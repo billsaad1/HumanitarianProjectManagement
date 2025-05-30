@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{1AF88A89-6330-4C98-B889-1F5BBA1BC6CD}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>HumanitarianProjectManagement</RootNamespace>
+    <AssemblyName>HumanitarianProjectManagement</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BCrypt.Net-Next, Version=4.0.3.0, Culture=neutral, PublicKeyToken=1e11be04b6288443, processorArchitecture=MSIL">
+      <HintPath>packages\BCrypt.Net-Next.4.0.3\lib\net472\BCrypt.Net-Next.dll</HintPath>
+    </Reference>
+    <Reference Include="ComponentFactory.Krypton.Design, Version=4.5.0.0, Culture=neutral, PublicKeyToken=a87e673e9ecb6e8e, processorArchitecture=MSIL">
+      <HintPath>packages\Krypton.Components.Suite.4.5.9\lib\net20\ComponentFactory.Krypton.Design.dll</HintPath>
+    </Reference>
+    <Reference Include="ComponentFactory.Krypton.Docking, Version=4.5.0.0, Culture=neutral, PublicKeyToken=a87e673e9ecb6e8e, processorArchitecture=MSIL">
+      <HintPath>packages\Krypton.Components.Suite.4.5.9\lib\net20\ComponentFactory.Krypton.Docking.dll</HintPath>
+    </Reference>
+    <Reference Include="ComponentFactory.Krypton.Navigator, Version=4.5.0.0, Culture=neutral, PublicKeyToken=a87e673e9ecb6e8e, processorArchitecture=MSIL">
+      <HintPath>packages\Krypton.Components.Suite.4.5.9\lib\net20\ComponentFactory.Krypton.Navigator.dll</HintPath>
+    </Reference>
+    <Reference Include="ComponentFactory.Krypton.Ribbon, Version=4.5.0.0, Culture=neutral, PublicKeyToken=a87e673e9ecb6e8e, processorArchitecture=MSIL">
+      <HintPath>packages\Krypton.Components.Suite.4.5.9\lib\net20\ComponentFactory.Krypton.Ribbon.dll</HintPath>
+    </Reference>
+    <Reference Include="ComponentFactory.Krypton.Toolkit, Version=4.5.0.0, Culture=neutral, PublicKeyToken=a87e673e9ecb6e8e, processorArchitecture=MSIL">
+      <HintPath>packages\Krypton.Components.Suite.4.5.9\lib\net20\ComponentFactory.Krypton.Toolkit.dll</HintPath>
+    </Reference>
+    <Reference Include="ComponentFactory.Krypton.Workspace, Version=4.5.0.0, Culture=neutral, PublicKeyToken=a87e673e9ecb6e8e, processorArchitecture=MSIL">
+      <HintPath>packages\Krypton.Components.Suite.4.5.9\lib\net20\ComponentFactory.Krypton.Workspace.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Memory.4.5.4\lib\net461\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Activity.cs" />
+    <Compile Include="ProjectCreatEditForm.Designer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ProjectIndicatorCreateEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PurchaseOrderCreateEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StockTransactionCreateForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StockTransactionCreateForm.Designer.cs" />
+    <Compile Include="StockItemListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StockItemListForm.Designer..cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StockItemHistoryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StockItemCreateEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StockItemHistoryForm.Designer.cs" />
+    <Compile Include="StockItemCreateEditForm.Designer..cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PurchaseOrderListForm.Designer.cs" />
+    <Compile Include="PurchaseOrderCreateEditForm.Designer.cs" />
+    <Compile Include="ProjectMonitoringForm.Designer.cs" />
+    <Compile Include="ProjectIndicatorCreateEditForm.Designer.cs" />
+    <Compile Include="BeneficiaryMainForm.Designer.cs" />
+    <Compile Include="BeneficiaryListManagementForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BeneficiaryListManagementForm.Designer.cs" />
+    <Compile Include="BeneficiaryListCreateEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BeneficiaryListCreateEditForm.Designer.cs" />
+    <Compile Include="BeneficiaryCreateEditForm.Designer.cs" />
+    <Compile Include="BeneficiaryCreateEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BeneficiaryMainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MonitoringService.cs" />
+    <Compile Include="BeneficiaryService.cs" />
+    <Compile Include="Beneficiary.cs" />
+    <Compile Include="BeneficaryList.cs" />
+    <Compile Include="Budget.cs" />
+    <Compile Include="Feedback.cs" />
+    <Compile Include="FollowUpVisit.cs" />
+    <Compile Include="ProjectMonitoringForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PurchaseOrderListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PurchaseOrderService.cs" />
+    <Compile Include="StockService.cs" />
+    <Compile Include="ThemeManager.cs" />
+    <Compile Include="ProjectIndicator.cs" />
+    <Compile Include="ProjectReport.cs" />
+    <Compile Include="Role.cs" />
+    <Compile Include="StockItem.cs" />
+    <Compile Include="StockTransaction.cs" />
+    <Compile Include="PasswordHelper.cs" />
+    <Compile Include="User.cs" />
+    <Compile Include="UserRole.cs" />
+    <Compile Include="VerificationMean.cs" />
+    <Compile Include="Project.cs" />
+    <Compile Include="Purchase.cs" />
+    <Compile Include="PurchaseOrder.cs" />
+    <Compile Include="Salary.cs" />
+    <Compile Include="Section.cs" />
+    <Compile Include="ProjectListForm.Designer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LoginForm.Designer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DashboardForm.Designer.cs" />
+    <Compile Include="DashboardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ProjectCreatEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ProjectListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UserService.cs" />
+    <Compile Include="ProjectService.cs" />
+    <Compile Include="DataBaseHelper.cs" />
+    <Compile Include="AppContext.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="LoginForm.resx">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
