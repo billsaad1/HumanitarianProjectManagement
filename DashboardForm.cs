@@ -3,14 +3,31 @@ using System.Windows.Forms;
 using HumanitarianProjectManagement.UI;
 using HumanitarianProjectManagement.Forms; // Ensured this is present
 
+using HumanitarianProjectManagement.DataAccessLayer; // For services
+using System.Threading.Tasks; // For Task
+using Microsoft.VisualBasic; // For InputBox
+
 namespace HumanitarianProjectManagement.Forms
 {
     public partial class DashboardForm : Form
     {
+        private readonly SectionService _sectionService;
+        private readonly ProjectService _projectService;
+
         public DashboardForm()
         {
             InitializeComponent();
             ThemeManager.ApplyThemeToForm(this);
+            this.pnlSidebar.BackColor = ThemeManager.PanelBackgroundColor; // Theme for sidebar
+
+            _sectionService = new SectionService();
+            _projectService = new ProjectService();
+
+            // Wire up event handlers
+            this.Load += DashboardForm_Load; // For loading sections
+            this.btnAddSection.Click += new System.EventHandler(this.btnAddSection_Click);
+            this.tvwSections.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.tvwSections_AfterSelect);
+
             // Consider setting IsMdiContainer = true in the designer or here if you want MDI
             // this.IsMdiContainer = true; 
 
@@ -44,35 +61,33 @@ namespace HumanitarianProjectManagement.Forms
 
         private void projectsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ProjectListForm projectListForm = new ProjectListForm();
-            projectListForm.Show(this); // 'this' makes the DashboardForm the owner
+            // This menu item is likely removed or will be.
+            // If kept, it should show ALL projects, or be removed if sections handle all project views.
+            OpenFormInPanel(new ProjectListForm());
         }
 
         private void monitoringEvaluationToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // MessageBox.Show("Navigating to Monitoring & Evaluation section...", "Monitoring & Evaluation", MessageBoxButtons.OK, MessageBoxIcon.Information); // Removed placeholder
-            ProjectListForm projectListForm = new ProjectListForm();
-            // Consider adding a title or state to projectListForm to indicate M&E focus, if desired later.
-            // For now, simply showing the form is sufficient.
-            projectListForm.Show(this); // 'this' makes the DashboardForm the owner
+            // This menu item is likely removed or will be.
+            OpenFormInPanel(new ProjectListForm()); // Assuming M&E uses a specialized view of ProjectList or its own form
         }
 
         private void purchasingToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            PurchaseOrderListForm poListForm = new PurchaseOrderListForm();
-            poListForm.Show(this); // 'this' makes the DashboardForm the owner
+            // This menu item is likely removed or will be.
+            OpenFormInPanel(new PurchaseOrderListForm());
         }
 
         private void beneficiariesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            BeneficiaryListManagementForm beneficiaryListForm = new BeneficiaryListManagementForm();
-            beneficiaryListForm.Show(this); // 'this' makes the DashboardForm the owner
+            // This menu item is likely removed or will be.
+            OpenFormInPanel(new BeneficiaryListManagementForm());
         }
 
         private void stockManagementToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            StockItemListForm stockItemListForm = new StockItemListForm();
-            stockItemListForm.Show(this); // 'this' makes the DashboardForm the owner
+            // This menu item is likely removed or will be.
+            OpenFormInPanel(new StockItemListForm());
         }
 
         private void reportsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -105,26 +120,161 @@ namespace HumanitarianProjectManagement.Forms
 
         // Optional: Helper method if you want to load forms into pnlMainContent
         // (pnlMainContent should be made public or internal for this to work directly)
-        /*
+        // Implemented OpenFormInPanel
         private void OpenFormInPanel(Form formToOpen)
         {
             // Close any existing form in the panel
             if (pnlMainContent.Controls.Count > 0)
             {
-                Form currentForm = pnlMainContent.Controls[0] as Form;
-                if (currentForm != null)
+                foreach(Control ctrl in pnlMainContent.Controls)
                 {
-                    currentForm.Close(); // Or Dispose()
+                    if (ctrl is Form currentForm)
+                    {
+                         currentForm.Close(); // Or Dispose()
+                    }
                 }
-                pnlMainContent.Controls.Clear();
+                pnlMainContent.Controls.Clear(); // Clear all controls
             }
 
             formToOpen.TopLevel = false;
             formToOpen.FormBorderStyle = FormBorderStyle.None;
             formToOpen.Dock = DockStyle.Fill;
             pnlMainContent.Controls.Add(formToOpen);
+            formToOpen.Tag = "DynamicForm"; // Optional tag to identify it later
             formToOpen.Show();
         }
-        */
+
+        private async void DashboardForm_Load(object sender, EventArgs e)
+        {
+            await LoadSectionsTreeViewAsync();
+            AddOtherModuleButtons(); // Add buttons for M&E, Purchasing etc.
+        }
+
+        private async Task LoadSectionsTreeViewAsync()
+        {
+            tvwSections.Nodes.Clear();
+            TreeNode sectionsRootNode = new TreeNode("Sections");
+            tvwSections.Nodes.Add(sectionsRootNode);
+
+            try
+            {
+                var sections = await _sectionService.GetSectionsAsync();
+                if (sections != null)
+                {
+                    foreach (var section in sections)
+                    {
+                        TreeNode sectionNode = new TreeNode(section.SectionName);
+                        sectionNode.Tag = section.SectionID; // Store SectionID
+                        sectionsRootNode.Nodes.Add(sectionNode);
+                    }
+                }
+                sectionsRootNode.Expand();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading sections: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void btnAddSection_Click(object sender, EventArgs e)
+        {
+            string sectionName = Interaction.InputBox("Enter the name for the new section:", "Add New Section", "");
+            if (!string.IsNullOrWhiteSpace(sectionName))
+            {
+                string sectionDescription = Interaction.InputBox("Enter the description for the new section (optional):", "Add Section Description", "");
+
+                Section newSection = new Section
+                {
+                    SectionName = sectionName,
+                    Description = sectionDescription
+                };
+
+                try
+                {
+                    int newSectionId = await _sectionService.AddSectionAsync(newSection);
+                    if (newSectionId > 0)
+                    {
+                        MessageBox.Show("Section added successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        await LoadSectionsTreeViewAsync(); // Refresh TreeView
+                    }
+                    else
+                    {
+                        MessageBox.Show("Failed to add section.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error adding section: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void tvwSections_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            if (e.Node != null && e.Node.Tag != null && e.Node.Parent == tvwSections.Nodes[0]) // Check if it's a section node under the root
+            {
+                if (int.TryParse(e.Node.Tag.ToString(), out int sectionId))
+                {
+                    // Pass the sectionId to the ProjectListForm constructor
+                    ProjectListForm projectListForm = new ProjectListForm(sectionId);
+                    OpenFormInPanel(projectListForm);
+                }
+            }
+        }
+
+        private void AddOtherModuleButtons()
+        {
+            // Clear existing buttons if any (e.g., if called multiple times, though not expected here)
+            // flpModuleButtons.Controls.Clear();
+
+            var moduleButtonProperties = new[]
+            {
+                new { Text = "Projects (All)", FormType = typeof(ProjectListForm), OriginalHandler = projectsToolStripMenuItem_Click },
+                new { Text = "Monitoring & Evaluation", FormType = typeof(ProjectListForm), OriginalHandler = monitoringEvaluationToolStripMenuItem_Click }, // Assuming ProjectListForm or a specific M&E form
+                new { Text = "Purchasing", FormType = typeof(PurchaseOrderListForm), OriginalHandler = purchasingToolStripMenuItem_Click },
+                new { Text = "Beneficiaries", FormType = typeof(BeneficiaryListManagementForm), OriginalHandler = beneficiariesToolStripMenuItem_Click },
+                new { Text = "Stock Management", FormType = typeof(StockItemListForm), OriginalHandler = stockManagementToolStripMenuItem_Click }
+                // Reports can be added if it has a dedicated form
+            };
+
+            foreach (var props in moduleButtonProperties)
+            {
+                Button btnModule = new Button();
+                btnModule.Text = props.Text;
+                btnModule.Height = 30; // Standard height
+                btnModule.Width = flpModuleButtons.ClientSize.Width - flpModuleButtons.Padding.Horizontal; // Fill width
+                btnModule.Margin = new Padding(3); // Add some margin
+
+                // Apply theme to button
+                btnModule.BackColor = ThemeManager.ButtonBackgroundColor;
+                btnModule.ForeColor = ThemeManager.ButtonForegroundColor;
+                btnModule.FlatStyle = FlatStyle.System; // Or Flat for more custom look
+
+                // If the original handler exists and is not null, use it. Otherwise, create a new form instance.
+                if (props.OriginalHandler != null)
+                {
+                    // We can't directly assign one event handler to another if signatures differ or if we want to pass specific context.
+                    // Instead, we invoke the logic of opening the specific form.
+                    btnModule.Click += (sender, e) => {
+                        // The original handlers were already updated to use OpenFormInPanel.
+                        // So, we can call them directly or replicate their OpenFormInPanel call.
+                        // For simplicity and to ensure any specific logic in those handlers is retained:
+                        // props.OriginalHandler(sender, e); // This would work if they are still accessible and relevant.
+                        // However, since menu items are gone, it's cleaner to just open the form.
+                        Form formToOpen = (Form)Activator.CreateInstance(props.FormType);
+                        OpenFormInPanel(formToOpen);
+                    };
+                }
+                else // Fallback if original handler is null or not to be used
+                {
+                    btnModule.Click += (sender, e) => {
+                        Form formToOpen = (Form)Activator.CreateInstance(props.FormType);
+                        OpenFormInPanel(formToOpen);
+                    };
+                }
+                flpModuleButtons.Controls.Add(btnModule);
+            }
+        }
+
     }
 }
