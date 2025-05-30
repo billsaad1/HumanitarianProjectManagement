@@ -14,8 +14,10 @@ namespace HumanitarianProjectManagement.Forms
     public partial class ProjectCreateEditForm : Form
     {
         private readonly ProjectService _projectService;
+        private readonly SectionService _sectionService; // Added SectionService field
         private Project _currentProject;
         private readonly bool _isEditMode;
+        private int? _initialSectionId;
 
         // Simple class for ComboBox items
         private class ComboboxItem
@@ -26,11 +28,20 @@ namespace HumanitarianProjectManagement.Forms
         }
 
 
+        // Existing constructor, modified to call the new one
         public ProjectCreateEditForm(Project projectToEdit = null)
+            : this(projectToEdit, null)
+        {
+        }
+
+        // New constructor accepting initialSectionId
+        public ProjectCreateEditForm(Project projectToEdit = null, int? initialSectionId = null)
         {
             InitializeComponent();
-            ThemeManager.ApplyThemeToForm(this); // Added
+            ThemeManager.ApplyThemeToForm(this);
             _projectService = new ProjectService();
+            _sectionService = new SectionService(); // Instantiate SectionService
+            _initialSectionId = initialSectionId;
 
             _isEditMode = (projectToEdit != null);
 
@@ -44,13 +55,18 @@ namespace HumanitarianProjectManagement.Forms
             {
                 _currentProject = new Project();
                 this.Text = "Add New Project";
-                // Set defaults for new project if any, e.g. StartDate
                 dtpStartDate.Value = DateTime.Now;
-                dtpStartDate.Checked = false; // Allow null StartDate initially
-                dtpEndDate.Checked = false;   // Allow null EndDate initially
+                dtpStartDate.Checked = false;
+                dtpEndDate.Checked = false;
             }
-            LoadComboBoxes(); // Call after _currentProject is initialized
+            // LoadComboBoxes(); // Will be called from Form_Load
             SetAccessibilityProperties();
+            this.Load += new System.EventHandler(this.ProjectCreateEditForm_Load); // Wire up Load event
+        }
+
+        private async void ProjectCreateEditForm_Load(object sender, EventArgs e)
+        {
+            await LoadComboBoxesAsync();
         }
 
         private void SetAccessibilityProperties()
@@ -96,21 +112,31 @@ namespace HumanitarianProjectManagement.Forms
         }
 
 
-        private void LoadComboBoxes()
+        private async Task LoadComboBoxesAsync() // Changed to async Task
         {
-            // TODO: Populate cmbSection and cmbManager from respective services (async if applicable).
-            // For now, using placeholder items.
-
             // Sections
             cmbSection.DisplayMember = "Text";
             cmbSection.ValueMember = "Value";
-            cmbSection.Items.Add(new ComboboxItem { Text = "(No Section)", Value = 0 }); // For null SectionID
-            cmbSection.Items.Add(new ComboboxItem { Text = "Default Section 1", Value = 1 });
-            cmbSection.Items.Add(new ComboboxItem { Text = "Default Section 2", Value = 2 });
-            // Select current project's section or default to (No Section)
+            cmbSection.Items.Clear(); // Clear existing items
+            cmbSection.Items.Add(new ComboboxItem { Text = "(No Section)", Value = 0 });
+
+            try
+            {
+                List<Section> sections = await _sectionService.GetSectionsAsync();
+                foreach (var section in sections)
+                {
+                    cmbSection.Items.Add(new ComboboxItem { Text = section.SectionName, Value = section.SectionID });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading sections: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Keep "(No Section)" as the only option if loading fails
+            }
+
+            // Set Selected Section
             if (_isEditMode && _currentProject.SectionID != null)
             {
-                // Find the item by value and select it
                 foreach (ComboboxItem item in cmbSection.Items)
                 {
                     if (item.Value == _currentProject.SectionID.Value)
@@ -119,10 +145,25 @@ namespace HumanitarianProjectManagement.Forms
                         break;
                     }
                 }
+                if (cmbSection.SelectedItem == null) cmbSection.SelectedIndex = 0; // Default if not found
+            }
+            else if (!_isEditMode && _initialSectionId.HasValue)
+            {
+                bool found = false;
+                foreach (ComboboxItem item in cmbSection.Items)
+                {
+                    if (item.Value == _initialSectionId.Value)
+                    {
+                        cmbSection.SelectedItem = item;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) cmbSection.SelectedIndex = 0;
             }
             else
             {
-                cmbSection.SelectedIndex = 0; // Default to (No Section)
+                cmbSection.SelectedIndex = 0;
             }
 
 
@@ -221,6 +262,8 @@ namespace HumanitarianProjectManagement.Forms
             {
                 _currentProject.SectionID = ((ComboboxItem)cmbSection.SelectedItem).Value;
             }
+            // Removed the else-if block that directly assigned _initialSectionId to _currentProject.SectionID
+            // The pre-selection in LoadComboBoxesAsync and this block should suffice.
             else
             {
                 _currentProject.SectionID = null;
