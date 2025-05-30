@@ -34,7 +34,6 @@ namespace HumanitarianProjectManagement.Forms
             this.txtPassword = new System.Windows.Forms.TextBox();
             this.btnLogin = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
-            this.lnkForgotPassword = new System.Windows.Forms.LinkLabel(); // Added LinkLabel
             this.SuspendLayout();
             // 
             // lblUsername
@@ -67,26 +66,15 @@ namespace HumanitarianProjectManagement.Forms
             this.txtPassword.Location = new System.Drawing.Point(120, 77);
             this.txtPassword.Name = "txtPassword";
             this.txtPassword.Size = new System.Drawing.Size(200, 20);
-            this.txtPassword.TabIndex = 2;
+            this.txtPassword.TabIndex = 2; // Changed to 2 for tab order
             this.txtPassword.UseSystemPasswordChar = true;
             // 
-            // lnkForgotPassword
-            //
-            this.lnkForgotPassword.AutoSize = true;
-            this.lnkForgotPassword.Location = new System.Drawing.Point(120, 103); // Below password
-            this.lnkForgotPassword.Name = "lnkForgotPassword";
-            this.lnkForgotPassword.Size = new System.Drawing.Size(92, 13);
-            this.lnkForgotPassword.TabIndex = 3; // After password field
-            this.lnkForgotPassword.TabStop = true;
-            this.lnkForgotPassword.Text = "Forgot Password?";
-            this.lnkForgotPassword.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lnkForgotPassword_LinkClicked);
-            //
             // btnLogin
             // 
-            this.btnLogin.Location = new System.Drawing.Point(120, 135); // Adjusted Y
+            this.btnLogin.Location = new System.Drawing.Point(120, 120);
             this.btnLogin.Name = "btnLogin";
             this.btnLogin.Size = new System.Drawing.Size(95, 23);
-            this.btnLogin.TabIndex = 4; // Adjusted TabIndex
+            this.btnLogin.TabIndex = 3; // Changed to 3 for tab order
             this.btnLogin.Text = "Login";
             this.btnLogin.UseVisualStyleBackColor = true;
             this.btnLogin.Click += new System.EventHandler(this.btnLogin_Click);
@@ -94,10 +82,10 @@ namespace HumanitarianProjectManagement.Forms
             // btnCancel
             // 
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(225, 135); // Adjusted Y
+            this.btnCancel.Location = new System.Drawing.Point(225, 120);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(95, 23);
-            this.btnCancel.TabIndex = 5; // Adjusted TabIndex
+            this.btnCancel.TabIndex = 4; // Changed to 4 for tab order
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
@@ -108,8 +96,7 @@ namespace HumanitarianProjectManagement.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(384, 200); // Increased height
-            this.Controls.Add(this.lnkForgotPassword); // Added LinkLabel
+            this.ClientSize = new System.Drawing.Size(384, 181);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnLogin);
             this.Controls.Add(this.txtPassword);
@@ -135,6 +122,5 @@ namespace HumanitarianProjectManagement.Forms
         private System.Windows.Forms.TextBox txtPassword;
         private System.Windows.Forms.Button btnLogin;
         private System.Windows.Forms.Button btnCancel;
-        private System.Windows.Forms.LinkLabel lnkForgotPassword; // Added declaration
     }
 }

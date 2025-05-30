@@ -10,32 +10,17 @@ namespace HumanitarianProjectManagement.Forms
 {
     public partial class ProjectListForm : Form
     {
-        private readonly ProjectService _projectService;
-        private readonly int? _sectionId; // Added field
+        private ProjectService _projectService;
 
-        // Modified default constructor
-        public ProjectListForm() : this(null)
-        {
-        }
-
-        // New constructor accepting sectionId
-        public ProjectListForm(int? sectionId = null)
+        public ProjectListForm()
         {
             InitializeComponent();
             ThemeManager.ApplyThemeToForm(this);
             _projectService = new ProjectService();
-            _sectionId = sectionId;
-
+            // Wire up the Form_Load event handler
             this.Load += new System.EventHandler(this.ProjectListForm_Load);
-            SetAccessibilityProperties();
 
-            // Optional: Adjust form title if sectionId is provided
-            if (_sectionId.HasValue)
-            {
-                // This would be better if we fetched the Section Name.
-                // For now, just indicate filtering.
-                this.Text += $" (Section ID: {_sectionId.Value})";
-            }
+            SetAccessibilityProperties(); // Call to set accessibility for all buttons
         }
 
         private void SetAccessibilityProperties()
@@ -68,15 +53,7 @@ namespace HumanitarianProjectManagement.Forms
             try
             {
                 dgvProjects.DataSource = null; // Clear previous data
-                List<Project> projects;
-                if (_sectionId.HasValue)
-                {
-                    projects = await _projectService.GetProjectsBySectionIdAsync(_sectionId.Value);
-                }
-                else
-                {
-                    projects = await _projectService.GetAllProjectsAsync();
-                }
+                List<Project> projects = await _projectService.GetAllProjectsAsync();
                 dgvProjects.DataSource = projects;
 
                 // Configure DataGridView columns
@@ -137,12 +114,11 @@ namespace HumanitarianProjectManagement.Forms
 
         private async void btnAddProject_Click(object sender, EventArgs e)
         {
-            // Pass _sectionId to ProjectCreateEditForm
-            using (ProjectCreateEditForm addForm = new ProjectCreateEditForm(projectToEdit: null, initialSectionId: _sectionId))
+            using (ProjectCreateEditForm addForm = new ProjectCreateEditForm())
             {
                 if (addForm.ShowDialog(this) == DialogResult.OK) // Set owner
                 {
-                    await LoadProjectsAsync(); // Refresh the list
+                    await LoadProjectsAsync();
                 }
             }
         }
