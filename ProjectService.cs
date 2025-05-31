@@ -102,6 +102,54 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             return project;
         }
 
+        public async Task<List<Project>> GetProjectsBySectionIdAsync(int sectionId)
+        {
+            List<Project> projects = new List<Project>();
+            string query = "SELECT ProjectID, ProjectName, ProjectCode, SectionID, StartDate, EndDate, Location, OverallObjective, ManagerUserID, Status, TotalBudget, Donor, CreatedAt, UpdatedAt FROM Projects WHERE SectionID = @SectionID";
+
+            try
+            {
+                using (SqlConnection connection = DatabaseHelper.GetConnection())
+                {
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@SectionID", sectionId);
+                        await connection.OpenAsync();
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                Project project = new Project
+                                {
+                                    ProjectID = (int)reader["ProjectID"],
+                                    ProjectName = reader["ProjectName"].ToString(),
+                                    ProjectCode = reader["ProjectCode"] != DBNull.Value ? reader["ProjectCode"].ToString() : null,
+                                    SectionID = reader["SectionID"] != DBNull.Value ? (int?)reader["SectionID"] : null,
+                                    StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader["StartDate"] : null,
+                                    EndDate = reader["EndDate"] != DBNull.Value ? (DateTime?)reader["EndDate"] : null,
+                                    Location = reader["Location"] != DBNull.Value ? reader["Location"].ToString() : null,
+                                    OverallObjective = reader["OverallObjective"] != DBNull.Value ? reader["OverallObjective"].ToString() : null,
+                                    ManagerUserID = reader["ManagerUserID"] != DBNull.Value ? (int?)reader["ManagerUserID"] : null,
+                                    Status = reader["Status"] != DBNull.Value ? reader["Status"].ToString() : null,
+                                    TotalBudget = reader["TotalBudget"] != DBNull.Value ? (decimal?)reader["TotalBudget"] : null,
+                                    Donor = reader["Donor"] != DBNull.Value ? reader["Donor"].ToString() : null,
+                                    CreatedAt = (DateTime)reader["CreatedAt"],
+                                    UpdatedAt = reader["UpdatedAt"] != DBNull.Value ? (DateTime?)reader["UpdatedAt"] : null
+                                };
+                                projects.Add(project);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (SqlException ex)
+            {
+                Console.WriteLine($"SQL Error in GetProjectsBySectionIdAsync: {ex.Message}");
+                // Return empty list or re-throw based on error handling policy
+            }
+            return projects;
+        }
+
         public async Task<bool> SaveProjectAsync(Project project)
         {
             int rowsAffected = 0;

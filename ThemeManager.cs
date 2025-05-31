@@ -27,19 +27,25 @@ namespace HumanitarianProjectManagement.UI
         // Static Constructor
         static ThemeManager()
         {
-            // Initialize with default sensible values (consider contrast)
-            FormBackgroundColor = SystemColors.Control;
-            PanelBackgroundColor = SystemColors.ControlLightLight; // Lighter than form
-            TextColor = SystemColors.ControlText;
-            ButtonBackgroundColor = SystemColors.Control;
-            ButtonForegroundColor = SystemColors.ControlText;
-            TextBoxBackgroundColor = SystemColors.Window;
-            DataGridViewBackgroundColor = SystemColors.Window;
-            DataGridViewHeaderBackgroundColor = SystemColors.ControlDark; // Darker header
-            DataGridViewHeaderForegroundColor = SystemColors.ControlLightLight; // Light text on dark header
-            MenuStripBackendColor = SystemColors.ControlLight;
-            MenuItemBackgroundColor = SystemColors.ControlLight;
-            MenuItemForegroundColor = SystemColors.ControlText;
+            // Blue Theme Palette
+            Color primaryBlue = Color.FromArgb(22, 100, 199); // A medium, rich blue
+            Color lighterBlue = Color.FromArgb(173, 216, 230); // Light blue, sky blue
+            Color accentBlue = Color.FromArgb(0, 71, 171);     // A deeper blue for accents
+            Color lightText = Color.FromArgb(240, 240, 240); // Very light gray / Off-white
+
+            // Initialize with Blue Theme
+            FormBackgroundColor = primaryBlue;
+            PanelBackgroundColor = lighterBlue;
+            TextColor = lightText;
+            ButtonBackgroundColor = accentBlue;
+            ButtonForegroundColor = lightText;
+            TextBoxBackgroundColor = Color.White; // Keep text boxes white for readability
+            DataGridViewBackgroundColor = Color.White; // Keep grids white
+            DataGridViewHeaderBackgroundColor = accentBlue;
+            DataGridViewHeaderForegroundColor = lightText;
+            MenuStripBackendColor = accentBlue;
+            MenuItemBackgroundColor = accentBlue; // Or a slightly lighter/darker shade of accentBlue
+            MenuItemForegroundColor = lightText;
 
 
             GlobalFont = new Font("Segoe UI", 9f, FontStyle.Regular);

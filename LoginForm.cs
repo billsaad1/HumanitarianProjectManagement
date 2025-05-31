@@ -51,11 +51,9 @@ namespace HumanitarianProjectManagement.Forms
                     // Store authenticated user in AppContext
                     AppContext.CurrentUser = authenticatedUser;
 
-                    // Successful login
-                    DashboardForm dashboardForm = new DashboardForm();
-                    this.Hide();
-                    dashboardForm.ShowDialog(); // Show as a dialog to block this form
-                    this.Close(); // Close login form after dashboard is closed
+                    // Successful login - Set DialogResult and Close. Program.cs will handle Dashboard.
+                    this.DialogResult = DialogResult.OK;
+                    this.Close();
                 }
                 else
                 {
@@ -81,6 +79,11 @@ namespace HumanitarianProjectManagement.Forms
         private void btnCancel_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void lnkForgotPassword_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            MessageBox.Show("Password recovery feature is not yet implemented.", "Forgot Password", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
