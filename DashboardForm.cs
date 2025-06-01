@@ -27,8 +27,8 @@ namespace HumanitarianProjectManagement.Forms
 
             // Wire up event handlers
             this.Load += DashboardForm_Load; // For loading sections
-            this.btnAddSection.Click += new System.EventHandler(this.btnAddSection_Click);
-            this.tvwSections.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.tvwSections_AfterSelect);
+            // this.btnAddSection.Click += new System.EventHandler(this.btnAddSection_Click); // REMOVE - Moved to Designer
+            // this.tvwSections.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.tvwSections_AfterSelect); // REMOVE - Moved to Designer
 
             // Consider setting IsMdiContainer = true in the designer or here if you want MDI
             // this.IsMdiContainer = true; 
@@ -38,17 +38,10 @@ namespace HumanitarianProjectManagement.Forms
             fileToolStripMenuItem.AccessibleName = "File Menu";
             settingsToolStripMenuItem.AccessibleName = "Application Settings";
             exitToolStripMenuItem.AccessibleName = "Exit Application";
-            modulesToolStripMenuItem.AccessibleName = "Modules Menu";
-            projectsToolStripMenuItem.AccessibleName = "Projects Module";
-            monitoringEvaluationToolStripMenuItem.AccessibleName = "Monitoring and Evaluation Module";
-            purchasingToolStripMenuItem.AccessibleName = "Purchasing Module";
-            beneficiariesToolStripMenuItem.AccessibleName = "Beneficiaries Module";
-            stockManagementToolStripMenuItem.AccessibleName = "Stock Management Module";
-            reportsToolStripMenuItem.AccessibleName = "Reports Module";
             helpToolStripMenuItem.AccessibleName = "Help Menu";
             aboutToolStripMenuItem.AccessibleName = "About Application";
 
-            lblWelcome.AccessibleName = "Welcome message"; // Though label text is usually sufficient
+            lblWelcome.AccessibleName = "Welcome message";
         }
 
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -61,41 +54,12 @@ namespace HumanitarianProjectManagement.Forms
             Application.Exit();
         }
 
-        private void projectsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            // This menu item is likely removed or will be.
-            // If kept, it should show ALL projects, or be removed if sections handle all project views.
-            OpenFormInPanel(new ProjectListForm());
-        }
-
-        private void monitoringEvaluationToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            // This menu item is likely removed or will be.
-            OpenFormInPanel(new ProjectListForm()); // Assuming M&E uses a specialized view of ProjectList or its own form
-        }
-
-        private void purchasingToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            // This menu item is likely removed or will be.
-            OpenFormInPanel(new PurchaseOrderListForm());
-        }
-
-        private void beneficiariesToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            // This menu item is likely removed or will be.
-            OpenFormInPanel(new BeneficiaryListManagementForm());
-        }
-
-        private void stockManagementToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            // This menu item is likely removed or will be.
-            OpenFormInPanel(new StockItemListForm());
-        }
-
-        private void reportsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show("Navigating to Reports section...", "Reports", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
+        // Removed projectsToolStripMenuItem_Click
+        // Removed monitoringEvaluationToolStripMenuItem_Click
+        // Removed purchasingToolStripMenuItem_Click
+        // Removed beneficiariesToolStripMenuItem_Click
+        // Removed stockManagementToolStripMenuItem_Click
+        // Removed reportsToolStripMenuItem_Click
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -231,12 +195,12 @@ namespace HumanitarianProjectManagement.Forms
 
             var moduleButtonProperties = new[]
             {
-                new { Text = "Projects (All)", FormType = typeof(ProjectListForm), OriginalHandler = projectsToolStripMenuItem_Click },
-                new { Text = "Monitoring & Evaluation", FormType = typeof(ProjectListForm), OriginalHandler = monitoringEvaluationToolStripMenuItem_Click }, // Assuming ProjectListForm or a specific M&E form
-                new { Text = "Purchasing", FormType = typeof(PurchaseOrderListForm), OriginalHandler = purchasingToolStripMenuItem_Click },
-                new { Text = "Beneficiaries", FormType = typeof(BeneficiaryListManagementForm), OriginalHandler = beneficiariesToolStripMenuItem_Click },
-                new { Text = "Stock Management", FormType = typeof(StockItemListForm), OriginalHandler = stockManagementToolStripMenuItem_Click }
-                // Reports can be added if it has a dedicated form
+                new { Text = "Projects (All)", FormType = typeof(ProjectListForm) },
+                new { Text = "Monitoring & Evaluation", FormType = typeof(ProjectListForm) }, // Assuming ProjectListForm or a specific M&E form
+                new { Text = "Purchasing", FormType = typeof(PurchaseOrderListForm) },
+                new { Text = "Beneficiaries", FormType = typeof(BeneficiaryListManagementForm) },
+                new { Text = "Stock Management", FormType = typeof(StockItemListForm) }
+                // Reports can be added if it has a dedicated form. Note: ReportsToolStripMenuItem_Click was simple MessageBox.
             };
 
             foreach (var props in moduleButtonProperties)
@@ -252,28 +216,10 @@ namespace HumanitarianProjectManagement.Forms
                 btnModule.ForeColor = ThemeManager.ButtonForegroundColor;
                 btnModule.FlatStyle = FlatStyle.System; // Or Flat for more custom look
 
-                // If the original handler exists and is not null, use it. Otherwise, create a new form instance.
-                if (props.OriginalHandler != null)
-                {
-                    // We can't directly assign one event handler to another if signatures differ or if we want to pass specific context.
-                    // Instead, we invoke the logic of opening the specific form.
-                    btnModule.Click += (sender, e) => {
-                        // The original handlers were already updated to use OpenFormInPanel.
-                        // So, we can call them directly or replicate their OpenFormInPanel call.
-                        // For simplicity and to ensure any specific logic in those handlers is retained:
-                        // props.OriginalHandler(sender, e); // This would work if they are still accessible and relevant.
-                        // However, since menu items are gone, it's cleaner to just open the form.
-                        Form formToOpen = (Form)Activator.CreateInstance(props.FormType);
-                        OpenFormInPanel(formToOpen);
-                    };
-                }
-                else // Fallback if original handler is null or not to be used
-                {
-                    btnModule.Click += (sender, e) => {
-                        Form formToOpen = (Form)Activator.CreateInstance(props.FormType);
-                        OpenFormInPanel(formToOpen);
-                    };
-                }
+                btnModule.Click += (sender, e) => {
+                    Form formToOpen = (Form)Activator.CreateInstance(props.FormType);
+                    OpenFormInPanel(formToOpen);
+                };
                 flpModuleButtons.Controls.Add(btnModule);
             }
         }

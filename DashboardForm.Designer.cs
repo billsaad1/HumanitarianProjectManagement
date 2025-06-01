@@ -28,24 +28,24 @@ namespace HumanitarianProjectManagement.Forms
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container(); // Assuming components might be used by Timer or other things later.
             this.mainMenuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.modulesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.projectsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.monitoringEvaluationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.purchasingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.beneficiariesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.stockManagementToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.reportsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mainStatusStrip = new System.Windows.Forms.StatusStrip();
             this.pnlMainContent = new System.Windows.Forms.Panel();
             this.lblWelcome = new System.Windows.Forms.Label();
+            this.pnlSidebar = new System.Windows.Forms.Panel();
+            this.flpModuleButtons = new System.Windows.Forms.FlowLayoutPanel();
+            this.tvwSections = new System.Windows.Forms.TreeView();
+            this.btnAddSection = new System.Windows.Forms.Button();
+
             this.mainMenuStrip.SuspendLayout();
             this.pnlMainContent.SuspendLayout();
+            this.pnlSidebar.SuspendLayout();
             this.SuspendLayout();
             // 
             // mainMenuStrip
@@ -107,40 +107,33 @@ namespace HumanitarianProjectManagement.Forms
             // 
             // pnlSidebar
             //
-            this.pnlSidebar = new System.Windows.Forms.Panel();
-            this.tvwSections = new System.Windows.Forms.TreeView();
-            this.btnAddSection = new System.Windows.Forms.Button();
-            this.pnlSidebar.SuspendLayout();
-            //
-            // pnlSidebar
-            //
-            this.flpModuleButtons = new System.Windows.Forms.FlowLayoutPanel(); // Added
-            this.pnlSidebar.Controls.Add(this.flpModuleButtons); // Add flp first for fill
+            this.pnlSidebar.Controls.Add(this.flpModuleButtons);
             this.pnlSidebar.Controls.Add(this.tvwSections);
             this.pnlSidebar.Controls.Add(this.btnAddSection);
             this.pnlSidebar.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlSidebar.Location = new System.Drawing.Point(0, 24); // X, Y (Below menu strip)
+            this.pnlSidebar.Location = new System.Drawing.Point(0, 24);
             this.pnlSidebar.Name = "pnlSidebar";
-            this.pnlSidebar.Size = new System.Drawing.Size(220, 515); // Width, Height (Full height minus menu & status)
-            this.pnlSidebar.TabIndex = 3; // Next available TabIndex
+            this.pnlSidebar.Size = new System.Drawing.Size(220, 515);
+            this.pnlSidebar.TabIndex = 3;
             //
             // tvwSections
             //
-            this.tvwSections.Dock = System.Windows.Forms.DockStyle.Top; // Changed from Fill
+            this.tvwSections.Dock = System.Windows.Forms.DockStyle.Top;
             this.tvwSections.Location = new System.Drawing.Point(0, 0);
             this.tvwSections.Name = "tvwSections";
-            this.tvwSections.Size = new System.Drawing.Size(220, 280); // Explicit height, width matches sidebar
+            this.tvwSections.Size = new System.Drawing.Size(220, 280);
             this.tvwSections.TabIndex = 0;
+            this.tvwSections.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.tvwSections_AfterSelect);
             //
             // flpModuleButtons
             //
-            this.flpModuleButtons.Dock = System.Windows.Forms.DockStyle.Fill; // Fills space between tvwSections and btnAddSection
-            this.flpModuleButtons.Location = new System.Drawing.Point(0, 280); // Below tvwSections
+            this.flpModuleButtons.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpModuleButtons.Location = new System.Drawing.Point(0, 280);
             this.flpModuleButtons.Name = "flpModuleButtons";
             this.flpModuleButtons.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
-            this.flpModuleButtons.Size = new System.Drawing.Size(220, 205); // Height = pnlSidebar(515) - tvw(280) - btnAddSection(30) = 205
-            this.flpModuleButtons.TabIndex = 1; // After tvwSections
-            this.flpModuleButtons.AutoScroll = true; // In case of many buttons
+            this.flpModuleButtons.Size = new System.Drawing.Size(220, 205);
+            this.flpModuleButtons.TabIndex = 1;
+            this.flpModuleButtons.AutoScroll = true;
             //
             // btnAddSection
             //
@@ -148,18 +141,19 @@ namespace HumanitarianProjectManagement.Forms
             this.btnAddSection.Location = new System.Drawing.Point(0, 485);
             this.btnAddSection.Name = "btnAddSection";
             this.btnAddSection.Size = new System.Drawing.Size(220, 30);
-            this.btnAddSection.TabIndex = 2; // After flpModuleButtons
+            this.btnAddSection.TabIndex = 2;
             this.btnAddSection.Text = "Add New Section";
             this.btnAddSection.UseVisualStyleBackColor = true;
+            this.btnAddSection.Click += new System.EventHandler(this.btnAddSection_Click);
             //
             // pnlMainContent
             // 
             this.pnlMainContent.Controls.Add(this.lblWelcome);
             this.pnlMainContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlMainContent.Location = new System.Drawing.Point(220, 24); // Adjusted X
+            this.pnlMainContent.Location = new System.Drawing.Point(220, 24);
             this.pnlMainContent.Name = "pnlMainContent";
-            this.pnlMainContent.Size = new System.Drawing.Size(564, 515); // Adjusted Width
-            this.pnlMainContent.TabIndex = 2; // TabIndex can remain, order of docking matters more
+            this.pnlMainContent.Size = new System.Drawing.Size(564, 515);
+            this.pnlMainContent.TabIndex = 2;
             // 
             // lblWelcome
             // 
@@ -178,11 +172,10 @@ namespace HumanitarianProjectManagement.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 561);
-            // Adjusted order and added pnlSidebar
-            this.Controls.Add(this.mainMenuStrip);
+            this.Controls.Add(this.pnlMainContent); // Order adjusted: main content fills remaining space
+            this.Controls.Add(this.pnlSidebar);   // Sidebar first
             this.Controls.Add(this.mainStatusStrip);
-            this.Controls.Add(this.pnlSidebar);
-            this.Controls.Add(this.pnlMainContent); // pnlMainContent last to correctly fill
+            this.Controls.Add(this.mainMenuStrip); // MenuStrip usually at the top of Z-order or handled by MainMenuStrip
             this.MainMenuStrip = this.mainMenuStrip;
             this.Name = "DashboardForm";
             this.Text = "Dashboard - Humanitarian Project Management System";
@@ -192,7 +185,7 @@ namespace HumanitarianProjectManagement.Forms
             this.mainMenuStrip.PerformLayout();
             this.pnlMainContent.ResumeLayout(false);
             this.pnlMainContent.PerformLayout();
-            this.pnlSidebar.ResumeLayout(false); // Added
+            this.pnlSidebar.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -212,6 +205,7 @@ namespace HumanitarianProjectManagement.Forms
         private System.Windows.Forms.Panel pnlSidebar;
         private System.Windows.Forms.TreeView tvwSections;
         private System.Windows.Forms.Button btnAddSection;
-        private System.Windows.Forms.FlowLayoutPanel flpModuleButtons; // Added declaration
+        private System.Windows.Forms.FlowLayoutPanel flpModuleButtons;
+        // Obsolete ToolStripMenuItem declarations are now removed.
     }
 }
