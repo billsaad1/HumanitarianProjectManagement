@@ -79,9 +79,12 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.VisualBasic" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Activity.cs" />
+    <Compile Include="Outcome.cs" />
+    <Compile Include="Output.cs" />
     <Compile Include="ProjectCreatEditForm.Designer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -133,9 +136,11 @@
     </Compile>
     <Compile Include="MonitoringService.cs" />
     <Compile Include="BeneficiaryService.cs" />
+    <Compile Include="SectionService.cs" />
     <Compile Include="Beneficiary.cs" />
     <Compile Include="BeneficaryList.cs" />
     <Compile Include="Budget.cs" />
+    <Compile Include="DetailedBudgetLine.cs" />
     <Compile Include="Feedback.cs" />
     <Compile Include="FollowUpVisit.cs" />
     <Compile Include="ProjectMonitoringForm.cs">

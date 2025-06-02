@@ -19,9 +19,6 @@ namespace HumanitarianProjectManagement.Models
         // Could be a JSON string or CSV for storing ticked months, e.g., "Jan/23,Mar/23"
         public string PlannedMonths { get; set; }
 
-        [ForeignKey("OutputID")]
-        public virtual Output Output { get; set; }
-
         // Constructor can be added if any collections need initialization in the future
         // public Activity()
         // {
