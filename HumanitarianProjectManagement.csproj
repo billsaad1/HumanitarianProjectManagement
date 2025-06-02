@@ -82,6 +82,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Activity.cs" />
+    <Compile Include="Outcome.cs" />
+    <Compile Include="Output.cs" />
     <Compile Include="ProjectCreatEditForm.Designer.cs">
       <SubType>Form</SubType>
     </Compile>
