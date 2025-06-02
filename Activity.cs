@@ -48,6 +48,12 @@ namespace HumanitarianProjectManagement.Models
         [ForeignKey("BudgetID")]
         public virtual Budget Budget { get; set; }
 
+        [Required]
+        public int OutputID { get; set; }
+
+        [ForeignKey("OutputID")]
+        public virtual Output Output { get; set; }
+
         // Navigation property for StockTransactions
         public virtual ICollection<StockTransaction> StockTransactions { get; set; }
 
