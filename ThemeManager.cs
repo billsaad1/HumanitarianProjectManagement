@@ -8,7 +8,8 @@ namespace HumanitarianProjectManagement.UI
         // Theme Properties
         public static Color FormBackgroundColor { get; set; }
         public static Color PanelBackgroundColor { get; set; }
-        public static Color TextColor { get; set; }
+        public static Color TextColor { get; set; } // For general text like labels
+        public static Color InputFieldForegroundColor { get; set; } // For text typed into input fields
         public static Color ButtonBackgroundColor { get; set; }
         public static Color ButtonForegroundColor { get; set; }
         public static Color TextBoxBackgroundColor { get; set; }
@@ -46,6 +47,7 @@ namespace HumanitarianProjectManagement.UI
             MenuStripBackendColor = accentBlue;
             MenuItemBackgroundColor = accentBlue; // Or a slightly lighter/darker shade of accentBlue
             MenuItemForegroundColor = lightText;
+            InputFieldForegroundColor = Color.Black; // Text in input fields should be black
 
 
             GlobalFont = new Font("Segoe UI", 9f, FontStyle.Regular);
@@ -84,23 +86,29 @@ namespace HumanitarianProjectManagement.UI
             else if (control is TextBox textBox)
             {
                 textBox.BackColor = TextBoxBackgroundColor;
-                textBox.ForeColor = TextColor;
+                textBox.ForeColor = InputFieldForegroundColor;
+            }
+            else if (control is RichTextBox richTextBox) // Added RichTextBox
+            {
+                richTextBox.BackColor = TextBoxBackgroundColor;
+                richTextBox.ForeColor = InputFieldForegroundColor;
             }
             else if (control is ComboBox comboBox)
             {
                 comboBox.BackColor = TextBoxBackgroundColor;
-                comboBox.ForeColor = TextColor;
+                comboBox.ForeColor = InputFieldForegroundColor; // Ensure typed text is black, dropdown list items might need custom drawing for full theme.
                 comboBox.FlatStyle = FlatStyle.System;
             }
             else if (control is DateTimePicker dateTimePicker)
             {
-                dateTimePicker.CalendarForeColor = TextColor;
+                dateTimePicker.CalendarForeColor = InputFieldForegroundColor; // For text in the calendar dropdown
                 dateTimePicker.CalendarMonthBackground = TextBoxBackgroundColor;
+                dateTimePicker.ForeColor = InputFieldForegroundColor; // For the text displayed in the control
             }
             else if (control is NumericUpDown numericUpDown)
             {
                 numericUpDown.BackColor = TextBoxBackgroundColor;
-                numericUpDown.ForeColor = TextColor;
+                numericUpDown.ForeColor = InputFieldForegroundColor;
             }
             else if (control is DataGridView dgv)
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -71,6 +71,11 @@ namespace HumanitarianProjectManagement.Models
         public virtual ICollection<Feedback> Feedbacks { get; set; }
         public virtual ICollection<FollowUpVisit> FollowUpVisits { get; set; }
 
+        // New Navigation Properties
+        public virtual ICollection<Outcome> Outcomes { get; set; }
+        public virtual ICollection<DetailedBudgetLine> DetailedBudgetLines { get; set; }
+
+
         public Project()
         {
             BeneficiaryLists = new HashSet<BeneficiaryList>();
@@ -81,6 +86,11 @@ namespace HumanitarianProjectManagement.Models
             StockTransactions = new HashSet<StockTransaction>();
             Feedbacks = new HashSet<Feedback>();
             FollowUpVisits = new HashSet<FollowUpVisit>();
+
+            // Initialize new collections
+            Outcomes = new HashSet<Outcome>();
+            DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
+
             CreatedAt = DateTime.UtcNow;
         }
     }

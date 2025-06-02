@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
+
 namespace HumanitarianProjectManagement.Forms
 {
     partial class BeneficiaryMainForm

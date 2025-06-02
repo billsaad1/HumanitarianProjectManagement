@@ -1,4 +1,5 @@
 ﻿using HumanitarianProjectManagement.Forms;
+using HumanitarianProjectManagement.UI; // Added using directive
 using System;
 using System.Windows.Forms;
 
@@ -16,8 +17,7 @@ namespace HumanitarianProjectManagement
             Application.SetCompatibleTextRenderingDefault(false);
 
             // Show splash screen first
-            // Assuming SplashScreenForm is in HumanitarianProjectManagement.UI namespace
-            HumanitarianProjectManagement.UI.SplashScreenForm splashScreen = new HumanitarianProjectManagement.UI.SplashScreenForm();
+            SplashScreenForm splashScreen = new SplashScreenForm(); // Simplified instantiation
             splashScreen.ShowDialog(); // Show as a dialog to wait for it to close
 
             // Then proceed to login
