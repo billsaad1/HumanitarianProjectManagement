@@ -140,6 +140,7 @@
     <Compile Include="Beneficiary.cs" />
     <Compile Include="BeneficaryList.cs" />
     <Compile Include="Budget.cs" />
+    <Compile Include="DetailedBudgetLine.cs" />
     <Compile Include="Feedback.cs" />
     <Compile Include="FollowUpVisit.cs" />
     <Compile Include="ProjectMonitoringForm.cs">
