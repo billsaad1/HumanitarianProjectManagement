@@ -456,7 +456,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                         {
                                             indicator.OutputID = output.OutputID;
                                             indicator.ProjectID = project.ProjectID; // Ensure ProjectID is set
-                                            if (indicator.ProjectIndicatorID == 0) await _logFrameService.AddProjectIndicatorToOutputAsync(indicator);
+                                            if (indicator.IndicatorID == 0) await _logFrameService.AddProjectIndicatorToOutputAsync(indicator);
                                             else await _logFrameService.UpdateProjectIndicatorAsync(indicator);
                                         }
                                     }
@@ -518,7 +518,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         var indicators = await _logFrameService.GetProjectIndicatorsByOutputIdAsync(output.OutputID);
                         foreach (var indicator in indicators)
                         {
-                            await _logFrameService.DeleteProjectIndicatorAsync(indicator.ProjectIndicatorID);
+                            await _logFrameService.DeleteProjectIndicatorAsync(indicator.IndicatorID);
                         }
                         await _logFrameService.DeleteOutputAsync(output.OutputID);
                     }

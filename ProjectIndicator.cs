@@ -10,7 +10,7 @@ namespace HumanitarianProjectManagement.Models
     public class ProjectIndicator
     {
         [Key]
-        public int ProjectIndicatorID { get; set; } // Renamed from IndicatorID
+        public int IndicatorID { get; set; }
 
         [Required]
         public int ProjectID { get; set; }

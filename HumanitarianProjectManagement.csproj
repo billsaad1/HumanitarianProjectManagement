@@ -81,6 +81,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PlaceholderTextBox.cs" />
     <Compile Include="Activity.cs" />
     <Compile Include="ProjectCreatEditForm.Designer.cs">
       <SubType>Form</SubType>

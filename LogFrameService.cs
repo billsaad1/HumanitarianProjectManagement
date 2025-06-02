@@ -71,6 +71,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         object newId = await command.ExecuteScalarAsync();
                         if (newId != null && newId != DBNull.Value)
                         {
+                            indicator.IndicatorID = Convert.ToInt32(newId);
                             return Convert.ToInt32(newId);
                         }
                     }
@@ -468,7 +469,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                             {
                                 indicators.Add(new ProjectIndicator
                                 {
-                                    ProjectIndicatorID = (int)reader["ProjectIndicatorID"],
+                                    IndicatorID = (int)reader["ProjectIndicatorID"],
                                     ProjectID = (int)reader["ProjectID"],
                                     OutputID = reader["OutputID"] != DBNull.Value ? (int?)reader["OutputID"] : null,
                                     IndicatorName = reader["IndicatorName"].ToString(),
@@ -601,7 +602,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         command.Parameters.AddWithValue("@TargetBoys", indicator.TargetBoys);
                         command.Parameters.AddWithValue("@TargetGirls", indicator.TargetGirls);
                         command.Parameters.AddWithValue("@TargetTotal", indicator.TargetTotal);
-                        command.Parameters.AddWithValue("@ProjectIndicatorID", indicator.ProjectIndicatorID);
+                        command.Parameters.AddWithValue("@ProjectIndicatorID", indicator.IndicatorID);
 
                         await connection.OpenAsync();
                         int rowsAffected = await command.ExecuteNonQueryAsync();

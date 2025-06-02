@@ -9,6 +9,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using HumanitarianProjectManagement.UI; // Added
+using HumanitarianProjectManagement.UI.Controls;
 
 namespace HumanitarianProjectManagement.Forms
 {
@@ -141,7 +142,7 @@ namespace HumanitarianProjectManagement.Forms
                 tlpOutcomeHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Button
 
                 Label lblOutcomeTitle = new Label { Text = $"Outcome {outcomeCounter}:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0,6,0,0) };
-                TextBox txtOutcomeDesc = new TextBox
+                PlaceholderTextBox txtOutcomeDesc = new PlaceholderTextBox
                 {
                     Text = outcome.OutcomeDescription,
                     Multiline = true,
@@ -303,8 +304,8 @@ namespace HumanitarianProjectManagement.Forms
                 tlpIndicator.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100)); // Labels
                 tlpIndicator.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // Controls
 
-                TextBox txtIndicatorName = new TextBox { Text = indicatorInstance.IndicatorName, Dock = DockStyle.Fill, PlaceholderText = "Indicator Description" };
-                txtIndicatorName.TextChanged += (s, ev) => indicatorInstance.IndicatorName = ((TextBox)s).Text;
+                PlaceholderTextBox txtIndicatorName = new PlaceholderTextBox { Text = indicatorInstance.IndicatorName, Dock = DockStyle.Fill, PlaceholderText = "Indicator Description" };
+                txtIndicatorName.TextChanged += (s, ev) => indicatorInstance.IndicatorName = ((PlaceholderTextBox)s).Text;
 
                 NumericUpDown nudTargetMen = new NumericUpDown { Value = indicatorInstance.TargetMen, Maximum = 1000000, Width=60 };
                 nudTargetMen.ValueChanged += (s, ev) => indicatorInstance.TargetMen = (int)((NumericUpDown)s).Value;
@@ -363,8 +364,8 @@ namespace HumanitarianProjectManagement.Forms
                 tlpActivity.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
                 tlpActivity.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-                TextBox txtActivityDesc = new TextBox { Text = activityInstance.ActivityDescription, Dock = DockStyle.Fill, PlaceholderText = "Activity Description" };
-                txtActivityDesc.TextChanged += (s, ev) => activityInstance.ActivityDescription = ((TextBox)s).Text;
+                PlaceholderTextBox txtActivityDesc = new PlaceholderTextBox { Text = activityInstance.ActivityDescription, Dock = DockStyle.Fill, PlaceholderText = "Activity Description" };
+                txtActivityDesc.TextChanged += (s, ev) => activityInstance.ActivityDescription = ((PlaceholderTextBox)s).Text;
 
                 tlpActivity.Controls.Add(new Label { Text = "Activity:", AutoSize=true }, 0, 0); tlpActivity.Controls.Add(txtActivityDesc, 1, 0);
 
