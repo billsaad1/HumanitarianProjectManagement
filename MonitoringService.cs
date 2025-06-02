@@ -1,4 +1,4 @@
-﻿using HumanitarianProjectManagement.Models;
+using HumanitarianProjectManagement.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -14,7 +14,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
         public async Task<List<ProjectIndicator>> GetIndicatorsForProjectAsync(int projectId)
         {
             List<ProjectIndicator> indicators = new List<ProjectIndicator>();
-            string query = "SELECT IndicatorID, ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator FROM ProjectIndicators WHERE ProjectID = @ProjectID ORDER BY IndicatorName;";
+            string query = "SELECT ProjectIndicatorID, ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator FROM ProjectIndicators WHERE ProjectID = @ProjectID ORDER BY IndicatorName;";
 
             try
             {
@@ -30,7 +30,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                             {
                                 ProjectIndicator indicator = new ProjectIndicator
                                 {
-                                    IndicatorID = (int)reader["IndicatorID"],
+                                    ProjectIndicatorID = (int)reader["ProjectIndicatorID"],
                                     ProjectID = (int)reader["ProjectID"],
                                     IndicatorName = reader["IndicatorName"].ToString(),
                                     Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
@@ -56,10 +56,10 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             return indicators;
         }
 
-        public async Task<ProjectIndicator> GetIndicatorByIdAsync(int indicatorId)
+        public async Task<ProjectIndicator> GetIndicatorByIdAsync(int projectIndicatorId)
         {
             ProjectIndicator indicator = null;
-            string query = "SELECT IndicatorID, ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator FROM ProjectIndicators WHERE IndicatorID = @IndicatorID;";
+            string query = "SELECT ProjectIndicatorID, ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator FROM ProjectIndicators WHERE ProjectIndicatorID = @ProjectIndicatorID;";
 
             try
             {
@@ -67,7 +67,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 {
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@IndicatorID", indicatorId);
+                        command.Parameters.AddWithValue("@ProjectIndicatorID", projectIndicatorId); 
                         await connection.OpenAsync();
                         using (SqlDataReader reader = await command.ExecuteReaderAsync())
                         {
@@ -75,7 +75,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                             {
                                 indicator = new ProjectIndicator
                                 {
-                                    IndicatorID = (int)reader["IndicatorID"],
+                                    ProjectIndicatorID = (int)reader["ProjectIndicatorID"],
                                     ProjectID = (int)reader["ProjectID"],
                                     IndicatorName = reader["IndicatorName"].ToString(),
                                     Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
@@ -107,13 +107,15 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
                 {
                     SqlCommand command;
-                    if (indicator.IndicatorID == 0) // New indicator
+                    if (indicator.ProjectIndicatorID == 0)
                     {
                         string insertQuery = @"
-                            INSERT INTO ProjectIndicators (ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator) 
-                            VALUES (@ProjectID, @IndicatorName, @Description, @TargetValue, @ActualValue, @UnitOfMeasure, @BaselineValue, @StartDate, @EndDate, @IsKeyIndicator); 
-                            SELECT CAST(SCOPE_IDENTITY() as int);";
+                            INSERT INTO ProjectIndicators (ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator, OutputID) 
+                            VALUES (@ProjectID, @IndicatorName, @Description, @TargetValue, @ActualValue, @UnitOfMeasure, @BaselineValue, @StartDate, @EndDate, @IsKeyIndicator, @OutputID); 
+                            SELECT CAST(SCOPE_IDENTITY() as int);"; 
                         command = new SqlCommand(insertQuery, connection);
+                        // Assuming OutputID might be needed for new indicators if it's a required part of your logic/table
+                        // command.Parameters.AddWithValue("@OutputID", (object)indicator.OutputID ?? DBNull.Value); 
                     }
                     else // Existing indicator
                     {
@@ -122,10 +124,11 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                 ProjectID = @ProjectID, IndicatorName = @IndicatorName, Description = @Description, 
                                 TargetValue = @TargetValue, ActualValue = @ActualValue, UnitOfMeasure = @UnitOfMeasure, 
                                 BaselineValue = @BaselineValue, StartDate = @StartDate, EndDate = @EndDate, 
-                                IsKeyIndicator = @IsKeyIndicator 
-                            WHERE IndicatorID = @IndicatorID;";
+                                IsKeyIndicator = @IsKeyIndicator, OutputID = @OutputID 
+                            WHERE ProjectIndicatorID = @ProjectIndicatorID;"; 
                         command = new SqlCommand(updateQuery, connection);
-                        command.Parameters.AddWithValue("@IndicatorID", indicator.IndicatorID);
+                        command.Parameters.AddWithValue("@ProjectIndicatorID", indicator.ProjectIndicatorID);
+                        // command.Parameters.AddWithValue("@OutputID", (object)indicator.OutputID ?? DBNull.Value);
                     }
 
                     command.Parameters.AddWithValue("@ProjectID", indicator.ProjectID);
@@ -138,14 +141,17 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     command.Parameters.AddWithValue("@StartDate", (object)indicator.StartDate ?? DBNull.Value);
                     command.Parameters.AddWithValue("@EndDate", (object)indicator.EndDate ?? DBNull.Value);
                     command.Parameters.AddWithValue("@IsKeyIndicator", indicator.IsKeyIndicator);
+                    // Add OutputID to main parameters as well, ensure it's handled in ProjectIndicator model
+                     command.Parameters.AddWithValue("@OutputID", (object)indicator.OutputID ?? DBNull.Value);
+
 
                     await connection.OpenAsync();
-                    if (indicator.IndicatorID == 0)
+                    if (indicator.ProjectIndicatorID == 0)
                     {
                         object newId = await command.ExecuteScalarAsync();
                         if (newId != null && newId != DBNull.Value)
                         {
-                            indicator.IndicatorID = Convert.ToInt32(newId);
+                            indicator.ProjectIndicatorID = Convert.ToInt32(newId);
                             rowsAffected = 1;
                         }
                     }
@@ -163,14 +169,14 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             return rowsAffected > 0;
         }
 
-        public async Task<bool> DeleteProjectIndicatorAsync(int indicatorId)
+        public async Task<bool> DeleteProjectIndicatorAsync(int projectIndicatorId)
         {
-            string sql = "DELETE FROM ProjectIndicators WHERE IndicatorID = @IndicatorID;";
+            string sql = "DELETE FROM ProjectIndicators WHERE ProjectIndicatorID = @ProjectIndicatorID;"; 
             using (SqlConnection conn = DatabaseHelper.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand(sql, conn))
                 {
-                    cmd.Parameters.AddWithValue("@IndicatorID", indicatorId);
+                    cmd.Parameters.AddWithValue("@ProjectIndicatorID", projectIndicatorId); 
                     try
                     {
                         await conn.OpenAsync();
@@ -180,14 +186,13 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     catch (SqlException ex)
                     {
                         Console.WriteLine($"SQL Error in DeleteProjectIndicatorAsync: {ex.Message}");
-                        // Consider specific error handling for FK violations (e.g., related VerificationMeans)
                         return false;
                     }
                 }
             }
         }
 
-        // New methods for FollowUpVisit records
+        // New methods for FollowUpVisit records (ASSUME THESE ARE CORRECT AND DO NOT NEED CHANGES FOR THIS TASK)
         public async Task<List<FollowUpVisit>> GetFollowUpVisitsForProjectAsync(int projectId)
         {
             List<FollowUpVisit> visits = new List<FollowUpVisit>();
