@@ -135,6 +135,7 @@
     </Compile>
     <Compile Include="MonitoringService.cs" />
     <Compile Include="BeneficiaryService.cs" />
+    <Compile Include="SectionService.cs" />
     <Compile Include="Beneficiary.cs" />
     <Compile Include="BeneficaryList.cs" />
     <Compile Include="Budget.cs" />
