@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using HumanitarianProjectManagement.Models; // Added to ensure Project and Output are found if they are in this namespace explicitly
 
 namespace HumanitarianProjectManagement.Models
 {

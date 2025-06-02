@@ -28,31 +28,30 @@ namespace HumanitarianProjectManagement.Forms
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container(); // Assuming components might be used by Timer or other things later.
             this.mainMenuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.modulesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.projectsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.monitoringEvaluationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.purchasingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.beneficiariesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.stockManagementToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.reportsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mainStatusStrip = new System.Windows.Forms.StatusStrip();
             this.pnlMainContent = new System.Windows.Forms.Panel();
             this.lblWelcome = new System.Windows.Forms.Label();
+            this.pnlSidebar = new System.Windows.Forms.Panel();
+            this.flpModuleButtons = new System.Windows.Forms.FlowLayoutPanel();
+            this.tvwSections = new System.Windows.Forms.TreeView();
+            this.btnAddSection = new System.Windows.Forms.Button();
+
             this.mainMenuStrip.SuspendLayout();
             this.pnlMainContent.SuspendLayout();
+            this.pnlSidebar.SuspendLayout();
             this.SuspendLayout();
             // 
             // mainMenuStrip
             // 
             this.mainMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
-            this.modulesToolStripMenuItem,
             this.helpToolStripMenuItem});
             this.mainMenuStrip.Location = new System.Drawing.Point(0, 0);
             this.mainMenuStrip.Name = "mainMenuStrip";
@@ -83,61 +82,6 @@ namespace HumanitarianProjectManagement.Forms
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
-            // modulesToolStripMenuItem
-            // 
-            this.modulesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.projectsToolStripMenuItem,
-            this.monitoringEvaluationToolStripMenuItem,
-            this.purchasingToolStripMenuItem,
-            this.beneficiariesToolStripMenuItem,
-            this.stockManagementToolStripMenuItem,
-            this.reportsToolStripMenuItem});
-            this.modulesToolStripMenuItem.Name = "modulesToolStripMenuItem";
-            this.modulesToolStripMenuItem.Size = new System.Drawing.Size(65, 20);
-            this.modulesToolStripMenuItem.Text = "&Modules";
-            // 
-            // projectsToolStripMenuItem
-            // 
-            this.projectsToolStripMenuItem.Name = "projectsToolStripMenuItem";
-            this.projectsToolStripMenuItem.Size = new System.Drawing.Size(201, 22);
-            this.projectsToolStripMenuItem.Text = "&Projects";
-            this.projectsToolStripMenuItem.Click += new System.EventHandler(this.projectsToolStripMenuItem_Click);
-            // 
-            // monitoringEvaluationToolStripMenuItem
-            // 
-            this.monitoringEvaluationToolStripMenuItem.Name = "monitoringEvaluationToolStripMenuItem";
-            this.monitoringEvaluationToolStripMenuItem.Size = new System.Drawing.Size(201, 22);
-            this.monitoringEvaluationToolStripMenuItem.Text = "&Monitoring & Evaluation";
-            this.monitoringEvaluationToolStripMenuItem.Click += new System.EventHandler(this.monitoringEvaluationToolStripMenuItem_Click);
-            // 
-            // purchasingToolStripMenuItem
-            // 
-            this.purchasingToolStripMenuItem.Name = "purchasingToolStripMenuItem";
-            this.purchasingToolStripMenuItem.Size = new System.Drawing.Size(201, 22);
-            this.purchasingToolStripMenuItem.Text = "P&urchasing";
-            this.purchasingToolStripMenuItem.Click += new System.EventHandler(this.purchasingToolStripMenuItem_Click);
-            // 
-            // beneficiariesToolStripMenuItem
-            // 
-            this.beneficiariesToolStripMenuItem.Name = "beneficiariesToolStripMenuItem";
-            this.beneficiariesToolStripMenuItem.Size = new System.Drawing.Size(201, 22);
-            this.beneficiariesToolStripMenuItem.Text = "&Beneficiaries";
-            this.beneficiariesToolStripMenuItem.Click += new System.EventHandler(this.beneficiariesToolStripMenuItem_Click);
-            // 
-            // stockManagementToolStripMenuItem
-            // 
-            this.stockManagementToolStripMenuItem.Name = "stockManagementToolStripMenuItem";
-            this.stockManagementToolStripMenuItem.Size = new System.Drawing.Size(201, 22);
-            this.stockManagementToolStripMenuItem.Text = "&Stock Management";
-            this.stockManagementToolStripMenuItem.Click += new System.EventHandler(this.stockManagementToolStripMenuItem_Click);
-            // 
-            // reportsToolStripMenuItem
-            // 
-            this.reportsToolStripMenuItem.Name = "reportsToolStripMenuItem";
-            this.reportsToolStripMenuItem.Size = new System.Drawing.Size(201, 22);
-            this.reportsToolStripMenuItem.Text = "&Reports";
-            this.reportsToolStripMenuItem.Click += new System.EventHandler(this.reportsToolStripMenuItem_Click);
-            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -161,13 +105,54 @@ namespace HumanitarianProjectManagement.Forms
             this.mainStatusStrip.TabIndex = 1;
             this.mainStatusStrip.Text = "statusStrip1";
             // 
+            // pnlSidebar
+            //
+            this.pnlSidebar.Controls.Add(this.flpModuleButtons);
+            this.pnlSidebar.Controls.Add(this.tvwSections);
+            this.pnlSidebar.Controls.Add(this.btnAddSection);
+            this.pnlSidebar.Dock = System.Windows.Forms.DockStyle.Left;
+            this.pnlSidebar.Location = new System.Drawing.Point(0, 24);
+            this.pnlSidebar.Name = "pnlSidebar";
+            this.pnlSidebar.Size = new System.Drawing.Size(220, 515);
+            this.pnlSidebar.TabIndex = 3;
+            //
+            // tvwSections
+            //
+            this.tvwSections.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tvwSections.Location = new System.Drawing.Point(0, 0);
+            this.tvwSections.Name = "tvwSections";
+            this.tvwSections.Size = new System.Drawing.Size(220, 280);
+            this.tvwSections.TabIndex = 0;
+            this.tvwSections.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.tvwSections_AfterSelect);
+            //
+            // flpModuleButtons
+            //
+            this.flpModuleButtons.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpModuleButtons.Location = new System.Drawing.Point(0, 280);
+            this.flpModuleButtons.Name = "flpModuleButtons";
+            this.flpModuleButtons.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flpModuleButtons.Size = new System.Drawing.Size(220, 205);
+            this.flpModuleButtons.TabIndex = 1;
+            this.flpModuleButtons.AutoScroll = true;
+            //
+            // btnAddSection
+            //
+            this.btnAddSection.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.btnAddSection.Location = new System.Drawing.Point(0, 485);
+            this.btnAddSection.Name = "btnAddSection";
+            this.btnAddSection.Size = new System.Drawing.Size(220, 30);
+            this.btnAddSection.TabIndex = 2;
+            this.btnAddSection.Text = "Add New Section";
+            this.btnAddSection.UseVisualStyleBackColor = true;
+            this.btnAddSection.Click += new System.EventHandler(this.btnAddSection_Click);
+            //
             // pnlMainContent
             // 
             this.pnlMainContent.Controls.Add(this.lblWelcome);
             this.pnlMainContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlMainContent.Location = new System.Drawing.Point(0, 24);
+            this.pnlMainContent.Location = new System.Drawing.Point(220, 24);
             this.pnlMainContent.Name = "pnlMainContent";
-            this.pnlMainContent.Size = new System.Drawing.Size(784, 515);
+            this.pnlMainContent.Size = new System.Drawing.Size(564, 515);
             this.pnlMainContent.TabIndex = 2;
             // 
             // lblWelcome
@@ -187,9 +172,10 @@ namespace HumanitarianProjectManagement.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 561);
-            this.Controls.Add(this.pnlMainContent);
+            this.Controls.Add(this.pnlMainContent); // Order adjusted: main content fills remaining space
+            this.Controls.Add(this.pnlSidebar);   // Sidebar first
             this.Controls.Add(this.mainStatusStrip);
-            this.Controls.Add(this.mainMenuStrip);
+            this.Controls.Add(this.mainMenuStrip); // MenuStrip usually at the top of Z-order or handled by MainMenuStrip
             this.MainMenuStrip = this.mainMenuStrip;
             this.Name = "DashboardForm";
             this.Text = "Dashboard - Humanitarian Project Management System";
@@ -199,6 +185,7 @@ namespace HumanitarianProjectManagement.Forms
             this.mainMenuStrip.PerformLayout();
             this.pnlMainContent.ResumeLayout(false);
             this.pnlMainContent.PerformLayout();
+            this.pnlSidebar.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -210,17 +197,15 @@ namespace HumanitarianProjectManagement.Forms
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem modulesToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem projectsToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem monitoringEvaluationToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem purchasingToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem beneficiariesToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem stockManagementToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem reportsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.StatusStrip mainStatusStrip;
         private System.Windows.Forms.Panel pnlMainContent;
         private System.Windows.Forms.Label lblWelcome;
+        private System.Windows.Forms.Panel pnlSidebar;
+        private System.Windows.Forms.TreeView tvwSections;
+        private System.Windows.Forms.Button btnAddSection;
+        private System.Windows.Forms.FlowLayoutPanel flpModuleButtons;
+        // Obsolete ToolStripMenuItem declarations are now removed.
     }
 }
