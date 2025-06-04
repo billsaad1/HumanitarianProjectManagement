@@ -1,13 +1,11 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using HumanitarianProjectManagement.Models; // Added to ensure Project and Output are found if they are in this namespace explicitly
+using HumanitarianProjectManagement.Models;
 
-namespace HumanitarianProjectManagement.Models
-{
+namespace HumanitarianProjectManagement.Models {
     [Table("Outcomes")]
-    public class Outcome
-    {
+    public class Outcome {
         [Key]
         public int OutcomeID { get; set; }
 
@@ -21,6 +19,7 @@ namespace HumanitarianProjectManagement.Models
         public virtual Project Project { get; set; }
 
         public virtual ICollection<Output> Outputs { get; set; }
+        // public object Activities { get; internal set; } // Removed this ambiguous property
 
         public Outcome()
         {

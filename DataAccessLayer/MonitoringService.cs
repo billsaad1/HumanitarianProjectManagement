@@ -1,4 +1,4 @@
-﻿using HumanitarianProjectManagement.Models;
+using HumanitarianProjectManagement.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,30 +7,22 @@ using System.Text;
 using System.Threading.Tasks;
 using HumanitarianProjectManagement; // For AppContext
 
-namespace HumanitarianProjectManagement.DataAccessLayer
-{
-    public class MonitoringService
-    {
-        public async Task<List<ProjectIndicator>> GetIndicatorsForProjectAsync(int projectId)
-        {
+namespace HumanitarianProjectManagement.DataAccessLayer {
+    public class MonitoringService {
+        public async Task<List<ProjectIndicator>> GetIndicatorsForProjectAsync(int projectId) {
             List<ProjectIndicator> indicators = new List<ProjectIndicator>();
-            string query = "SELECT IndicatorID, ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator FROM ProjectIndicators WHERE ProjectID = @ProjectID ORDER BY IndicatorName;";
+            // Query updated to use ProjectIndicatorID
+            string query = "SELECT ProjectIndicatorID, ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator, OutputID, OutcomeID FROM ProjectIndicators WHERE ProjectID = @ProjectID ORDER BY IndicatorName;";
 
-            try
-            {
-                using (SqlConnection connection = DatabaseHelper.GetConnection())
-                {
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
+            try {
+                using (SqlConnection connection = DatabaseHelper.GetConnection()) {
+                    using (SqlCommand command = new SqlCommand(query, connection)) {
                         command.Parameters.AddWithValue("@ProjectID", projectId);
                         await connection.OpenAsync();
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                ProjectIndicator indicator = new ProjectIndicator
-                                {
-                                    IndicatorID = (int)reader["IndicatorID"],
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync()) {
+                            while (await reader.ReadAsync()) {
+                                ProjectIndicator indicator = new ProjectIndicator {
+                                    ProjectIndicatorID = (int)reader["ProjectIndicatorID"],
                                     ProjectID = (int)reader["ProjectID"],
                                     IndicatorName = reader["IndicatorName"].ToString(),
                                     Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
@@ -40,42 +32,35 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                     BaselineValue = reader["BaselineValue"] != DBNull.Value ? reader["BaselineValue"].ToString() : null,
                                     StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader["StartDate"] : null,
                                     EndDate = reader["EndDate"] != DBNull.Value ? (DateTime?)reader["EndDate"] : null,
-                                    IsKeyIndicator = (bool)reader["IsKeyIndicator"]
+                                    IsKeyIndicator = (bool)reader["IsKeyIndicator"],
+                                    OutputID = reader["OutputID"] != DBNull.Value ? (int?)reader["OutputID"] : null, // Added
+                                    OutcomeID = reader["OutcomeID"] != DBNull.Value ? (int?)reader["OutcomeID"] : null // Added
                                 };
                                 indicators.Add(indicator);
                             }
                         }
                     }
                 }
-            }
-            catch (SqlException ex)
-            {
+            } catch (SqlException ex) {
                 Console.WriteLine($"SQL Error in GetIndicatorsForProjectAsync: {ex.Message}");
-                // Return empty list or rethrow as appropriate
             }
             return indicators;
         }
 
-        public async Task<ProjectIndicator> GetIndicatorByIdAsync(int indicatorId)
-        {
+        public async Task<ProjectIndicator> GetIndicatorByIdAsync(int projectIndicatorId) {
             ProjectIndicator indicator = null;
-            string query = "SELECT IndicatorID, ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator FROM ProjectIndicators WHERE IndicatorID = @IndicatorID;";
+            // Query updated to use ProjectIndicatorID
+            string query = "SELECT ProjectIndicatorID, ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator, OutputID, OutcomeID FROM ProjectIndicators WHERE ProjectIndicatorID = @ProjectIndicatorID;";
 
-            try
-            {
-                using (SqlConnection connection = DatabaseHelper.GetConnection())
-                {
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@IndicatorID", indicatorId);
+            try {
+                using (SqlConnection connection = DatabaseHelper.GetConnection()) {
+                    using (SqlCommand command = new SqlCommand(query, connection)) {
+                        command.Parameters.AddWithValue("@ProjectIndicatorID", projectIndicatorId);
                         await connection.OpenAsync();
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            if (await reader.ReadAsync())
-                            {
-                                indicator = new ProjectIndicator
-                                {
-                                    IndicatorID = (int)reader["IndicatorID"],
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync()) {
+                            if (await reader.ReadAsync()) {
+                                indicator = new ProjectIndicator {
+                                    ProjectIndicatorID = (int)reader["ProjectIndicatorID"],
                                     ProjectID = (int)reader["ProjectID"],
                                     IndicatorName = reader["IndicatorName"].ToString(),
                                     Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
@@ -85,128 +70,117 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                     BaselineValue = reader["BaselineValue"] != DBNull.Value ? reader["BaselineValue"].ToString() : null,
                                     StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader["StartDate"] : null,
                                     EndDate = reader["EndDate"] != DBNull.Value ? (DateTime?)reader["EndDate"] : null,
-                                    IsKeyIndicator = (bool)reader["IsKeyIndicator"]
+                                    IsKeyIndicator = (bool)reader["IsKeyIndicator"],
+                                    OutputID = reader["OutputID"] != DBNull.Value ? (int?)reader["OutputID"] : null, // Added
+                                    OutcomeID = reader["OutcomeID"] != DBNull.Value ? (int?)reader["OutcomeID"] : null // Added
+                                    // TargetMen, Women, Boys, Girls, Total are part of the model but might not be directly read here unless the query is expanded.
+                                    // The user's version of ProjectIndicator model initializes them, so they'll be default if not in SELECT.
+                                    // For saving, they are expected.
                                 };
                             }
                         }
                     }
                 }
-            }
-            catch (SqlException ex)
-            {
+            } catch (SqlException ex) {
                 Console.WriteLine($"SQL Error in GetIndicatorByIdAsync: {ex.Message}");
             }
             return indicator;
         }
 
-        public async Task<bool> SaveProjectIndicatorAsync(ProjectIndicator indicator)
-        {
+        public async Task<bool> SaveProjectIndicatorAsync(ProjectIndicator indicator) {
             int rowsAffected = 0;
-            try
-            {
-                using (SqlConnection connection = DatabaseHelper.GetConnection())
-                {
+            try {
+                using (SqlConnection connection = DatabaseHelper.GetConnection()) {
                     SqlCommand command;
-                    if (indicator.IndicatorID == 0) // New indicator
-                    {
+                    if (indicator.ProjectIndicatorID == 0) { // New indicator
+                        // Query updated for new fields and ProjectIndicatorID
                         string insertQuery = @"
-                            INSERT INTO ProjectIndicators (ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator) 
-                            VALUES (@ProjectID, @IndicatorName, @Description, @TargetValue, @ActualValue, @UnitOfMeasure, @BaselineValue, @StartDate, @EndDate, @IsKeyIndicator); 
+                            INSERT INTO ProjectIndicators (ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator, OutputID, OutcomeID, TargetMen, TargetWomen, TargetBoys, TargetGirls, TargetTotal)
+                            VALUES (@ProjectID, @IndicatorName, @Description, @TargetValue, @ActualValue, @UnitOfMeasure, @BaselineValue, @StartDate, @EndDate, @IsKeyIndicator, @OutputID, @OutcomeID, @TargetMen, @TargetWomen, @TargetBoys, @TargetGirls, @TargetTotal);
                             SELECT CAST(SCOPE_IDENTITY() as int);";
                         command = new SqlCommand(insertQuery, connection);
-                    }
-                    else // Existing indicator
-                    {
+                    } else { // Existing indicator
+                        // Query updated for new fields and ProjectIndicatorID
                         string updateQuery = @"
                             UPDATE ProjectIndicators SET 
                                 ProjectID = @ProjectID, IndicatorName = @IndicatorName, Description = @Description, 
                                 TargetValue = @TargetValue, ActualValue = @ActualValue, UnitOfMeasure = @UnitOfMeasure, 
                                 BaselineValue = @BaselineValue, StartDate = @StartDate, EndDate = @EndDate, 
-                                IsKeyIndicator = @IsKeyIndicator 
-                            WHERE IndicatorID = @IndicatorID;";
+                                IsKeyIndicator = @IsKeyIndicator, OutputID = @OutputID, OutcomeID = @OutcomeID,
+                                TargetMen = @TargetMen, TargetWomen = @TargetWomen, TargetBoys = @TargetBoys, TargetGirls = @TargetGirls, TargetTotal = @TargetTotal
+                            WHERE ProjectIndicatorID = @ProjectIndicatorID;";
                         command = new SqlCommand(updateQuery, connection);
-                        command.Parameters.AddWithValue("@IndicatorID", indicator.IndicatorID);
+                        command.Parameters.AddWithValue("@ProjectIndicatorID", indicator.ProjectIndicatorID);
                     }
 
                     command.Parameters.AddWithValue("@ProjectID", indicator.ProjectID);
                     command.Parameters.AddWithValue("@IndicatorName", indicator.IndicatorName);
                     command.Parameters.AddWithValue("@Description", (object)indicator.Description ?? DBNull.Value);
-                    command.Parameters.AddWithValue("@TargetValue", (object)indicator.TargetValue ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@TargetValue", (object)indicator.TargetValue ?? DBNull.Value); // Original textual target
                     command.Parameters.AddWithValue("@ActualValue", (object)indicator.ActualValue ?? DBNull.Value);
                     command.Parameters.AddWithValue("@UnitOfMeasure", (object)indicator.UnitOfMeasure ?? DBNull.Value);
                     command.Parameters.AddWithValue("@BaselineValue", (object)indicator.BaselineValue ?? DBNull.Value);
                     command.Parameters.AddWithValue("@StartDate", (object)indicator.StartDate ?? DBNull.Value);
                     command.Parameters.AddWithValue("@EndDate", (object)indicator.EndDate ?? DBNull.Value);
                     command.Parameters.AddWithValue("@IsKeyIndicator", indicator.IsKeyIndicator);
+                    command.Parameters.AddWithValue("@OutputID", (object)indicator.OutputID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@OutcomeID", (object)indicator.OutcomeID ?? DBNull.Value);
+                    // Add new target fields
+                    command.Parameters.AddWithValue("@TargetMen", indicator.TargetMen);
+                    command.Parameters.AddWithValue("@TargetWomen", indicator.TargetWomen);
+                    command.Parameters.AddWithValue("@TargetBoys", indicator.TargetBoys);
+                    command.Parameters.AddWithValue("@TargetGirls", indicator.TargetGirls);
+                    command.Parameters.AddWithValue("@TargetTotal", indicator.TargetTotal);
+
 
                     await connection.OpenAsync();
-                    if (indicator.IndicatorID == 0)
-                    {
+                    if (indicator.ProjectIndicatorID == 0) {
                         object newId = await command.ExecuteScalarAsync();
-                        if (newId != null && newId != DBNull.Value)
-                        {
-                            indicator.IndicatorID = Convert.ToInt32(newId);
+                        if (newId != null && newId != DBNull.Value) {
+                            indicator.ProjectIndicatorID = Convert.ToInt32(newId);
                             rowsAffected = 1;
                         }
-                    }
-                    else
-                    {
+                    } else {
                         rowsAffected = await command.ExecuteNonQueryAsync();
                     }
                 }
-            }
-            catch (SqlException ex)
-            {
+            } catch (SqlException ex) {
                 Console.WriteLine($"SQL Error in SaveProjectIndicatorAsync: {ex.Message}");
                 return false;
             }
             return rowsAffected > 0;
         }
 
-        public async Task<bool> DeleteProjectIndicatorAsync(int indicatorId)
-        {
-            string sql = "DELETE FROM ProjectIndicators WHERE IndicatorID = @IndicatorID;";
-            using (SqlConnection conn = DatabaseHelper.GetConnection())
-            {
-                using (SqlCommand cmd = new SqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@IndicatorID", indicatorId);
-                    try
-                    {
+        public async Task<bool> DeleteProjectIndicatorAsync(int projectIndicatorId) {
+            // Query updated for ProjectIndicatorID
+            string sql = "DELETE FROM ProjectIndicators WHERE ProjectIndicatorID = @ProjectIndicatorID;";
+            using (SqlConnection conn = DatabaseHelper.GetConnection()) {
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@ProjectIndicatorID", projectIndicatorId);
+                    try {
                         await conn.OpenAsync();
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
                         return rowsAffected > 0;
-                    }
-                    catch (SqlException ex)
-                    {
+                    } catch (SqlException ex) {
                         Console.WriteLine($"SQL Error in DeleteProjectIndicatorAsync: {ex.Message}");
-                        // Consider specific error handling for FK violations (e.g., related VerificationMeans)
                         return false;
                     }
                 }
             }
         }
 
-        // New methods for FollowUpVisit records
-        public async Task<List<FollowUpVisit>> GetFollowUpVisitsForProjectAsync(int projectId)
-        {
+        // --- FollowUpVisit Methods (Assumed correct by user, copied as is) ---
+        public async Task<List<FollowUpVisit>> GetFollowUpVisitsForProjectAsync(int projectId) {
             List<FollowUpVisit> visits = new List<FollowUpVisit>();
             string query = "SELECT VisitID, ProjectID, BeneficiaryID, VisitDate, VisitedByUserID, VisitPurpose, Observations, ActionItems, NextFollowUpDate, Notes FROM FollowUpVisits WHERE ProjectID = @ProjectID ORDER BY VisitDate DESC;";
-
-            try
-            {
-                using (SqlConnection connection = DatabaseHelper.GetConnection())
-                {
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
+            try {
+                using (SqlConnection connection = DatabaseHelper.GetConnection()) {
+                    using (SqlCommand command = new SqlCommand(query, connection)) {
                         command.Parameters.AddWithValue("@ProjectID", projectId);
                         await connection.OpenAsync();
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                FollowUpVisit visit = new FollowUpVisit
-                                {
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync()) {
+                            while (await reader.ReadAsync()) {
+                                FollowUpVisit visit = new FollowUpVisit {
                                     VisitID = (int)reader["VisitID"],
                                     ProjectID = (int)reader["ProjectID"],
                                     BeneficiaryID = reader["BeneficiaryID"] != DBNull.Value ? (int?)reader["BeneficiaryID"] : null,
@@ -222,34 +196,23 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                             }
                         }
                     }
+                } catch (SqlException ex) {
+                    Console.WriteLine($"SQL Error in GetFollowUpVisitsForProjectAsync: {ex.Message}");
                 }
-            }
-            catch (SqlException ex)
-            {
-                Console.WriteLine($"SQL Error in GetFollowUpVisitsForProjectAsync: {ex.Message}");
-            }
-            return visits;
+                return visits;
         }
 
-        public async Task<FollowUpVisit> GetFollowUpVisitByIdAsync(int visitId)
-        {
+        public async Task<FollowUpVisit> GetFollowUpVisitByIdAsync(int visitId) {
             FollowUpVisit visit = null;
             string query = "SELECT VisitID, ProjectID, BeneficiaryID, VisitDate, VisitedByUserID, VisitPurpose, Observations, ActionItems, NextFollowUpDate, Notes FROM FollowUpVisits WHERE VisitID = @VisitID;";
-
-            try
-            {
-                using (SqlConnection connection = DatabaseHelper.GetConnection())
-                {
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
+            try {
+                using (SqlConnection connection = DatabaseHelper.GetConnection()) {
+                    using (SqlCommand command = new SqlCommand(query, connection)) {
                         command.Parameters.AddWithValue("@VisitID", visitId);
                         await connection.OpenAsync();
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            if (await reader.ReadAsync())
-                            {
-                                visit = new FollowUpVisit
-                                {
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync()) {
+                            if (await reader.ReadAsync()) {
+                                visit = new FollowUpVisit {
                                     VisitID = (int)reader["VisitID"],
                                     ProjectID = (int)reader["ProjectID"],
                                     BeneficiaryID = reader["BeneficiaryID"] != DBNull.Value ? (int?)reader["BeneficiaryID"] : null,
@@ -264,42 +227,30 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                             }
                         }
                     }
+                } catch (SqlException ex) {
+                    Console.WriteLine($"SQL Error in GetFollowUpVisitByIdAsync: {ex.Message}");
                 }
-            }
-            catch (SqlException ex)
-            {
-                Console.WriteLine($"SQL Error in GetFollowUpVisitByIdAsync: {ex.Message}");
-            }
-            return visit;
+                return visit;
         }
 
-        public async Task<bool> SaveFollowUpVisitAsync(FollowUpVisit visit)
-        {
-            if (visit.ProjectID <= 0)
-            {
+        public async Task<bool> SaveFollowUpVisitAsync(FollowUpVisit visit) {
+            if (visit.ProjectID <= 0) {
                 Console.WriteLine("Error in SaveFollowUpVisitAsync: ProjectID must be greater than 0.");
                 return false;
             }
-
             int rowsAffected = 0;
-            try
-            {
-                using (SqlConnection connection = DatabaseHelper.GetConnection())
-                {
+            try {
+                using (SqlConnection connection = DatabaseHelper.GetConnection()) {
                     SqlCommand command;
-                    if (visit.VisitID == 0) // New visit
-                    {
+                    if (visit.VisitID == 0) {
                         visit.VisitedByUserID = visit.VisitedByUserID ?? AppContext.CurrentUser?.UserID;
                         visit.VisitDate = (visit.VisitDate == DateTime.MinValue) ? DateTime.Now : visit.VisitDate;
-
                         string insertQuery = @"
                             INSERT INTO FollowUpVisits (ProjectID, BeneficiaryID, VisitDate, VisitedByUserID, VisitPurpose, Observations, ActionItems, NextFollowUpDate, Notes) 
                             VALUES (@ProjectID, @BeneficiaryID, @VisitDate, @VisitedByUserID, @VisitPurpose, @Observations, @ActionItems, @NextFollowUpDate, @Notes); 
                             SELECT CAST(SCOPE_IDENTITY() as int);";
                         command = new SqlCommand(insertQuery, connection);
-                    }
-                    else // Existing visit
-                    {
+                    } else {
                         string updateQuery = @"
                             UPDATE FollowUpVisits SET 
                                 ProjectID = @ProjectID, BeneficiaryID = @BeneficiaryID, VisitDate = @VisitDate, 
@@ -309,7 +260,6 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         command = new SqlCommand(updateQuery, connection);
                         command.Parameters.AddWithValue("@VisitID", visit.VisitID);
                     }
-
                     command.Parameters.AddWithValue("@ProjectID", visit.ProjectID);
                     command.Parameters.AddWithValue("@BeneficiaryID", (object)visit.BeneficiaryID ?? DBNull.Value);
                     command.Parameters.AddWithValue("@VisitDate", visit.VisitDate);
@@ -319,47 +269,34 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     command.Parameters.AddWithValue("@ActionItems", (object)visit.ActionItems ?? DBNull.Value);
                     command.Parameters.AddWithValue("@NextFollowUpDate", (object)visit.NextFollowUpDate ?? DBNull.Value);
                     command.Parameters.AddWithValue("@Notes", (object)visit.Notes ?? DBNull.Value);
-
                     await connection.OpenAsync();
-                    if (visit.VisitID == 0)
-                    {
+                    if (visit.VisitID == 0) {
                         object newId = await command.ExecuteScalarAsync();
-                        if (newId != null && newId != DBNull.Value)
-                        {
+                        if (newId != null && newId != DBNull.Value) {
                             visit.VisitID = Convert.ToInt32(newId);
                             rowsAffected = 1;
                         }
-                    }
-                    else
-                    {
+                    } else {
                         rowsAffected = await command.ExecuteNonQueryAsync();
                     }
                 }
-            }
-            catch (SqlException ex)
-            {
+            } catch (SqlException ex) {
                 Console.WriteLine($"SQL Error in SaveFollowUpVisitAsync: {ex.Message}");
                 return false;
             }
             return rowsAffected > 0;
         }
 
-        public async Task<bool> DeleteFollowUpVisitAsync(int visitId)
-        {
+        public async Task<bool> DeleteFollowUpVisitAsync(int visitId) {
             string sql = "DELETE FROM FollowUpVisits WHERE VisitID = @VisitID;";
-            using (SqlConnection conn = DatabaseHelper.GetConnection())
-            {
-                using (SqlCommand cmd = new SqlCommand(sql, conn))
-                {
+            using (SqlConnection conn = DatabaseHelper.GetConnection()) {
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                     cmd.Parameters.AddWithValue("@VisitID", visitId);
-                    try
-                    {
+                    try {
                         await conn.OpenAsync();
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
                         return rowsAffected > 0;
-                    }
-                    catch (SqlException ex)
-                    {
+                    } catch (SqlException ex) {
                         Console.WriteLine($"SQL Error in DeleteFollowUpVisitAsync: {ex.Message}");
                         return false;
                     }

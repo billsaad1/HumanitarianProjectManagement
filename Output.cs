@@ -1,13 +1,11 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using HumanitarianProjectManagement.Models; // Added to ensure Activity and ProjectIndicator are found if they are in this namespace explicitly
+using HumanitarianProjectManagement.Models;
 
-namespace HumanitarianProjectManagement.Models
-{
+namespace HumanitarianProjectManagement.Models {
     [Table("Outputs")]
-    public class Output
-    {
+    public class Output {
         [Key]
         public int OutputID { get; set; }
 

@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
+using System.Collections.Generic; // Ensure this is present
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -19,10 +19,7 @@ namespace HumanitarianProjectManagement.Models
 
         [StringLength(50)]
         [DisplayName("Project Code")]
-        public string ProjectCode { get; set; } // Unique
-
-        [DisplayName("Section ID")]
-        public int? SectionID { get; set; }
+        public string ProjectCode { get; set; }
 
         [DisplayName("Start Date")]
         public DateTime? StartDate { get; set; }
@@ -30,58 +27,52 @@ namespace HumanitarianProjectManagement.Models
         [DisplayName("End Date")]
         public DateTime? EndDate { get; set; }
 
-        [DisplayName("Location")]
-        public string Location { get; set; } // NVARCHAR(MAX)
+        [StringLength(500)]
+        public string Location { get; set; }
 
         [DisplayName("Overall Objective")]
         public string OverallObjective { get; set; } // NVARCHAR(MAX)
 
-        [DisplayName("Manager User ID")]
-        public int? ManagerUserID { get; set; }
-
         [StringLength(100)]
-        public string Status { get; set; } // e.g., Planning, Active, Completed, On Hold
-
-        [Column(TypeName = "decimal(18, 2)")]
-        [DisplayName("Total Budget")]
-        public decimal? TotalBudget { get; set; }
+        public string Status { get; set; }
 
         [StringLength(255)]
         public string Donor { get; set; }
+
+        [Column(TypeName = "decimal(18, 2)")]
+        [DisplayName("Total Budget")]
+        public decimal? TotalBudget { get; set; } // This is the overall budget from main form
 
         [DisplayName("Created At")]
         public DateTime CreatedAt { get; set; }
 
         [DisplayName("Updated At")]
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; } // Matched to user's provided model for this subtask
 
-        // Navigation properties
+        public int? SectionID { get; set; } // Foreign key for Section
         [ForeignKey("SectionID")]
         public virtual Section Section { get; set; }
 
+        public int? ManagerUserID { get; set; } // Foreign key for User (Project Manager)
         [ForeignKey("ManagerUserID")]
         public virtual User ManagerUser { get; set; }
 
-        public virtual ICollection<BeneficiaryList> BeneficiaryLists { get; set; }
-        public virtual ICollection<ProjectIndicator> ProjectIndicators { get; set; }
-        public virtual ICollection<Budget> Budgets { get; set; }
-        public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; }
-        public virtual ICollection<ProjectReport> ProjectReports { get; set; }
-        public virtual ICollection<StockTransaction> StockTransactions { get; set; }
-        public virtual ICollection<Feedback> Feedbacks { get; set; }
-        public virtual ICollection<FollowUpVisit> FollowUpVisits { get; set; }
+        // LogFrame Components
+        public virtual ICollection<Outcome> Outcomes { get; set; }
+
+        // NEW: Budget Components
+        public virtual ICollection<DetailedBudgetLine> DetailedBudgetLines { get; set; }
+
 
         public Project()
         {
-            BeneficiaryLists = new HashSet<BeneficiaryList>();
-            ProjectIndicators = new HashSet<ProjectIndicator>();
-            Budgets = new HashSet<Budget>();
-            PurchaseOrders = new HashSet<PurchaseOrder>();
-            ProjectReports = new HashSet<ProjectReport>();
-            StockTransactions = new HashSet<StockTransaction>();
-            Feedbacks = new HashSet<Feedback>();
-            FollowUpVisits = new HashSet<FollowUpVisit>();
             CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow; // Matched to user's provided model for this subtask
+            Outcomes = new HashSet<Outcome>();
+            DetailedBudgetLines = new HashSet<DetailedBudgetLine>(); // Initialize new collection
+            // Note: Other collections like BeneficiaryLists, ProjectIndicators etc. were in the read file but not in the user's target for this subtask.
+            // For this operation, I am strictly adhering to the user-provided final structure for Project.cs.
+            // If those other collections are needed, they should be in the target state.
         }
     }
 }
