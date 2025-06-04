@@ -30,7 +30,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                             {
                                 ProjectIndicator indicator = new ProjectIndicator
                                 {
-                                    IndicatorID = (int)reader["IndicatorID"],
+                                    ProjectIndicatorID = (int)reader["IndicatorID"], // Changed to ProjectIndicatorID
                                     ProjectID = (int)reader["ProjectID"],
                                     IndicatorName = reader["IndicatorName"].ToString(),
                                     Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
@@ -75,7 +75,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                             {
                                 indicator = new ProjectIndicator
                                 {
-                                    IndicatorID = (int)reader["IndicatorID"],
+                                    ProjectIndicatorID = (int)reader["IndicatorID"], // Changed to ProjectIndicatorID
                                     ProjectID = (int)reader["ProjectID"],
                                     IndicatorName = reader["IndicatorName"].ToString(),
                                     Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
@@ -107,7 +107,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
                 {
                     SqlCommand command;
-                    if (indicator.IndicatorID == 0) // New indicator
+                    if (indicator.ProjectIndicatorID == 0) // New indicator - Changed to ProjectIndicatorID
                     {
                         string insertQuery = @"
                             INSERT INTO ProjectIndicators (ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator) 
@@ -123,9 +123,9 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                 TargetValue = @TargetValue, ActualValue = @ActualValue, UnitOfMeasure = @UnitOfMeasure, 
                                 BaselineValue = @BaselineValue, StartDate = @StartDate, EndDate = @EndDate, 
                                 IsKeyIndicator = @IsKeyIndicator 
-                            WHERE IndicatorID = @IndicatorID;";
+                            WHERE IndicatorID = @IndicatorID;"; // SQL still uses @IndicatorID matching the WHERE clause
                         command = new SqlCommand(updateQuery, connection);
-                        command.Parameters.AddWithValue("@IndicatorID", indicator.IndicatorID);
+                        command.Parameters.AddWithValue("@IndicatorID", indicator.ProjectIndicatorID); // Value from model's ProjectIndicatorID
                     }
 
                     command.Parameters.AddWithValue("@ProjectID", indicator.ProjectID);
@@ -140,12 +140,12 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     command.Parameters.AddWithValue("@IsKeyIndicator", indicator.IsKeyIndicator);
 
                     await connection.OpenAsync();
-                    if (indicator.IndicatorID == 0)
+                    if (indicator.ProjectIndicatorID == 0) // Changed to ProjectIndicatorID
                     {
                         object newId = await command.ExecuteScalarAsync();
                         if (newId != null && newId != DBNull.Value)
                         {
-                            indicator.IndicatorID = Convert.ToInt32(newId);
+                            indicator.ProjectIndicatorID = Convert.ToInt32(newId); // Changed to ProjectIndicatorID
                             rowsAffected = 1;
                         }
                     }
@@ -289,7 +289,8 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     SqlCommand command;
                     if (visit.VisitID == 0) // New visit
                     {
-                        visit.VisitedByUserID = visit.VisitedByUserID ?? AppContext.CurrentUser?.UserID;
+                        // Use ApplicationState for CurrentUser
+                        visit.VisitedByUserID = visit.VisitedByUserID ?? ApplicationState.CurrentUser?.UserID;
                         visit.VisitDate = (visit.VisitDate == DateTime.MinValue) ? DateTime.Now : visit.VisitDate;
 
                         string insertQuery = @"
