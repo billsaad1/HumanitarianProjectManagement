@@ -9,6 +9,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using HumanitarianProjectManagement.UI; // Added
+using System.Globalization; // Added for CultureInfo
 
 namespace HumanitarianProjectManagement.Forms
 {
@@ -46,6 +47,7 @@ namespace HumanitarianProjectManagement.Forms
             _initialSectionId = initialSectionId;
 
             _isEditMode = (projectToEdit != null);
+            this.WindowState = FormWindowState.Maximized; // Maximize the form
 
             if (_isEditMode)
             {
@@ -72,6 +74,35 @@ namespace HumanitarianProjectManagement.Forms
         {
             await LoadComboBoxesAsync();
             InitializeLogFrameUI(); // New method to setup LogFrame
+            InitializeBudgetUITab(); // Setup Budget Tab
+            InitializeActivityPlanTab(); // Setup Activity Plan Tab
+
+            // Wire up DGV events for Activity Plan
+            // Find dgvActivityPlan control dynamically. This assumes it's somewhere on the form.
+            DataGridView dgvActivityPlan = this.Controls.Find("dgvActivityPlan", true).FirstOrDefault() as DataGridView;
+            if (dgvActivityPlan != null)
+            {
+                 // Ensure event handlers are not subscribed multiple times if Load is called again (though unusual for form load)
+                 dgvActivityPlan.CellValueChanged -= dgvActivityPlan_CellValueChanged;
+                 dgvActivityPlan.CurrentCellDirtyStateChanged -= dgvActivityPlan_CurrentCellDirtyStateChanged;
+
+                 dgvActivityPlan.CellValueChanged += dgvActivityPlan_CellValueChanged;
+                 dgvActivityPlan.CurrentCellDirtyStateChanged += dgvActivityPlan_CurrentCellDirtyStateChanged;
+            }
+
+            // Wire up project date changes to refresh activity plan
+            // Ensure dtpStartDate and dtpEndDate are the correct names from your designer
+            // These controls are assumed to be direct members of the form class (this.dtpStartDate)
+            if (this.dtpStartDate != null)
+            {
+                this.dtpStartDate.ValueChanged -= ProjectDatesChanged_RefreshActivityPlan;
+                this.dtpStartDate.ValueChanged += ProjectDatesChanged_RefreshActivityPlan;
+            }
+            if (this.dtpEndDate != null)
+            {
+                this.dtpEndDate.ValueChanged -= ProjectDatesChanged_RefreshActivityPlan;
+                this.dtpEndDate.ValueChanged += ProjectDatesChanged_RefreshActivityPlan;
+            }
         }
 
         private void InitializeLogFrameUI()
@@ -123,67 +154,80 @@ namespace HumanitarianProjectManagement.Forms
             foreach (var outcome in _currentProject.Outcomes.ToList()) // ToList for safe iteration if collection modified by delete
             {
                 outcomeCounter++;
-                Panel pnlDynamicOutcome = new Panel
+                string outcomeInitialText = string.IsNullOrWhiteSpace(outcome.OutcomeDescription) ? "Enter outcome description" : outcome.OutcomeDescription;
+                GroupBox grpOutcome = new GroupBox
                 {
-                    Name = $"pnlOutcome_{outcomeCounter}",
+                    Text = $"Outcome {outcomeCounter}: {FirstWords(outcomeInitialText, 7)}",
+                    Name = $"grpOutcome_{outcomeCounter}",
                     AutoSize = true,
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                    BorderStyle = BorderStyle.FixedSingle,
-                    Padding = new Padding(5),
-                    Margin = new Padding(3, 3, 3, 10), // Add some bottom margin
+                    Padding = new Padding(10, 8, 10, 10), // Adjusted padding
+                    Margin = new Padding(5, 5, 5, 15), // Add some bottom margin
                     Dock = DockStyle.Top // Stack them vertically
                 };
 
-                // --- Outcome Header: Label, Description TextBox, Delete Outcome Button ---
-                TableLayoutPanel tlpOutcomeHeader = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3};
-                tlpOutcomeHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Label
+                // --- Outcome Header: Description TextBox, Delete Outcome Button ---
+                TableLayoutPanel tlpOutcomeHeader = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 5, 0, 5) };
                 tlpOutcomeHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // TextBox
                 tlpOutcomeHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Button
 
-                Label lblOutcomeTitle = new Label { Text = $"Outcome {outcomeCounter}:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0,6,0,0) };
                 TextBox txtOutcomeDesc = new TextBox
                 {
                     Text = outcome.OutcomeDescription,
                     Multiline = true,
                     ScrollBars = ScrollBars.Vertical,
-                    Height = 40,
+                    MinHeight = 40, // Use MinHeight
+                    Height = 40,    // Initial height
                     Dock = DockStyle.Fill,
                     PlaceholderText = "Enter outcome description"
                 };
-                txtOutcomeDesc.TextChanged += (s, ev) => outcome.OutcomeDescription = ((TextBox)s).Text;
+                txtOutcomeDesc.TextChanged += (s, ev) => {
+                    outcome.OutcomeDescription = ((TextBox)s).Text;
+                    string currentDesc = string.IsNullOrWhiteSpace(outcome.OutcomeDescription) ? "Enter outcome description" : outcome.OutcomeDescription;
+                    grpOutcome.Text = $"Outcome {outcomeCounter}: {FirstWords(currentDesc, 7)}";
+                };
 
-                Button btnDeleteOutcome = new Button { Text = "Delete Outcome", Tag = outcome, ForeColor = Color.Red, Width = 100, Anchor = AnchorStyles.Right };
+                Button btnDeleteOutcome = new Button { Text = "Delete Outcome", Tag = outcome, ForeColor = Color.Red, MinimumSize = new Size(120, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right, AutoSize = true };
                 btnDeleteOutcome.Click += BtnDeleteOutcome_Click;
 
-                tlpOutcomeHeader.Controls.Add(lblOutcomeTitle, 0, 0);
-                tlpOutcomeHeader.Controls.Add(txtOutcomeDesc, 1, 0);
-                tlpOutcomeHeader.Controls.Add(btnDeleteOutcome, 2, 0);
-                pnlDynamicOutcome.Controls.Add(tlpOutcomeHeader);
+                tlpOutcomeHeader.Controls.Add(txtOutcomeDesc, 0, 0);
+                tlpOutcomeHeader.Controls.Add(btnDeleteOutcome, 1, 0);
+                grpOutcome.Controls.Add(tlpOutcomeHeader);
 
-                // --- Add Output Button for this Outcome ---
-                Button btnAddOutput = new Button { Text = "Add Output to this Outcome", Tag = outcome, Dock = DockStyle.Top, AutoSize=true };
-                btnAddOutput.Click += BtnAddOutputToOutcome_Click; // Generalized handler
-                pnlDynamicOutcome.Controls.Add(btnAddOutput);
-                btnAddOutput.BringToFront(); // Place it after header
-
-                // --- Panel to Contain Outputs for this Outcome ---
+                // --- Panel to Contain Outputs for this Outcome (directly inside GroupBox) ---
                 Panel pnlOutputsContainer = new Panel
                 {
                     Name = $"pnlOutputsContainer_Outcome{outcomeCounter}",
                     AutoSize = true,
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
                     Dock = DockStyle.Top,
-                    Padding = new Padding(10, 0, 0, 0) // Indent outputs slightly
+                    Padding = new Padding(15, 5, 0, 5), // Indent outputs
+                    Margin = new Padding(0, 5, 0, 5)
                 };
-                pnlDynamicOutcome.Controls.Add(pnlOutputsContainer);
-                pnlOutputsContainer.BringToFront(); // Place it after Add Output button
+                // This container is added to GroupBox AFTER the header and BEFORE AddOutput button
 
-                RenderOutputsForOutcome(outcome, pnlOutputsContainer); // Existing method, now targetting specific container
+                // --- Add Output Button for this Outcome ---
+                Button btnAddOutput = new Button { Text = "Add Output to this Outcome", Tag = outcome, Dock = DockStyle.Top, AutoSize = true, Margin = new Padding(0, 5, 0, 0) };
+                btnAddOutput.Click += BtnAddOutputToOutcome_Click;
 
-                pnlLogFrameMain.Controls.Add(pnlDynamicOutcome);
-                pnlDynamicOutcome.BringToFront(); // Ensure outcomes are stacked correctly
+                // Order of adding to GroupBox's controls matters for DockStyle.Top
+                grpOutcome.Controls.Add(pnlOutputsContainer); // Add container first
+                RenderOutputsForOutcome(outcome, pnlOutputsContainer); // Then populate it
+                grpOutcome.Controls.Add(btnAddOutput); // Then add the button below outputs
+
+                pnlLogFrameMain.Controls.Add(grpOutcome);
+                grpOutcome.BringToFront(); // Ensure this outcome group is placed correctly relative to others
             }
-            pnlLogFrameMain.ResumeLayout();
+            pnlLogFrameMain.ResumeLayout(true); // Perform layout after all changes
+        }
+
+        // Helper function to get first few words of a string
+        private string FirstWords(string text, int wordCount)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+            var words = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var takenWords = words.Take(wordCount);
+            return string.Join(" ", takenWords) + (words.Length > wordCount ? "..." : "");
         }
 
         private void BtnDeleteOutcome_Click(object sender, EventArgs e)
@@ -207,172 +251,435 @@ namespace HumanitarianProjectManagement.Forms
             if (btn == null || !(btn.Tag is Outcome outcome)) return;
 
             Output newOutput = new Output { OutcomeID = outcome.OutcomeID }; // Link it
-            if(outcome.Outputs == null) outcome.Outputs = new HashSet<Output>();
+            if (outcome.Outputs == null) outcome.Outputs = new HashSet<Output>();
             outcome.Outputs.Add(newOutput);
 
-            // Find the pnlOutputsContainer within the specific outcome panel this button belongs to
-            Panel outcomePanel = btn.Parent as Panel;
-            Panel pnlOutputsContainer = outcomePanel?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("pnlOutputsContainer_Outcome"));
+            // The button is now a direct child of the GroupBox (grpOutcome)
+            // The pnlOutputsContainer is also a direct child of grpOutcome
+            GroupBox grpOutcome = btn.Parent as GroupBox;
+            Panel pnlOutputsContainer = grpOutcome?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("pnlOutputsContainer_Outcome"));
+
             if (pnlOutputsContainer != null)
             {
-                RenderOutputsForOutcome(outcome, pnlOutputsContainer);
+                RenderOutputsForOutcome(outcome, pnlOutputsContainer); // Re-render outputs in their container
+            }
+            else
+            {
+                // Fallback or error logging. If the structure is correct, this shouldn't be hit.
+                // If hit, it implies pnlOutputsContainer was not found in the GroupBox.
+                RenderAllOutcomes(); // As a safeguard, re-render everything.
             }
         }
 
-        private void RenderOutputsForOutcome(Outcome outcome, Panel parentOutputPanel) // parentOutputPanel is now specific outputs container
+        private void RenderOutputsForOutcome(Outcome outcome, Panel parentOutputPanel) // parentOutputPanel is pnlOutputsContainer
         {
-            parentOutputPanel.SuspendLayout(); // Suspend layout
+            parentOutputPanel.SuspendLayout();
             parentOutputPanel.Controls.Clear();
-            parentOutputPanel.Height = 0; // Reset height before adding auto-sized panels
+            // parentOutputPanel.Height = 0; // AutoSize should handle this if children are Dock.Top
 
-            foreach (var outputInstance in outcome.Outputs.ToList()) // ToList() for safe iteration if collection modified by delete
+            int outputCounter = 0;
+            foreach (var outputInstance in outcome.Outputs.ToList())
             {
-                Panel pnlDynamicOutput = new Panel
+                outputCounter++;
+                Panel pnlDynamicOutput = new Panel // This is the main panel for one output
                 {
+                    Name = $"pnlOutput_{outcome.OutcomeID}_{outputInstance.OutputID}_{outputCounter}", // More specific name
                     AutoSize = true,
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
                     BorderStyle = BorderStyle.FixedSingle,
-                    Padding = new Padding(5),
-                    Margin = new Padding(3),
-                    Dock = DockStyle.Top // Stack them
+                    Padding = new Padding(10),
+                    Margin = new Padding(0, 0, 0, 10), // Bottom margin to space out outputs
+                    Dock = DockStyle.Top
                 };
 
-                Label lblOutput = new Label { Text = "Output:", AutoSize = true, Location = new Point(5, 5) };
+                // --- Output Header: Label, Description TextBox, Delete Output Button ---
+                TableLayoutPanel tlpOutputHeader = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3, Margin = new Padding(0,0,0,5)};
+                tlpOutputHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Label
+                tlpOutputHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // TextBox
+                tlpOutputHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Button
+
+                Label lblOutputTitle = new Label { Text = $"Output {outputCounter}:", AutoSize = true, Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0,3,3,0) };
                 TextBox txtOutputDesc = new TextBox
                 {
                     Text = outputInstance.OutputDescription,
                     Multiline = true,
                     ScrollBars = ScrollBars.Vertical,
+                    MinHeight = 40,
                     Height = 40,
-                    Width = parentOutputPanel.ClientSize.Width - 15, // Adjust for padding
-                    Location = new Point(5, 25)
+                    Dock = DockStyle.Fill,
+                    PlaceholderText = "Enter output description"
                 };
                 txtOutputDesc.TextChanged += (s, ev) => outputInstance.OutputDescription = ((TextBox)s).Text;
 
-                Panel pnlButtonsForOutput = new Panel { AutoSize = true, Dock = DockStyle.Top, Location = new Point(5, 70) };
-                Button btnAddIndicator = new Button { Text = "Add Indicator", Tag = outputInstance, Location = new Point(0,0) };
+                Button btnDeleteOutput = new Button { Text = "Delete Output", Tag = new Tuple<Outcome, Output>(outcome, outputInstance), ForeColor = Color.Red, MinimumSize = new Size(110,0), Anchor = AnchorStyles.Top | AnchorStyles.Right, AutoSize = true};
+                btnDeleteOutput.Click += BtnDeleteOutput_Click;
+
+                tlpOutputHeader.Controls.Add(lblOutputTitle, 0, 0);
+                tlpOutputHeader.Controls.Add(txtOutputDesc, 1, 0);
+                tlpOutputHeader.Controls.Add(btnDeleteOutput, 2, 0);
+                pnlDynamicOutput.Controls.Add(tlpOutputHeader);
+
+                // --- Buttons Panel for Add Indicator/Activity for this Output ---
+                FlowLayoutPanel flpOutputActions = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, Dock = DockStyle.Top, AutoSize = true, Margin = new Padding(0,0,0,5)};
+                Button btnAddIndicator = new Button { Text = "Add Indicator", Tag = outputInstance, AutoSize=true };
                 btnAddIndicator.Click += BtnAddIndicator_Click;
-                Button btnAddActivity = new Button { Text = "Add Activity", Tag = outputInstance, Location = new Point(btnAddIndicator.Right + 5, 0) };
+                Button btnAddActivity = new Button { Text = "Add Activity", Tag = outputInstance, AutoSize=true, Margin = new Padding(5,0,0,0) };
                 btnAddActivity.Click += BtnAddActivity_Click;
 
-                pnlButtonsForOutput.Controls.Add(btnAddIndicator); // Order matters for Flow layout if used, or manual positioning
-                pnlButtonsForOutput.Controls.Add(btnAddActivity);
+                flpOutputActions.Controls.Add(btnAddIndicator);
+                flpOutputActions.Controls.Add(btnAddActivity);
+                pnlDynamicOutput.Controls.Add(flpOutputActions);
 
+                // --- Panel to Contain Indicators for this Output ---
+                Panel pnlIndicatorsContainer = new Panel
+                {
+                    Name = $"pnlIndicatorsContainer_Output{outputInstance.OutputID}_{outputCounter}",
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    Dock = DockStyle.Top,
+                    Padding = new Padding(20, 5, 0, 5), // Indent indicators more
+                    Margin = new Padding(0,0,0,5)
+                };
+                pnlDynamicOutput.Controls.Add(pnlIndicatorsContainer);
 
-                Panel pnlIndicatorsContainer = new Panel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, Location = new Point(5, pnlButtonsForOutput.Bottom + 5), Width = pnlDynamicOutput.ClientSize.Width - 10, MinimumSize = new Size(0, 10) };
-                Panel pnlActivitiesContainer = new Panel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, Location = new Point(5, pnlIndicatorsContainer.Bottom + 5), Width = pnlDynamicOutput.ClientSize.Width - 10, MinimumSize = new Size(0,10) };
-
-                pnlDynamicOutput.Controls.Add(lblOutput);
-                pnlDynamicOutput.Controls.Add(txtOutputDesc);
-                pnlDynamicOutput.Controls.Add(pnlButtonsForOutput);
-                pnlDynamicOutput.Controls.Add(pnlIndicatorsContainer); // Add before activities
+                // --- Panel to Contain Activities for this Output ---
+                Panel pnlActivitiesContainer = new Panel
+                {
+                    Name = $"pnlActivitiesContainer_Output{outputInstance.OutputID}_{outputCounter}",
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    Dock = DockStyle.Top,
+                    Padding = new Padding(20, 5, 0, 5) // Indent activities more
+                };
                 pnlDynamicOutput.Controls.Add(pnlActivitiesContainer);
 
                 parentOutputPanel.Controls.Add(pnlDynamicOutput);
-                pnlDynamicOutput.BringToFront(); // Ensure it's on top of previous ones if Dock.Top is used
+                pnlDynamicOutput.BringToFront();
 
                 RenderIndicatorsForOutput(outputInstance, pnlIndicatorsContainer);
                 RenderActivitiesForOutput(outputInstance, pnlActivitiesContainer);
             }
-            parentOutputPanel.ResumeLayout();
+            parentOutputPanel.ResumeLayout(true);
+        }
+
+        private void BtnDeleteOutput_Click(object sender, EventArgs e)
+        {
+            Button btn = sender as Button;
+            if (btn == null || !(btn.Tag is Tuple<Outcome, Output> data)) return;
+
+            Outcome parentOutcome = data.Item1;
+            Output outputToDelete = data.Item2;
+
+            if (parentOutcome == null || outputToDelete == null)
+            {
+                MessageBox.Show("Error identifying the item to delete.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (MessageBox.Show($"Are you sure you want to delete this output and all its activities and indicators?\n\nOutput: {outputToDelete.OutputDescription}",
+                                "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            {
+                parentOutcome.Outputs.Remove(outputToDelete);
+                // Re-render the outputs for the specific parent outcome.
+                // To do this, we need to find the container panel for this outcome's outputs.
+                // The GroupBox for the outcome can be found by iterating up from btn.Parent until a GroupBox is found.
+                // Then, find the pnlOutputsContainer within that GroupBox.
+
+                Control currentControl = btn;
+                GroupBox outcomeGrp = null;
+                while (currentControl.Parent != null)
+                {
+                    if (currentControl.Parent is GroupBox && currentControl.Parent.Name.StartsWith("grpOutcome_"))
+                    {
+                        outcomeGrp = currentControl.Parent as GroupBox;
+                        break;
+                    }
+                    currentControl = currentControl.Parent;
+                }
+
+                if (outcomeGrp != null)
+                {
+                    Panel pnlOutputsContainer = outcomeGrp.Controls.OfType<Panel>().FirstOrDefault(p => p.Name.StartsWith("pnlOutputsContainer_Outcome"));
+                    if (pnlOutputsContainer != null)
+                    {
+                        RenderOutputsForOutcome(parentOutcome, pnlOutputsContainer);
+                    }
+                    else
+                    {
+                        RenderAllOutcomes(); // Fallback if specific container not found
+                    }
+                }
+                else
+                {
+                    RenderAllOutcomes(); // Fallback if GroupBox not found
+                }
+            }
         }
 
         private void BtnAddIndicator_Click(object sender, EventArgs e)
         {
-            Button btn = sender as Button;
+            Button btn = sender as Button; // This button is in flpOutputActions
             if (btn == null || !(btn.Tag is Output output)) return;
 
-            ProjectIndicator newIndicator = new ProjectIndicator { ProjectID = _currentProject.ProjectID }; // Ensure ProjectID is linked
+            ProjectIndicator newIndicator = new ProjectIndicator { ProjectID = _currentProject.ProjectID, OutputID = output.OutputID };
+            if (output.ProjectIndicators == null) output.ProjectIndicators = new HashSet<ProjectIndicator>();
             output.ProjectIndicators.Add(newIndicator);
 
-            Panel pnlDynamicOutput = btn.Parent.Parent as Panel; // btn -> pnlButtonsForOutput -> pnlDynamicOutput
-            Panel pnlIndicatorsContainer = pnlDynamicOutput.Controls.OfType<Panel>().FirstOrDefault(p => p.Name == null && p.Location.Y > btn.Parent.Bottom); // Heuristic to find it
-            if (pnlIndicatorsContainer != null) RenderIndicatorsForOutput(output, pnlIndicatorsContainer);
+            // btn -> flpOutputActions -> pnlDynamicOutput
+            Panel pnlDynamicOutput = btn.Parent.Parent as Panel;
+            Panel pnlIndicatorsContainer = pnlDynamicOutput?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name != null && p.Name.StartsWith("pnlIndicatorsContainer_Output"));
+            if (pnlIndicatorsContainer != null)
+            {
+                RenderIndicatorsForOutput(output, pnlIndicatorsContainer);
+            }
+            else
+            {
+                RenderAllOutcomes();
+            }
         }
 
-        private void RenderIndicatorsForOutput(Output output, Panel parentIndicatorPanel)
+        private void RenderIndicatorsForOutput(Output output, Panel parentIndicatorPanel) // parentIndicatorPanel is pnlIndicatorsContainer
         {
             parentIndicatorPanel.SuspendLayout();
             parentIndicatorPanel.Controls.Clear();
-            parentIndicatorPanel.Height = 0;
+            // parentIndicatorPanel.Height = 0; // AutoSize handles this
 
+            int indicatorCounter = 0;
             foreach (var indicatorInstance in output.ProjectIndicators.ToList())
             {
-                Panel pnlDynamicIndicator = new Panel { AutoSize = true, BorderStyle = BorderStyle.None, Padding = new Padding(3), Margin = new Padding(0,0,0,3), Dock = DockStyle.Top };
-                TableLayoutPanel tlpIndicator = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2 };
-                tlpIndicator.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100)); // Labels
-                tlpIndicator.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // Controls
+                indicatorCounter++;
+                Panel pnlDynamicIndicator = new Panel
+                {
+                    Name = $"pnlIndicator_{output.OutputID}_{indicatorInstance.ProjectIndicatorID}_{indicatorCounter}",
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Padding = new Padding(8), // Increased padding
+                    Margin = new Padding(0, 0, 0, 8), // Bottom margin for spacing
+                    Dock = DockStyle.Top
+                };
 
-                TextBox txtIndicatorName = new TextBox { Text = indicatorInstance.IndicatorName, Dock = DockStyle.Fill, PlaceholderText = "Indicator Description" };
+                TableLayoutPanel tlpIndicatorMain = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3 };
+                tlpIndicatorMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90F)); // Labels like "Indicator:"
+                tlpIndicatorMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // Controls like TextBox, FlowLayoutPanel
+                tlpIndicatorMain.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Delete button
+
+                // Row 0: Indicator Description
+                Label lblIndicatorName = new Label { Text = "Indicator:", AutoSize = true, Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 3, 0, 0) };
+                TextBox txtIndicatorName = new TextBox
+                {
+                    Text = indicatorInstance.IndicatorName,
+                    Dock = DockStyle.Fill,
+                    PlaceholderText = "Enter indicator description",
+                    Multiline = true,
+                    MinHeight = 40,
+                    Height = 40,
+                    ScrollBars = ScrollBars.Vertical
+                };
                 txtIndicatorName.TextChanged += (s, ev) => indicatorInstance.IndicatorName = ((TextBox)s).Text;
 
-                NumericUpDown nudTargetMen = new NumericUpDown { Value = indicatorInstance.TargetMen, Maximum = 1000000, Width=60 };
-                nudTargetMen.ValueChanged += (s, ev) => indicatorInstance.TargetMen = (int)((NumericUpDown)s).Value;
-                // ... similar for Women, Boys, Girls, Total
-                NumericUpDown nudTargetWomen = new NumericUpDown { Value = indicatorInstance.TargetWomen, Maximum = 1000000, Width=60 };
-                nudTargetWomen.ValueChanged += (s, ev) => indicatorInstance.TargetWomen = (int)((NumericUpDown)s).Value;
-                 NumericUpDown nudTargetBoys = new NumericUpDown { Value = indicatorInstance.TargetBoys, Maximum = 1000000, Width=60 };
-                nudTargetBoys.ValueChanged += (s, ev) => indicatorInstance.TargetBoys = (int)((NumericUpDown)s).Value;
-                NumericUpDown nudTargetGirls = new NumericUpDown { Value = indicatorInstance.TargetGirls, Maximum = 1000000, Width=60 };
-                nudTargetGirls.ValueChanged += (s, ev) => indicatorInstance.TargetGirls = (int)((NumericUpDown)s).Value;
-                NumericUpDown nudTargetTotal = new NumericUpDown { Value = indicatorInstance.TargetTotal, Maximum = 4000000, Width=70, Enabled = false /* often calculated */ }; // Example: Total is calculated
+                Button btnDeleteIndicator = new Button { Text = "Delete", Tag = new Tuple<Output, ProjectIndicator>(output, indicatorInstance), ForeColor = Color.Red, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, MinimumSize = new Size(75,0) };
+                btnDeleteIndicator.Click += BtnDeleteIndicator_Click;
+
+                tlpIndicatorMain.Controls.Add(lblIndicatorName, 0, 0);
+                tlpIndicatorMain.Controls.Add(txtIndicatorName, 1, 0);
+                tlpIndicatorMain.Controls.Add(btnDeleteIndicator, 2, 0);
+
+                // Row 1: Targets Label
+                Label lblTargets = new Label { Text = "Targets:", AutoSize = true, Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 8, 0, 0) }; // Added top margin
+                tlpIndicatorMain.Controls.Add(lblTargets, 0, 1);
+
+                // Row 1 (continued): Targets FlowLayoutPanel
+                FlowLayoutPanel flpTargets = new FlowLayoutPanel
+                {
+                    FlowDirection = FlowDirection.LeftToRight,
+                    AutoSize = true,
+                    WrapContents = true, // Allow wrapping of target groups
+                    Dock = DockStyle.Fill,
+                    Margin = new Padding(0, 5, 0, 0) // Top margin for flpTargets
+                };
+                tlpIndicatorMain.Controls.Add(flpTargets, 1, 1);
+                tlpIndicatorMain.SetColumnSpan(flpTargets, 2); // Span across control and button column
+
+                Action<string, NumericUpDown, Action<int>> addTargetControl = (labelText, nud, setter) => {
+                    FlowLayoutPanel flpSingleTargetGroup = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, AutoSize = true, Margin = new Padding(0, 0, 10, 3) }; // Right/bottom margin for spacing between groups
+                    flpSingleTargetGroup.Controls.Add(new Label { Text = labelText, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 3, 3, 0) });
+                    nud.Maximum = 1000000; nud.Width = 70; nud.Anchor = AnchorStyles.Left;
+                    nud.ValueChanged += (s, ev) => setter((int)((NumericUpDown)s).Value);
+                    flpSingleTargetGroup.Controls.Add(nud);
+                    flpTargets.Controls.Add(flpSingleTargetGroup);
+                };
+
+                addTargetControl("Men:", new NumericUpDown { Value = indicatorInstance.TargetMen }, val => indicatorInstance.TargetMen = val);
+                addTargetControl("Women:", new NumericUpDown { Value = indicatorInstance.TargetWomen }, val => indicatorInstance.TargetWomen = val);
+                addTargetControl("Boys:", new NumericUpDown { Value = indicatorInstance.TargetBoys }, val => indicatorInstance.TargetBoys = val);
+                addTargetControl("Girls:", new NumericUpDown { Value = indicatorInstance.TargetGirls }, val => indicatorInstance.TargetGirls = val);
+
+                FlowLayoutPanel flpTotalTargetGroup = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, AutoSize = true, Margin = new Padding(0,0,10,3) };
+                flpTotalTargetGroup.Controls.Add(new Label { Text = "Total:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0,3,3,0) });
+                NumericUpDown nudTargetTotal = new NumericUpDown { Value = indicatorInstance.TargetTotal, Maximum = 4000000, Width = 75, Enabled = true, Anchor = AnchorStyles.Left };
                 nudTargetTotal.ValueChanged += (s, ev) => indicatorInstance.TargetTotal = (int)((NumericUpDown)s).Value;
+                flpTotalTargetGroup.Controls.Add(nudTargetTotal);
+                flpTargets.Controls.Add(flpTotalTargetGroup);
 
-
-                tlpIndicator.Controls.Add(new Label { Text = "Indicator:", AutoSize=true }, 0, 0); tlpIndicator.Controls.Add(txtIndicatorName, 1, 0);
-
-                FlowLayoutPanel flpTargets = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, AutoSize = true, WrapContents = false };
-                flpTargets.Controls.Add(new Label { Text="Men:", AutoSize=true}); flpTargets.Controls.Add(nudTargetMen);
-                flpTargets.Controls.Add(new Label { Text="Women:", AutoSize=true, Margin = new Padding(5,0,0,0) }); flpTargets.Controls.Add(nudTargetWomen);
-                flpTargets.Controls.Add(new Label { Text="Boys:", AutoSize=true, Margin = new Padding(5,0,0,0) }); flpTargets.Controls.Add(nudTargetBoys);
-                flpTargets.Controls.Add(new Label { Text="Girls:", AutoSize=true, Margin = new Padding(5,0,0,0) }); flpTargets.Controls.Add(nudTargetGirls);
-                flpTargets.Controls.Add(new Label { Text="Total:", AutoSize=true, Margin = new Padding(5,0,0,0) }); flpTargets.Controls.Add(nudTargetTotal);
-
-                tlpIndicator.Controls.Add(new Label { Text = "Targets:", AutoSize=true }, 0, 1); tlpIndicator.Controls.Add(flpTargets, 1, 1);
-
-                pnlDynamicIndicator.Controls.Add(tlpIndicator);
+                pnlDynamicIndicator.Controls.Add(tlpIndicatorMain);
                 parentIndicatorPanel.Controls.Add(pnlDynamicIndicator);
                 pnlDynamicIndicator.BringToFront();
             }
-            parentIndicatorPanel.ResumeLayout();
+            parentIndicatorPanel.ResumeLayout(true);
+        }
+
+        private void BtnDeleteIndicator_Click(object sender, EventArgs e)
+        {
+            Button btn = sender as Button;
+            if (btn == null || !(btn.Tag is Tuple<Output, ProjectIndicator> data)) return;
+
+            Output parentOutput = data.Item1;
+            ProjectIndicator indicatorToDelete = data.Item2;
+
+            if (MessageBox.Show($"Are you sure you want to delete this indicator?\n\nIndicator: {indicatorToDelete.IndicatorName}",
+                                "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            {
+                parentOutput.ProjectIndicators.Remove(indicatorToDelete);
+
+                Control current = btn;
+                Panel indicatorsContainer = null;
+                while(current.Parent != null)
+                {
+                    // Traverse up to find the specific pnlIndicatorsContainer for this output
+                    if(current.Parent is Panel && current.Parent.Name != null && current.Parent.Name.StartsWith("pnlIndicatorsContainer_Output"))
+                    {
+                        indicatorsContainer = current.Parent as Panel;
+                        break;
+                    }
+                    current = current.Parent;
+                }
+
+                if (indicatorsContainer != null)
+                {
+                    RenderIndicatorsForOutput(parentOutput, indicatorsContainer);
+                }
+                else
+                {
+                     RenderAllOutcomes(); // Fallback if specific container not found
+                }
+            }
         }
 
         private void BtnAddActivity_Click(object sender, EventArgs e)
         {
-            Button btn = sender as Button;
+            Button btn = sender as Button; // This button is in flpOutputActions
             if (btn == null || !(btn.Tag is Output output)) return;
 
-            Activity newActivity = new Activity();
+            Activity newActivity = new Activity() { OutputID = output.OutputID }; // Ensure OutputID is linked if applicable
+            if (output.Activities == null) output.Activities = new HashSet<Activity>();
             output.Activities.Add(newActivity);
 
+            // btn -> flpOutputActions -> pnlDynamicOutput
             Panel pnlDynamicOutput = btn.Parent.Parent as Panel;
-            Panel pnlActivitiesContainer = pnlDynamicOutput.Controls.OfType<Panel>().LastOrDefault(p => p.Name == null && p.Location.Y > btn.Parent.Bottom); // Heuristic
-            if (pnlActivitiesContainer != null) RenderActivitiesForOutput(output, pnlActivitiesContainer);
+            Panel pnlActivitiesContainer = pnlDynamicOutput?.Controls.OfType<Panel>().FirstOrDefault(p => p.Name != null && p.Name.StartsWith("pnlActivitiesContainer_Output"));
+            if (pnlActivitiesContainer != null)
+            {
+                RenderActivitiesForOutput(output, pnlActivitiesContainer);
+            }
+            else
+            {
+                RenderAllOutcomes(); // Fallback
+            }
+            InitializeActivityPlanTab(); // Refresh activity plan
         }
 
-        private void RenderActivitiesForOutput(Output output, Panel parentActivityPanel)
+        private void RenderActivitiesForOutput(Output output, Panel parentActivityPanel) // parentActivityPanel is pnlActivitiesContainer
         {
             parentActivityPanel.SuspendLayout();
             parentActivityPanel.Controls.Clear();
-            parentActivityPanel.Height = 0;
+            // parentActivityPanel.Height = 0; // AutoSize handles this
 
+            int activityCounter = 0;
             foreach (var activityInstance in output.Activities.ToList())
             {
-                Panel pnlDynamicActivity = new Panel { AutoSize = true, BorderStyle = BorderStyle.None, Padding = new Padding(3), Margin = new Padding(0,0,0,3), Dock = DockStyle.Top };
-                TableLayoutPanel tlpActivity = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2};
-                tlpActivity.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
-                tlpActivity.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+                activityCounter++;
+                Panel pnlDynamicActivity = new Panel
+                {
+                    Name = $"pnlActivity_{output.OutputID}_{activityInstance.ActivityID}_{activityCounter}",
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Padding = new Padding(8), // Consistent padding
+                    Margin = new Padding(0, 0, 0, 8), // Bottom margin for spacing
+                    Dock = DockStyle.Top
+                };
 
-                TextBox txtActivityDesc = new TextBox { Text = activityInstance.ActivityDescription, Dock = DockStyle.Fill, PlaceholderText = "Activity Description" };
-                txtActivityDesc.TextChanged += (s, ev) => activityInstance.ActivityDescription = ((TextBox)s).Text;
+                TableLayoutPanel tlpActivityMain = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3 };
+                tlpActivityMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80F)); // Label "Activity:"
+                tlpActivityMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // TextBox
+                tlpActivityMain.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Delete Button
 
-                tlpActivity.Controls.Add(new Label { Text = "Activity:", AutoSize=true }, 0, 0); tlpActivity.Controls.Add(txtActivityDesc, 1, 0);
+                Label lblActivityDesc = new Label { Text = "Activity:", AutoSize = true, Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 3, 0, 0) };
+                TextBox txtActivityDesc = new TextBox
+                {
+                    Text = activityInstance.ActivityDescription,
+                    Dock = DockStyle.Fill,
+                    PlaceholderText = "Enter activity description",
+                    Multiline = true,
+                    MinHeight = 40,
+                    Height = 40,
+                    ScrollBars = ScrollBars.Vertical
+                };
+                txtActivityDesc.TextChanged += (s, ev) => {
+                    activityInstance.ActivityDescription = ((TextBox)s).Text;
+                    InitializeActivityPlanTab(); // Refresh activity plan if description changes
+                };
 
-                pnlDynamicActivity.Controls.Add(tlpActivity);
+                Button btnDeleteActivity = new Button { Text = "Delete", Tag = new Tuple<Output, Activity>(output, activityInstance), ForeColor = Color.Red, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, MinimumSize = new Size(75,0) };
+                btnDeleteActivity.Click += BtnDeleteActivity_Click;
+
+                tlpActivityMain.Controls.Add(lblActivityDesc, 0, 0);
+                tlpActivityMain.Controls.Add(txtActivityDesc, 1, 0);
+                tlpActivityMain.Controls.Add(btnDeleteActivity, 2, 0);
+
+                pnlDynamicActivity.Controls.Add(tlpActivityMain);
                 parentActivityPanel.Controls.Add(pnlDynamicActivity);
                 pnlDynamicActivity.BringToFront();
             }
-            parentActivityPanel.ResumeLayout();
+            parentActivityPanel.ResumeLayout(true);
+        }
+
+        private void BtnDeleteActivity_Click(object sender, EventArgs e)
+        {
+            Button btn = sender as Button;
+            if (btn == null || !(btn.Tag is Tuple<Output, Activity> data)) return;
+
+            Output parentOutput = data.Item1;
+            Activity activityToDelete = data.Item2;
+
+            if (MessageBox.Show($"Are you sure you want to delete this activity?\n\nActivity: {activityToDelete.ActivityDescription}",
+                                "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            {
+                parentOutput.Activities.Remove(activityToDelete);
+
+                Control current = btn;
+                Panel activitiesContainer = null;
+                while (current.Parent != null)
+                {
+                    if (current.Parent is Panel && current.Parent.Name != null && current.Parent.Name.StartsWith("pnlActivitiesContainer_Output"))
+                    {
+                        activitiesContainer = current.Parent as Panel;
+                        break;
+                    }
+                    current = current.Parent;
+                }
+
+                if (activitiesContainer != null)
+                {
+                    RenderActivitiesForOutput(parentOutput, activitiesContainer);
+                }
+                else
+                {
+                    RenderAllOutcomes(); // Fallback
+                }
+                InitializeActivityPlanTab(); // Refresh activity plan
+            }
         }
 
         private void SetAccessibilityProperties()
@@ -533,6 +840,11 @@ namespace HumanitarianProjectManagement.Forms
             nudTotalBudget.Value = _currentProject.TotalBudget ?? 0;
 
             // ComboBoxes are handled in LoadComboBoxes after _currentProject is set
+            if (_isEditMode)
+            {
+                InitializeBudgetUITab(); // Load existing budget lines
+                InitializeActivityPlanTab(); // Load activity plan data
+            }
         }
 
         private bool CollectAndValidateData()
@@ -636,5 +948,367 @@ namespace HumanitarianProjectManagement.Forms
             this.DialogResult = DialogResult.Cancel;
             this.Close();
         }
-    }
-}
+
+        // Budget Tab Implementation Start
+
+        private string GetCategoryDisplayName(BudgetCategoriesEnum category)
+        {
+            string name = category.ToString();
+            // Example: A_StaffAndPersonnel -> "A. Staff And Personnel"
+            if (name.Length > 2 && name[1] == '_')
+            {
+                name = name[0] + ". " + name.Substring(2);
+            }
+            // Add spaces before capital letters (simple version)
+            return System.Text.RegularExpressions.Regex.Replace(name, "([A-Z])", " $1").Trim();
+        }
+
+        void ClearControlsFromRow(TableLayoutPanel panel, int rowIndex)
+        {
+            for (int i = 0; i < panel.ColumnCount; i++)
+            {
+                Control control = panel.GetControlFromPosition(i, rowIndex);
+                if (control != null)
+                {
+                    // TODO: Unsubscribe events if necessary before disposing if they cause issues.
+                    // For this specific set of controls, direct removal and dispose is usually fine.
+                    panel.Controls.Remove(control);
+                    control.Dispose();
+                }
+            }
+        }
+
+        private void InitializeBudgetUITab()
+        {
+            if (flpBudgetCategories == null) return; // Designer control might not be ready in some call paths initially.
+                                                  // This method might be called multiple times (Load, PopulateControls), ensure idempotency.
+
+            // Check if already initialized to prevent duplicate controls and event subscriptions
+            if (flpBudgetCategories.Controls.OfType<GroupBox>().Any()) {
+                 // If re-populating for existing data, just re-render lines, not structure.
+                 // However, the current design rebuilds GroupBoxes too.
+                 // For simplicity, clear and rebuild. More advanced would be to update existing.
+                foreach (GroupBox gb in flpBudgetCategories.Controls.OfType<GroupBox>().ToList())
+                {
+                    TableLayoutPanel tlp = gb.Controls.OfType<TableLayoutPanel>().FirstOrDefault();
+                    if (tlp != null)
+                    {
+                         BudgetCategoriesEnum catEnum = (BudgetCategoriesEnum)gb.Tag;
+                         RenderBudgetLinesForCategory(catEnum, tlp);
+                    }
+                }
+                return; // Already initialized the main structure
+            }
+
+            flpBudgetCategories.Controls.Clear(); // Clear previous if any (e.g. design-time placeholders)
+            flpBudgetCategories.SuspendLayout();
+
+            foreach (BudgetCategoriesEnum catEnum in Enum.GetValues(typeof(BudgetCategoriesEnum)))
+            {
+                GroupBox gbCategory = new GroupBox
+                {
+                    Text = GetCategoryDisplayName(catEnum),
+                    Tag = catEnum,
+                    Dock = DockStyle.Top,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    Padding = new Padding(10),
+                    Margin = new Padding(0, 0, 0, 10),
+                    // Set width relative to parent FlowLayoutPanel, accounting for scrollbar and margins
+                    Width = flpBudgetCategories.ClientSize.Width - (flpBudgetCategories.VerticalScroll.Visible ? SystemInformation.VerticalScrollBarWidth : 0) - flpBudgetCategories.Padding.Horizontal - 10
+                };
+
+                TableLayoutPanel tlpLines = new TableLayoutPanel
+                {
+                    ColumnCount = 8, // Description, Unit, Qty, UnitCost, Duration, %CBPF, Total, Action
+                    Dock = DockStyle.Top,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
+                    Padding = new Padding(5),
+                    Margin = new Padding(0,5,0,5),
+                    Width = gbCategory.ClientSize.Width - gbCategory.Padding.Horizontal
+                };
+
+                // Define ColumnStyles
+                tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F)); // Description
+                tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 8F));  // Unit
+                tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 8F));  // Qty
+                tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F)); // UnitCost
+                tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 8F));  // Duration
+                tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F)); // % CBPF
+                tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12F)); // Total Cost
+                tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));    // Action Button
+
+                // Add Header Row
+                string[] headers = { "Description", "Unit", "Qty", "Unit Cost", "Duration", "% CBPF", "Total Cost", "Action" };
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    Label lblHeader = new Label { Text = headers[i], Font = new Font(this.Font, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, AutoSize = true};
+                    tlpLines.Controls.Add(lblHeader, i, 0);
+                }
+                tlpLines.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Header row
+
+                gbCategory.Controls.Add(tlpLines);
+
+                Button btnAddLine = new Button
+                {
+                    Text = "Add New Budget Line",
+                    Tag = catEnum,
+                    Dock = DockStyle.Top, // Docks below the table inside the groupbox
+                    AutoSize = true,
+                    Margin = new Padding(0,5,0,0)
+                };
+                btnAddLine.Click += BtnAddBudgetLine_Click;
+                gbCategory.Controls.Add(btnAddLine);
+                tlpLines.BringToFront(); // Ensure table is before button if both Dock.Top
+
+                flpBudgetCategories.Controls.Add(gbCategory);
+                RenderBudgetLinesForCategory(catEnum, tlpLines); // Populate with existing lines if any
+            }
+            flpBudgetCategories.ResumeLayout(true);
+        }
+
+        private void RenderBudgetLinesForCategory(BudgetCategoriesEnum category, TableLayoutPanel uiTable)
+        {
+            uiTable.SuspendLayout();
+            // Clear existing data rows (keep header row 0)
+            while (uiTable.RowCount > 1)
+            {
+                ClearControlsFromRow(uiTable, uiTable.RowCount - 1);
+                uiTable.RowStyles.RemoveAt(uiTable.RowCount -1); // Remove RowStyle too
+                uiTable.RowCount--;
+            }
+
+            if (_currentProject.DetailedBudgetLines == null) _currentProject.DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
+            var linesForCategory = _currentProject.DetailedBudgetLines.Where(b => b.Category == category).ToList();
+
+            if (linesForCategory != null)
+            {
+                foreach (var line in linesForCategory)
+                {
+                    int currentRow = uiTable.RowCount;
+                    uiTable.RowCount++; // Increment row count
+                    uiTable.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Add a style for the new row
+
+                    TextBox txtDesc = new TextBox { Text = line.Description, Dock = DockStyle.Fill, MaxLength = 1500, Multiline = true, MinimumSize = new Size(150, 40), ScrollBars = ScrollBars.Vertical, Height=40 };
+                    txtDesc.TextChanged += (s, e) => line.Description = ((TextBox)s).Text;
+
+                    TextBox txtUnit = new TextBox { Text = line.Unit, Dock = DockStyle.Fill, MaxLength = 50 };
+                    txtUnit.TextChanged += (s, e) => line.Unit = ((TextBox)s).Text;
+
+                    NumericUpDown nudQty = new NumericUpDown { Value = line.Quantity, Maximum = 9999999, DecimalPlaces = 3, Dock = DockStyle.Fill, Width = 70 };
+                    NumericUpDown nudUnitCost = new NumericUpDown { Value = line.UnitCost, Maximum = 99999999, DecimalPlaces = 2, Dock = DockStyle.Fill, Width = 80 };
+                    NumericUpDown nudDuration = new NumericUpDown { Value = line.Duration, Maximum = 9999, DecimalPlaces = 2, Dock = DockStyle.Fill, Width = 70 };
+                    NumericUpDown nudPrcCharged = new NumericUpDown { Value = line.PercentageChargedToCBPF, Maximum = 100, Minimum = 0, DecimalPlaces = 2, Dock = DockStyle.Fill, Width = 70 };
+
+                    Label lblTotal = new Label { Text = line.TotalCost.ToString("C", CultureInfo.InvariantCulture), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, AutoSize = true };
+
+                    Button btnDeleteLine = new Button { Text = "Delete", Tag = line, AutoSize = true, ForeColor = Color.Red };
+                    btnDeleteLine.Click += (s, e) =>
+                    {
+                        _currentProject.DetailedBudgetLines.Remove(line);
+                        RenderBudgetLinesForCategory(category, uiTable);
+                    };
+
+                    EventHandler recalc = (s, e) =>
+                    {
+                        line.Quantity = nudQty.Value;
+                        line.UnitCost = nudUnitCost.Value;
+                        line.Duration = nudDuration.Value;
+                        line.PercentageChargedToCBPF = nudPrcCharged.Value;
+                        line.TotalCost = line.Quantity * line.UnitCost * line.Duration * (line.PercentageChargedToCBPF / 100M);
+                        lblTotal.Text = line.TotalCost.ToString("C", CultureInfo.InvariantCulture);
+                    };
+
+                    nudQty.ValueChanged += recalc;
+                    nudUnitCost.ValueChanged += recalc;
+                    nudDuration.ValueChanged += recalc;
+                    nudPrcCharged.ValueChanged += recalc;
+
+                    uiTable.Controls.Add(txtDesc, 0, currentRow);
+                    uiTable.Controls.Add(txtUnit, 1, currentRow);
+                    uiTable.Controls.Add(nudQty, 2, currentRow);
+                    uiTable.Controls.Add(nudUnitCost, 3, currentRow);
+                    uiTable.Controls.Add(nudDuration, 4, currentRow);
+                    uiTable.Controls.Add(nudPrcCharged, 5, currentRow);
+                    uiTable.Controls.Add(lblTotal, 6, currentRow);
+                    uiTable.Controls.Add(btnDeleteLine, 7, currentRow);
+                }
+            }
+            uiTable.ResumeLayout(true);
+        }
+
+        private void BtnAddBudgetLine_Click(object sender, EventArgs e)
+        {
+            var category = (BudgetCategoriesEnum)((Button)sender).Tag;
+            var newLine = new DetailedBudgetLine
+            {
+                ProjectId = _currentProject.ProjectID,
+                Category = category,
+                Quantity = 1,
+                Duration = 1,
+                UnitCost = 0,
+                PercentageChargedToCBPF = 100
+            };
+            newLine.TotalCost = newLine.Quantity * newLine.UnitCost * newLine.Duration * (newLine.PercentageChargedToCBPF / 100M);
+
+            if (_currentProject.DetailedBudgetLines == null) _currentProject.DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
+            _currentProject.DetailedBudgetLines.Add(newLine);
+
+            // Find the TableLayoutPanel associated with this category
+            GroupBox gbParent = (GroupBox)((Button)sender).Parent;
+            TableLayoutPanel tlp = gbParent.Controls.OfType<TableLayoutPanel>().First();
+            RenderBudgetLinesForCategory(category, tlp);
+        }
+
+        // Budget Tab Implementation End
+
+        // Activity Plan Tab Implementation Start
+
+        private void InitializeActivityPlanTab()
+        {
+            // Ensure dgvActivityPlan is referenced from this.Controls or the specific TabPage
+            DataGridView dgvActivityPlan = this.Controls.Find("dgvActivityPlan", true).FirstOrDefault() as DataGridView;
+
+            if (dgvActivityPlan == null || _currentProject == null)
+            {
+                return;
+            }
+
+            dgvActivityPlan.SuspendLayout();
+            dgvActivityPlan.Columns.Clear(); // Clear existing columns first
+            dgvActivityPlan.Rows.Clear();    // Clear existing rows
+
+            // Setup Columns
+            dgvActivityPlan.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "ActivityDescription",
+                HeaderText = "Activity",
+                ReadOnly = true,
+                Frozen = true,
+                FillWeight = 30
+            });
+
+            DateTime startDate = _currentProject.StartDate ?? (_currentProject.CreatedAt != DateTime.MinValue ? _currentProject.CreatedAt : DateTime.Now);
+            DateTime endDate = _currentProject.EndDate ?? startDate.AddYears(1);
+
+            if (endDate < startDate) endDate = startDate.AddYears(1);
+
+            DateTime currentMonthIterator = new DateTime(startDate.Year, startDate.Month, 1);
+            DateTime endMonthTarget = new DateTime(endDate.Year, endDate.Month, 1);
+
+            while (currentMonthIterator <= endMonthTarget)
+            {
+                string monthYearKeyStorage = currentMonthIterator.ToString("MMM/yyyy", CultureInfo.InvariantCulture); // For storage "Jan/2023"
+                string headerTextDisplay = currentMonthIterator.ToString("MMM/yy", CultureInfo.InvariantCulture);   // For display "Jan/23"
+
+                // Use a more robust name that doesn't rely on special characters like '/'
+                string columnName = $"Month_{currentMonthIterator.Year}_{currentMonthIterator.Month:00}";
+
+                dgvActivityPlan.Columns.Add(new DataGridViewCheckBoxColumn
+                {
+                    Name = columnName,
+                    HeaderText = headerTextDisplay, // Display "Jan/23"
+                    Tag = monthYearKeyStorage,      // Store "Jan/2023" in Tag for reliable parsing
+                    Width = 70
+                });
+                currentMonthIterator = currentMonthIterator.AddMonths(1);
+            }
+
+            // Populate Rows
+            if (_currentProject.Outcomes != null)
+            {
+                foreach (var outcome in _currentProject.Outcomes)
+                {
+                    if (outcome.Outputs == null) continue;
+                    foreach (var output in outcome.Outputs)
+                    {
+                        if (output.Activities == null) continue;
+                        foreach (var activity in output.Activities)
+                        {
+                            int rowIndex = dgvActivityPlan.Rows.Add();
+                            DataGridViewRow row = dgvActivityPlan.Rows[rowIndex];
+                            row.Cells["ActivityDescription"].Value = activity.ActivityDescription;
+                            row.Tag = activity; // Store activity object
+
+                            List<string> plannedMonthsList = string.IsNullOrEmpty(activity.PlannedMonths)
+                                ? new List<string>()
+                                : activity.PlannedMonths.Split(',').ToList();
+
+                            foreach (DataGridViewColumn col in dgvActivityPlan.Columns)
+                            {
+                                if (col is DataGridViewCheckBoxColumn && col.Name.StartsWith("Month_"))
+                                {
+                                    string colStorageKey = col.Tag as string; // "Jan/2023"
+                                    if (colStorageKey != null && plannedMonthsList.Contains(colStorageKey))
+                                    {
+                                        row.Cells[col.Name].Value = true;
+                                    }
+                                    else
+                                    {
+                                        row.Cells[col.Name].Value = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            dgvActivityPlan.ResumeLayout();
+        }
+
+        private void dgvActivityPlan_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+        {
+            DataGridView dgvActivityPlan = sender as DataGridView;
+            if (dgvActivityPlan != null && dgvActivityPlan.IsCurrentCellDirty && dgvActivityPlan.CurrentCell is DataGridViewCheckBoxCell)
+            {
+                dgvActivityPlan.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+
+        private void dgvActivityPlan_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            DataGridView dgvActivityPlan = sender as DataGridView;
+            if (dgvActivityPlan == null || e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            DataGridViewRow row = dgvActivityPlan.Rows[e.RowIndex];
+            Activity activity = row.Tag as Activity;
+            if (activity == null) return;
+
+            DataGridViewColumn col = dgvActivityPlan.Columns[e.ColumnIndex];
+            if (col is DataGridViewCheckBoxColumn && col.Name.StartsWith("Month_"))
+            {
+                bool isChecked = (bool)(row.Cells[e.ColumnIndex].Value ?? false);
+                string monthYearKey = col.Tag as string; // "Jan/2023" from Tag
+
+                if (monthYearKey == null) return; // Should not happen if Tag is set during column creation
+
+                List<string> plannedMonthsList = string.IsNullOrEmpty(activity.PlannedMonths)
+                    ? new List<string>()
+                    : activity.PlannedMonths.Split(',').ToList();
+
+                if (isChecked)
+                {
+                    if (!plannedMonthsList.Contains(monthYearKey))
+                    {
+                        plannedMonthsList.Add(monthYearKey);
+                    }
+                }
+                else
+                {
+                    plannedMonthsList.Remove(monthYearKey);
+                }
+                activity.PlannedMonths = string.Join(",", plannedMonthsList);
+            }
+        }
+
+        private void ProjectDatesChanged_RefreshActivityPlan(object sender, EventArgs e)
+        {
+            InitializeActivityPlanTab();
+        }
+
+        // Activity Plan Tab Implementation End
+
+
+        private void SetAccessibilityProperties()

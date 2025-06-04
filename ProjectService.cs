@@ -38,14 +38,14 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                 budgetLines.Add(new DetailedBudgetLine
                                 {
                                     DetailedBudgetLineID = (int)reader["DetailedBudgetLineID"],
-                                    ProjectID = (int)reader["ProjectID"],
-                                    BudgetCategory = (BudgetCategory)Enum.Parse(typeof(BudgetCategory), reader["BudgetCategory"].ToString()),
+                                    ProjectId = (int)reader["ProjectID"], // Model uses ProjectId
+                                    Category = (BudgetCategoriesEnum)Enum.Parse(typeof(BudgetCategoriesEnum), reader["BudgetCategory"].ToString()), // Use new enum
                                     Description = reader["Description"].ToString(),
                                     Unit = reader["Unit"] != DBNull.Value ? reader["Unit"].ToString() : null,
-                                    Quantity = (int)reader["Quantity"],
+                                    Quantity = Convert.ToDecimal(reader["Quantity"]), // DB stores as numeric/decimal
                                     UnitCost = (decimal)reader["UnitCost"],
-                                    Duration = (int)reader["Duration"],
-                                    PercentChargedToCBPF = (decimal)reader["PercentChargedToCBPF"],
+                                    Duration = Convert.ToDecimal(reader["Duration"]), // DB stores as numeric/decimal
+                                    PercentageChargedToCBPF = (decimal)reader["PercentChargedToCBPF"],
                                     TotalCost = (decimal)reader["TotalCost"]
                                 });
                             }
@@ -68,6 +68,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
         {
             if (budgetLine == null) throw new ArgumentNullException(nameof(budgetLine));
 
+            // Ensure ProjectId is used from the model for consistency, DB column is ProjectID
             string query = @"INSERT INTO DetailedBudgetLines
                                 (ProjectID, BudgetCategory, Description, Unit, Quantity, UnitCost, Duration, PercentChargedToCBPF, TotalCost)
                              VALUES
@@ -79,14 +80,14 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 {
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectID);
-                        command.Parameters.AddWithValue("@BudgetCategory", budgetLine.BudgetCategory.ToString()); // Store enum as string or int
+                        command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId); // Model uses ProjectId
+                        command.Parameters.AddWithValue("@BudgetCategory", budgetLine.Category.ToString()); // Model uses Category (new enum)
                         command.Parameters.AddWithValue("@Description", budgetLine.Description);
                         command.Parameters.AddWithValue("@Unit", (object)budgetLine.Unit ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@Quantity", budgetLine.Quantity);
+                        command.Parameters.AddWithValue("@Quantity", budgetLine.Quantity); // Model uses decimal
                         command.Parameters.AddWithValue("@UnitCost", budgetLine.UnitCost);
-                        command.Parameters.AddWithValue("@Duration", budgetLine.Duration);
-                        command.Parameters.AddWithValue("@PercentChargedToCBPF", budgetLine.PercentChargedToCBPF);
+                        command.Parameters.AddWithValue("@Duration", budgetLine.Duration); // Model uses decimal
+                        command.Parameters.AddWithValue("@PercentChargedToCBPF", budgetLine.PercentageChargedToCBPF);
                         command.Parameters.AddWithValue("@TotalCost", budgetLine.TotalCost);
 
                         await connection.OpenAsync();
@@ -113,6 +114,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
         {
             if (budgetLine == null) throw new ArgumentNullException(nameof(budgetLine));
 
+            // Ensure ProjectId is used from the model for consistency, DB column is ProjectID
             string query = @"UPDATE DetailedBudgetLines SET
                                 ProjectID = @ProjectID,
                                 BudgetCategory = @BudgetCategory,
@@ -130,14 +132,14 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 {
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectID);
-                        command.Parameters.AddWithValue("@BudgetCategory", budgetLine.BudgetCategory.ToString());
+                        command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId); // Model uses ProjectId
+                        command.Parameters.AddWithValue("@BudgetCategory", budgetLine.Category.ToString()); // Model uses Category (new enum)
                         command.Parameters.AddWithValue("@Description", budgetLine.Description);
                         command.Parameters.AddWithValue("@Unit", (object)budgetLine.Unit ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@Quantity", budgetLine.Quantity);
+                        command.Parameters.AddWithValue("@Quantity", budgetLine.Quantity); // Model uses decimal
                         command.Parameters.AddWithValue("@UnitCost", budgetLine.UnitCost);
-                        command.Parameters.AddWithValue("@Duration", budgetLine.Duration);
-                        command.Parameters.AddWithValue("@PercentChargedToCBPF", budgetLine.PercentChargedToCBPF);
+                        command.Parameters.AddWithValue("@Duration", budgetLine.Duration); // Model uses decimal
+                        command.Parameters.AddWithValue("@PercentChargedToCBPF", budgetLine.PercentageChargedToCBPF);
                         command.Parameters.AddWithValue("@TotalCost", budgetLine.TotalCost);
                         command.Parameters.AddWithValue("@DetailedBudgetLineID", budgetLine.DetailedBudgetLineID);
 
@@ -469,11 +471,53 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 // Save DetailedBudgetLines
                 if (project.DetailedBudgetLines != null)
                 {
+                    // Get existing budget lines from DB for comparison
+                    // Ensure ProjectID is valid before fetching
+                    List<DetailedBudgetLine> existingDbLines = new List<DetailedBudgetLine>();
+                    if (project.ProjectID > 0)
+                    {
+                        existingDbLines = await GetDetailedBudgetLinesByProjectIdAsync(project.ProjectID);
+                    }
+
+                    var incomingLineIds = new HashSet<int>(project.DetailedBudgetLines.Where(bl => bl.DetailedBudgetLineID != 0).Select(bl => bl.DetailedBudgetLineID));
+
+                    // Delete lines that are in DB but not in incoming project data
+                    foreach (var dbLine in existingDbLines)
+                    {
+                        if (!incomingLineIds.Contains(dbLine.DetailedBudgetLineID))
+                        {
+                            await DeleteDetailedBudgetLineAsync(dbLine.DetailedBudgetLineID);
+                        }
+                    }
+
+                    // Add new lines or update existing ones
                     foreach (var budgetLine in project.DetailedBudgetLines)
                     {
-                        budgetLine.ProjectID = project.ProjectID;
-                        if (budgetLine.DetailedBudgetLineID == 0) await this.AddDetailedBudgetLineAsync(budgetLine);
-                        else await this.UpdateDetailedBudgetLineAsync(budgetLine);
+                        budgetLine.ProjectId = project.ProjectID; // Ensure ProjectId is correctly set from the parent project
+                        if (budgetLine.DetailedBudgetLineID == 0) // New line
+                        {
+                            budgetLine.DetailedBudgetLineID = await AddDetailedBudgetLineAsync(budgetLine);
+                        }
+                        else // Existing line, ensure it was in the DB list before attempting update
+                        {
+                            if (existingDbLines.Any(dbl => dbl.DetailedBudgetLineID == budgetLine.DetailedBudgetLineID))
+                            {
+                                await UpdateDetailedBudgetLineAsync(budgetLine);
+                            }
+                            // Optional: else log a warning or error if an incoming line with ID > 0 was not in DB.
+                        }
+                    }
+                }
+                else // If project.DetailedBudgetLines is null or empty, and it's an existing project
+                {
+                    if (project.ProjectID > 0)
+                    {
+                        // Delete all existing budget lines for this project from DB
+                        var existingDbLines = await GetDetailedBudgetLinesByProjectIdAsync(project.ProjectID);
+                        foreach (var dbLine in existingDbLines)
+                        {
+                            await DeleteDetailedBudgetLineAsync(dbLine.DetailedBudgetLineID);
+                        }
                     }
                 }
                 return true; // Indicates main project and attempted child saves
