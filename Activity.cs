@@ -23,5 +23,9 @@ namespace HumanitarianProjectManagement.Models
         // public Activity()
         // {
         // }
+
+        // Navigation property to Output
+        [ForeignKey("OutputID")]
+        public virtual Output Output { get; set; }
     }
 }
