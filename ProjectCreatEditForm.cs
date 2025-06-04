@@ -148,7 +148,7 @@ namespace HumanitarianProjectManagement.Forms
                     ScrollBars = ScrollBars.Vertical,
                     Height = 40,
                     Dock = DockStyle.Fill,
-                    PlaceholderText = "Enter outcome description"
+                    // PlaceholderText = "Enter outcome description"
                 };
                 txtOutcomeDesc.TextChanged += (s, ev) => outcome.OutcomeDescription = ((TextBox)s).Text;
 
@@ -303,7 +303,7 @@ namespace HumanitarianProjectManagement.Forms
                 tlpIndicator.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100)); // Labels
                 tlpIndicator.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // Controls
 
-                TextBox txtIndicatorName = new TextBox { Text = indicatorInstance.IndicatorName, Dock = DockStyle.Fill, PlaceholderText = "Indicator Description" };
+                TextBox txtIndicatorName = new TextBox { Text = indicatorInstance.IndicatorName, Dock = DockStyle.Fill, /* PlaceholderText = "Indicator Description" */ };
                 txtIndicatorName.TextChanged += (s, ev) => indicatorInstance.IndicatorName = ((TextBox)s).Text;
 
                 NumericUpDown nudTargetMen = new NumericUpDown { Value = indicatorInstance.TargetMen, Maximum = 1000000, Width=60 };
@@ -363,7 +363,7 @@ namespace HumanitarianProjectManagement.Forms
                 tlpActivity.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
                 tlpActivity.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-                TextBox txtActivityDesc = new TextBox { Text = activityInstance.ActivityDescription, Dock = DockStyle.Fill, PlaceholderText = "Activity Description" };
+                TextBox txtActivityDesc = new TextBox { Text = activityInstance.ActivityDescription, Dock = DockStyle.Fill, /* PlaceholderText = "Activity Description" */ };
                 txtActivityDesc.TextChanged += (s, ev) => activityInstance.ActivityDescription = ((TextBox)s).Text;
 
                 tlpActivity.Controls.Add(new Label { Text = "Activity:", AutoSize=true }, 0, 0); tlpActivity.Controls.Add(txtActivityDesc, 1, 0);

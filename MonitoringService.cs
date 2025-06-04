@@ -30,7 +30,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                             {
                                 ProjectIndicator indicator = new ProjectIndicator
                                 {
-                                    IndicatorID = (int)reader["IndicatorID"],
+                                    ProjectIndicatorID = (int)reader["IndicatorID"],
                                     ProjectID = (int)reader["ProjectID"],
                                     IndicatorName = reader["IndicatorName"].ToString(),
                                     Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
@@ -75,7 +75,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                             {
                                 indicator = new ProjectIndicator
                                 {
-                                    IndicatorID = (int)reader["IndicatorID"],
+                                    ProjectIndicatorID = (int)reader["IndicatorID"],
                                     ProjectID = (int)reader["ProjectID"],
                                     IndicatorName = reader["IndicatorName"].ToString(),
                                     Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
@@ -107,7 +107,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
                 {
                     SqlCommand command;
-                    if (indicator.IndicatorID == 0) // New indicator
+                    if (indicator.ProjectIndicatorID == 0) // New indicator
                     {
                         string insertQuery = @"
                             INSERT INTO ProjectIndicators (ProjectID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator) 
@@ -125,7 +125,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                 IsKeyIndicator = @IsKeyIndicator 
                             WHERE IndicatorID = @IndicatorID;";
                         command = new SqlCommand(updateQuery, connection);
-                        command.Parameters.AddWithValue("@IndicatorID", indicator.IndicatorID);
+                        command.Parameters.AddWithValue("@IndicatorID", indicator.ProjectIndicatorID);
                     }
 
                     command.Parameters.AddWithValue("@ProjectID", indicator.ProjectID);
@@ -140,12 +140,12 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     command.Parameters.AddWithValue("@IsKeyIndicator", indicator.IsKeyIndicator);
 
                     await connection.OpenAsync();
-                    if (indicator.IndicatorID == 0)
+                    if (indicator.ProjectIndicatorID == 0)
                     {
                         object newId = await command.ExecuteScalarAsync();
                         if (newId != null && newId != DBNull.Value)
                         {
-                            indicator.IndicatorID = Convert.ToInt32(newId);
+                            indicator.ProjectIndicatorID = Convert.ToInt32(newId);
                             rowsAffected = 1;
                         }
                     }
