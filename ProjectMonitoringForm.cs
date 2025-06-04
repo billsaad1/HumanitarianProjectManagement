@@ -74,7 +74,7 @@ namespace HumanitarianProjectManagement.Forms
 
         private void ConfigureDataGridView()
         {
-            string[] columnsToHide = { "IndicatorID", "ProjectID", "Project", "VerificationMeans", "Description", "BaselineValue", "StartDate", "EndDate" };
+            string[] columnsToHide = { "ProjectIndicatorID", "ProjectID", "Project", "VerificationMeans", "Description", "BaselineValue", "StartDate", "EndDate" }; // Changed IndicatorID to ProjectIndicatorID
             foreach (string colName in columnsToHide)
             {
                 if (dgvProjectIndicators.Columns.Contains(colName))
@@ -129,7 +129,7 @@ namespace HumanitarianProjectManagement.Forms
                 ProjectIndicator indicatorToEdit = null;
                 try
                 {
-                    indicatorToEdit = await _monitoringService.GetIndicatorByIdAsync(selectedSummary.IndicatorID);
+                    indicatorToEdit = await _monitoringService.GetIndicatorByIdAsync(selectedSummary.ProjectIndicatorID); // Changed to ProjectIndicatorID
                 }
                 catch (Exception ex)
                 {
@@ -177,7 +177,7 @@ namespace HumanitarianProjectManagement.Forms
                     bool success = false;
                     try
                     {
-                        success = await _monitoringService.DeleteProjectIndicatorAsync(selectedIndicator.IndicatorID);
+                        success = await _monitoringService.DeleteProjectIndicatorAsync(selectedIndicator.ProjectIndicatorID); // Changed to ProjectIndicatorID
                         if (success)
                         {
                             MessageBox.Show("Indicator deleted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);

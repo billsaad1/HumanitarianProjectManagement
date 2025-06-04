@@ -157,7 +157,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     if (po.PurchaseOrderID == 0) // New PO
                     {
                         po.OrderDate = (po.OrderDate == DateTime.MinValue || po.OrderDate == default(DateTime)) ? DateTime.UtcNow : po.OrderDate;
-                        po.CreatedByUserID = AppContext.CurrentUser?.UserID;
+                        po.CreatedByUserID = ApplicationState.CurrentUser?.UserID; // Changed to ApplicationState
 
                         string insertQuery = @"
                             INSERT INTO PurchaseOrders (ProjectID, PurchaseID, SupplierName, OrderDate, ExpectedDeliveryDate, ActualDeliveryDate, TotalAmount, Status, ShippingAddress, BillingAddress, Notes, CreatedByUserID, ApprovedByUserID) 

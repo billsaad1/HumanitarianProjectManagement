@@ -48,8 +48,8 @@ namespace HumanitarianProjectManagement.Forms
 
                 if (authenticatedUser != null)
                 {
-                    // Store authenticated user in AppContext
-                    AppContext.CurrentUser = authenticatedUser;
+                    // Store authenticated user in ApplicationState
+                    ApplicationState.CurrentUser = authenticatedUser;
 
                     // Successful login - Set DialogResult and Close. Program.cs will handle Dashboard.
                     this.DialogResult = DialogResult.OK;
