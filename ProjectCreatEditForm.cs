@@ -12,7 +12,7 @@ using HumanitarianProjectManagement.UI; // Added
 
 namespace HumanitarianProjectManagement.Forms
 {
-    public partial class ProjectCreateEditForm : Form
+    partial class ProjectCreateEditForm : System.Windows.Forms.Form
     {
         private readonly ProjectService _projectService;
         private readonly SectionService _sectionService; // Added SectionService field
