@@ -1,50 +1,33 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+// Ensure this using directive is present if BudgetCategoriesEnum is in a different namespace,
+// but given the plan, it should be in HumanitarianProjectManagement.Models as well.
+// using HumanitarianProjectManagement.Models;
 
 namespace HumanitarianProjectManagement.Models
 {
-    [Table("DetailedBudgetLines")]
     public class DetailedBudgetLine
     {
         [Key]
-        public int DetailedBudgetLineID { get; set; }
+        public int DetailedBudgetLineID { get; set; } // Changed from Id to DetailedBudgetLineID
 
         [Required]
-        public int ProjectID { get; set; }
-
-        [Required]
-        public BudgetCategory BudgetCategory { get; set; }
-
-        [StringLength(1500)]
-        public string Description { get; set; }
-
-        [StringLength(100)] // Assuming a reasonable length for unit
-        public string Unit { get; set; }
-
-        public int Quantity { get; set; }
-
-        [Column(TypeName = "decimal(18, 2)")]
-        public decimal UnitCost { get; set; }
-
-        public int Duration { get; set; } // e.g., number of months, days
-
-        [Column(TypeName = "decimal(5, 2)")] // Assuming PercentChargedToCBPF is like 0.75 for 75%
-        public decimal PercentChargedToCBPF { get; set; }
-
-        [Column(TypeName = "decimal(18, 2)")]
-        public decimal TotalCost { get; set; } // May be auto-calculated in UI/Service layer
-
-        [ForeignKey("ProjectID")]
+        public int ProjectId { get; set; }
+        [ForeignKey("ProjectId")]
         public virtual Project Project { get; set; }
 
-        public DetailedBudgetLine()
-        {
-            // Default values if necessary
-            Quantity = 0;
-            UnitCost = 0m;
-            Duration = 0;
-            PercentChargedToCBPF = 1.0m; // Default to 100% charged unless specified
-            TotalCost = 0m;
-        }
+        [Required]
+        public BudgetCategoriesEnum Category { get; set; } // Using the new enum
+
+        [StringLength(1500)]
+        public string Description { get; set; } // Remarks (max 1500 characters)
+
+        [StringLength(50)]
+        public string Unit { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal UnitCost { get; set; }
+        public decimal Duration { get; set; } // e.g., number of months, days, etc.
+        public decimal PercentageChargedToCBPF { get; set; } // Store as 0-100
+        public decimal TotalCost { get; set; } // Calculated: Quantity * UnitCost * Duration * (%ChargedToCBPF / 100)
     }
 }
