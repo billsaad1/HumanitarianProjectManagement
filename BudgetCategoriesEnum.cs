@@ -1,14 +1,13 @@
-namespace HumanitarianProjectManagement.Models // Or HumanitarianProjectManagement.Models.Enums
+namespace HumanitarianProjectManagement.Models
 {
-    public enum BudgetCategory
+    public enum BudgetCategoriesEnum
     {
-        StaffAndPersonnel,              // A
-        SuppliesCommoditiesMaterials,   // B
-        Equipment,                      // C
-        ContractualServices,            // D
-        Travel,                         // E
-        TransfersAndGrants,             // F
-        GeneralOperatingAndDirectCosts, // G
-        Unknown                         // Default or for uncategorized
+        A_StaffAndPersonnel, // "A. Staff and Other Personnel Costs (Salaries)"
+        B_SuppliesCommoditiesMaterials, // "B. Supplies, Commodities, Materials"
+        C_Equipment, // "C. Equipment"
+        D_ContractualServices, // "D. Contractual Services"
+        E_Travel, // "E. Travel"
+        F_TransfersAndGrants, // "F. Transfers and Grants to Counterparts"
+        G_GeneralOperatingAndDirectCosts // "G. General Operating and Other Direct Costs"
     }
 }
