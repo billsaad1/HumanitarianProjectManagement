@@ -13,7 +13,7 @@ using System.Globalization; // Added for CultureInfo
 
 namespace HumanitarianProjectManagement.Forms
 {
-    public partial class ProjectCreateEditForm : Form
+    partial class ProjectCreateEditForm : System.Windows.Forms.Form
     {
         private readonly ProjectService _projectService;
         private readonly SectionService _sectionService; // Added SectionService field
@@ -176,10 +176,8 @@ namespace HumanitarianProjectManagement.Forms
                     Text = outcome.OutcomeDescription,
                     Multiline = true,
                     ScrollBars = ScrollBars.Vertical,
-                    MinHeight = 40, // Use MinHeight
                     Height = 40,    // Initial height
-                    Dock = DockStyle.Fill,
-                    PlaceholderText = "Enter outcome description"
+                    Dock = DockStyle.Fill
                 };
                 txtOutcomeDesc.TextChanged += (s, ev) => {
                     outcome.OutcomeDescription = ((TextBox)s).Text;
@@ -304,10 +302,8 @@ namespace HumanitarianProjectManagement.Forms
                     Text = outputInstance.OutputDescription,
                     Multiline = true,
                     ScrollBars = ScrollBars.Vertical,
-                    MinHeight = 40,
                     Height = 40,
-                    Dock = DockStyle.Fill,
-                    PlaceholderText = "Enter output description"
+                    Dock = DockStyle.Fill
                 };
                 txtOutputDesc.TextChanged += (s, ev) => outputInstance.OutputDescription = ((TextBox)s).Text;
 
@@ -470,9 +466,7 @@ namespace HumanitarianProjectManagement.Forms
                 {
                     Text = indicatorInstance.IndicatorName,
                     Dock = DockStyle.Fill,
-                    PlaceholderText = "Enter indicator description",
                     Multiline = true,
-                    MinHeight = 40,
                     Height = 40,
                     ScrollBars = ScrollBars.Vertical
                 };
@@ -586,7 +580,7 @@ namespace HumanitarianProjectManagement.Forms
             {
                 RenderAllOutcomes(); // Fallback
             }
-            InitializeActivityPlanTab(); // Refresh activity plan
+            InitializeActivityPlanTab(); // Ensure this is called after activity is added
         }
 
         private void RenderActivitiesForOutput(Output output, Panel parentActivityPanel) // parentActivityPanel is pnlActivitiesContainer
@@ -620,15 +614,13 @@ namespace HumanitarianProjectManagement.Forms
                 {
                     Text = activityInstance.ActivityDescription,
                     Dock = DockStyle.Fill,
-                    PlaceholderText = "Enter activity description",
                     Multiline = true,
-                    MinHeight = 40,
                     Height = 40,
                     ScrollBars = ScrollBars.Vertical
                 };
                 txtActivityDesc.TextChanged += (s, ev) => {
                     activityInstance.ActivityDescription = ((TextBox)s).Text;
-                    InitializeActivityPlanTab(); // Refresh activity plan if description changes
+                    InitializeActivityPlanTab(); // Refresh activity plan if description changes - This is the correct placement
                 };
 
                 Button btnDeleteActivity = new Button { Text = "Delete", Tag = new Tuple<Output, Activity>(output, activityInstance), ForeColor = Color.Red, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, MinimumSize = new Size(75,0) };
@@ -678,7 +670,7 @@ namespace HumanitarianProjectManagement.Forms
                 {
                     RenderAllOutcomes(); // Fallback
                 }
-                InitializeActivityPlanTab(); // Refresh activity plan
+                InitializeActivityPlanTab(); // Ensure this is called after activity is deleted
             }
         }
 

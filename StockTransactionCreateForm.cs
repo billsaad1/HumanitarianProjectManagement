@@ -114,7 +114,7 @@ namespace HumanitarianProjectManagement.Forms
             transaction.Reason = string.IsNullOrWhiteSpace(txtReason.Text) ? null : txtReason.Text.Trim();
             transaction.DistributedTo = string.IsNullOrWhiteSpace(txtDistributedTo.Text) ? null : txtDistributedTo.Text.Trim();
             transaction.Notes = string.IsNullOrWhiteSpace(txtNotes.Text) ? null : txtNotes.Text.Trim();
-            transaction.RecordedByUserID = AppContext.CurrentUser?.UserID; // Assuming AppContext holds the logged-in user
+            transaction.RecordedByUserID = ApplicationState.CurrentUser?.UserID; // Using ApplicationState
 
             return true;
         }
