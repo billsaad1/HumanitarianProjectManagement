@@ -1299,8 +1299,6 @@ namespace HumanitarianProjectManagement.Forms
         {
             InitializeActivityPlanTab();
         }
-
-        // Activity Plan Tab Implementation End
-
-
-        private void SetAccessibilityProperties()
+    }
+}
+// Activity Plan Tab Implementation End
