@@ -227,7 +227,7 @@ namespace HumanitarianProjectManagement.Forms
 
             if (!_isEditMode)
             {
-                _currentPO.CreatedByUserID = AppContext.CurrentUser?.UserID; // Set on create
+                _currentPO.CreatedByUserID = ApplicationState.CurrentUser?.UserID; // Set on create
             }
 
             return true;
