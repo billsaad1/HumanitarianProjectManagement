@@ -13,7 +13,7 @@ using System.Globalization; // Added for CultureInfo
 
 namespace HumanitarianProjectManagement.Forms
 {
-    public partial class ProjectCreateEditForm : Form
+    partial class ProjectCreateEditForm : System.Windows.Forms.Form
     {
         private readonly ProjectService _projectService;
         private readonly SectionService _sectionService; // Added SectionService field
