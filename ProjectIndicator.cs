@@ -65,6 +65,9 @@ namespace HumanitarianProjectManagement.Models
         [DisplayName("Is Key Indicator")]
         public bool IsKeyIndicator { get; set; } = false;
 
+        [DisplayName("Means of Verification")] // New Property
+        public string MeansOfVerification { get; set; }
+
         // Navigation properties
         [ForeignKey("ProjectID")]
         public virtual Project Project { get; set; }
@@ -83,6 +86,7 @@ namespace HumanitarianProjectManagement.Models
             TargetBoys = 0;
             TargetGirls = 0;
             TargetTotal = 0;
+            MeansOfVerification = string.Empty; // Initialize new property
         }
     }
 }

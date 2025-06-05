@@ -13,7 +13,7 @@ using System.Globalization; // Added for CultureInfo
 
 namespace HumanitarianProjectManagement.Forms
 {
-    partial class ProjectCreateEditForm : System.Windows.Forms.Form
+    public partial class ProjectCreateEditForm : Form
     {
         private readonly ProjectService _projectService;
         private readonly SectionService _sectionService; // Added SectionService field
@@ -64,7 +64,7 @@ namespace HumanitarianProjectManagement.Forms
                 dtpEndDate.Checked = false;
             }
             // LoadComboBoxes(); // Will be called from Form_Load
-            SetAccessibilityProperties();
+           
             this.Load += new System.EventHandler(this.ProjectCreateEditForm_Load); // Wire up Load event
         }
 
@@ -82,12 +82,12 @@ namespace HumanitarianProjectManagement.Forms
             DataGridView dgvActivityPlan = this.Controls.Find("dgvActivityPlan", true).FirstOrDefault() as DataGridView;
             if (dgvActivityPlan != null)
             {
-                 // Ensure event handlers are not subscribed multiple times if Load is called again (though unusual for form load)
-                 dgvActivityPlan.CellValueChanged -= dgvActivityPlan_CellValueChanged;
-                 dgvActivityPlan.CurrentCellDirtyStateChanged -= dgvActivityPlan_CurrentCellDirtyStateChanged;
+                // Ensure event handlers are not subscribed multiple times if Load is called again (though unusual for form load)
+                dgvActivityPlan.CellValueChanged -= dgvActivityPlan_CellValueChanged;
+                dgvActivityPlan.CurrentCellDirtyStateChanged -= dgvActivityPlan_CurrentCellDirtyStateChanged;
 
-                 dgvActivityPlan.CellValueChanged += dgvActivityPlan_CellValueChanged;
-                 dgvActivityPlan.CurrentCellDirtyStateChanged += dgvActivityPlan_CurrentCellDirtyStateChanged;
+                dgvActivityPlan.CellValueChanged += dgvActivityPlan_CellValueChanged;
+                dgvActivityPlan.CurrentCellDirtyStateChanged += dgvActivityPlan_CurrentCellDirtyStateChanged;
             }
 
             // Wire up project date changes to refresh activity plan
@@ -214,7 +214,7 @@ namespace HumanitarianProjectManagement.Forms
                 grpOutcome.Controls.Add(btnAddOutput); // Then add the button below outputs
 
                 pnlLogFrameMain.Controls.Add(grpOutcome);
-                grpOutcome.BringToFront(); // Ensure this outcome group is placed correctly relative to others
+                // grpOutcome.BringToFront(); // Removed: Rely on Dock.Top and add order
             }
             pnlLogFrameMain.ResumeLayout(true); // Perform layout after all changes
         }
@@ -291,12 +291,12 @@ namespace HumanitarianProjectManagement.Forms
                 };
 
                 // --- Output Header: Label, Description TextBox, Delete Output Button ---
-                TableLayoutPanel tlpOutputHeader = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3, Margin = new Padding(0,0,0,5)};
+                TableLayoutPanel tlpOutputHeader = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3, Margin = new Padding(0, 0, 0, 5) };
                 tlpOutputHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Label
                 tlpOutputHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // TextBox
                 tlpOutputHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Button
 
-                Label lblOutputTitle = new Label { Text = $"Output {outputCounter}:", AutoSize = true, Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0,3,3,0) };
+                Label lblOutputTitle = new Label { Text = $"Output {outputCounter}:", AutoSize = true, Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 3, 3, 0) };
                 TextBox txtOutputDesc = new TextBox
                 {
                     Text = outputInstance.OutputDescription,
@@ -307,7 +307,7 @@ namespace HumanitarianProjectManagement.Forms
                 };
                 txtOutputDesc.TextChanged += (s, ev) => outputInstance.OutputDescription = ((TextBox)s).Text;
 
-                Button btnDeleteOutput = new Button { Text = "Delete Output", Tag = new Tuple<Outcome, Output>(outcome, outputInstance), ForeColor = Color.Red, MinimumSize = new Size(110,0), Anchor = AnchorStyles.Top | AnchorStyles.Right, AutoSize = true};
+                Button btnDeleteOutput = new Button { Text = "Delete Output", Tag = new Tuple<Outcome, Output>(outcome, outputInstance), ForeColor = Color.Red, MinimumSize = new Size(110, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right, AutoSize = true };
                 btnDeleteOutput.Click += BtnDeleteOutput_Click;
 
                 tlpOutputHeader.Controls.Add(lblOutputTitle, 0, 0);
@@ -316,10 +316,10 @@ namespace HumanitarianProjectManagement.Forms
                 pnlDynamicOutput.Controls.Add(tlpOutputHeader);
 
                 // --- Buttons Panel for Add Indicator/Activity for this Output ---
-                FlowLayoutPanel flpOutputActions = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, Dock = DockStyle.Top, AutoSize = true, Margin = new Padding(0,0,0,5)};
-                Button btnAddIndicator = new Button { Text = "Add Indicator", Tag = outputInstance, AutoSize=true };
+                FlowLayoutPanel flpOutputActions = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, Dock = DockStyle.Top, AutoSize = true, Margin = new Padding(0, 0, 0, 5) };
+                Button btnAddIndicator = new Button { Text = "Add Indicator", Tag = outputInstance, AutoSize = true };
                 btnAddIndicator.Click += BtnAddIndicator_Click;
-                Button btnAddActivity = new Button { Text = "Add Activity", Tag = outputInstance, AutoSize=true, Margin = new Padding(5,0,0,0) };
+                Button btnAddActivity = new Button { Text = "Add Activity", Tag = outputInstance, AutoSize = true, Margin = new Padding(5, 0, 0, 0) };
                 btnAddActivity.Click += BtnAddActivity_Click;
 
                 flpOutputActions.Controls.Add(btnAddIndicator);
@@ -334,7 +334,7 @@ namespace HumanitarianProjectManagement.Forms
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
                     Dock = DockStyle.Top,
                     Padding = new Padding(20, 5, 0, 5), // Indent indicators more
-                    Margin = new Padding(0,0,0,5)
+                    Margin = new Padding(0, 0, 0, 5)
                 };
                 pnlDynamicOutput.Controls.Add(pnlIndicatorsContainer);
 
@@ -350,7 +350,7 @@ namespace HumanitarianProjectManagement.Forms
                 pnlDynamicOutput.Controls.Add(pnlActivitiesContainer);
 
                 parentOutputPanel.Controls.Add(pnlDynamicOutput);
-                pnlDynamicOutput.BringToFront();
+                // pnlDynamicOutput.BringToFront(); // Removed: Rely on Dock.Top and add order
 
                 RenderIndicatorsForOutput(outputInstance, pnlIndicatorsContainer);
                 RenderActivitiesForOutput(outputInstance, pnlActivitiesContainer);
@@ -472,7 +472,7 @@ namespace HumanitarianProjectManagement.Forms
                 };
                 txtIndicatorName.TextChanged += (s, ev) => indicatorInstance.IndicatorName = ((TextBox)s).Text;
 
-                Button btnDeleteIndicator = new Button { Text = "Delete", Tag = new Tuple<Output, ProjectIndicator>(output, indicatorInstance), ForeColor = Color.Red, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, MinimumSize = new Size(75,0) };
+                Button btnDeleteIndicator = new Button { Text = "Delete", Tag = new Tuple<Output, ProjectIndicator>(output, indicatorInstance), ForeColor = Color.Red, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, MinimumSize = new Size(75, 0) };
                 btnDeleteIndicator.Click += BtnDeleteIndicator_Click;
 
                 tlpIndicatorMain.Controls.Add(lblIndicatorName, 0, 0);
@@ -493,7 +493,33 @@ namespace HumanitarianProjectManagement.Forms
                     Margin = new Padding(0, 5, 0, 0) // Top margin for flpTargets
                 };
                 tlpIndicatorMain.Controls.Add(flpTargets, 1, 1);
-                tlpIndicatorMain.SetColumnSpan(flpTargets, 2); // Span across control and button column
+                tlpIndicatorMain.SetColumnSpan(flpTargets, tlpIndicatorMain.ColumnCount - 1); // Span remaining columns. If delete button is present, this is 2, else could be 1.
+
+                // Row 2: Means of Verification
+                tlpIndicatorMain.RowCount++; // Current RowCount will be 2 (for rows 0 and 1), new row will be index 2
+                tlpIndicatorMain.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+                Label lblMoV = new Label
+                {
+                    Text = "Means of Verification:",
+                    AutoSize = true,
+                    Anchor = AnchorStyles.Left | AnchorStyles.Top,
+                    Margin = new Padding(0, 8, 3, 0) // Top margin for spacing
+                };
+                TextBox txtMoV = new TextBox
+                {
+                    Text = indicatorInstance.MeansOfVerification,
+                    Multiline = true,
+                    ScrollBars = ScrollBars.Vertical,
+                    Height = 60,
+                    Dock = DockStyle.Fill
+                };
+                txtMoV.TextChanged += (s, ev) => indicatorInstance.MeansOfVerification = ((TextBox)s).Text;
+
+                tlpIndicatorMain.Controls.Add(lblMoV, 0, 2);       // Column 0, Row 2
+                tlpIndicatorMain.Controls.Add(txtMoV, 1, 2);       // Column 1, Row 2
+                tlpIndicatorMain.SetColumnSpan(txtMoV, tlpIndicatorMain.ColumnCount - 1); // Span remaining columns
+
 
                 Action<string, NumericUpDown, Action<int>> addTargetControl = (labelText, nud, setter) => {
                     FlowLayoutPanel flpSingleTargetGroup = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, AutoSize = true, Margin = new Padding(0, 0, 10, 3) }; // Right/bottom margin for spacing between groups
@@ -509,8 +535,8 @@ namespace HumanitarianProjectManagement.Forms
                 addTargetControl("Boys:", new NumericUpDown { Value = indicatorInstance.TargetBoys }, val => indicatorInstance.TargetBoys = val);
                 addTargetControl("Girls:", new NumericUpDown { Value = indicatorInstance.TargetGirls }, val => indicatorInstance.TargetGirls = val);
 
-                FlowLayoutPanel flpTotalTargetGroup = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, AutoSize = true, Margin = new Padding(0,0,10,3) };
-                flpTotalTargetGroup.Controls.Add(new Label { Text = "Total:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0,3,3,0) });
+                FlowLayoutPanel flpTotalTargetGroup = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, AutoSize = true, Margin = new Padding(0, 0, 10, 3) };
+                flpTotalTargetGroup.Controls.Add(new Label { Text = "Total:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 3, 3, 0) });
                 NumericUpDown nudTargetTotal = new NumericUpDown { Value = indicatorInstance.TargetTotal, Maximum = 4000000, Width = 75, Enabled = true, Anchor = AnchorStyles.Left };
                 nudTargetTotal.ValueChanged += (s, ev) => indicatorInstance.TargetTotal = (int)((NumericUpDown)s).Value;
                 flpTotalTargetGroup.Controls.Add(nudTargetTotal);
@@ -538,10 +564,10 @@ namespace HumanitarianProjectManagement.Forms
 
                 Control current = btn;
                 Panel indicatorsContainer = null;
-                while(current.Parent != null)
+                while (current.Parent != null)
                 {
                     // Traverse up to find the specific pnlIndicatorsContainer for this output
-                    if(current.Parent is Panel && current.Parent.Name != null && current.Parent.Name.StartsWith("pnlIndicatorsContainer_Output"))
+                    if (current.Parent is Panel && current.Parent.Name != null && current.Parent.Name.StartsWith("pnlIndicatorsContainer_Output"))
                     {
                         indicatorsContainer = current.Parent as Panel;
                         break;
@@ -555,7 +581,7 @@ namespace HumanitarianProjectManagement.Forms
                 }
                 else
                 {
-                     RenderAllOutcomes(); // Fallback if specific container not found
+                    RenderAllOutcomes(); // Fallback if specific container not found
                 }
             }
         }
@@ -623,7 +649,7 @@ namespace HumanitarianProjectManagement.Forms
                     InitializeActivityPlanTab(); // Refresh activity plan if description changes - This is the correct placement
                 };
 
-                Button btnDeleteActivity = new Button { Text = "Delete", Tag = new Tuple<Output, Activity>(output, activityInstance), ForeColor = Color.Red, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, MinimumSize = new Size(75,0) };
+                Button btnDeleteActivity = new Button { Text = "Delete", Tag = new Tuple<Output, Activity>(output, activityInstance), ForeColor = Color.Red, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, MinimumSize = new Size(75, 0) };
                 btnDeleteActivity.Click += BtnDeleteActivity_Click;
 
                 tlpActivityMain.Controls.Add(lblActivityDesc, 0, 0);
@@ -973,20 +999,21 @@ namespace HumanitarianProjectManagement.Forms
         private void InitializeBudgetUITab()
         {
             if (flpBudgetCategories == null) return; // Designer control might not be ready in some call paths initially.
-                                                  // This method might be called multiple times (Load, PopulateControls), ensure idempotency.
+                                                     // This method might be called multiple times (Load, PopulateControls), ensure idempotency.
 
             // Check if already initialized to prevent duplicate controls and event subscriptions
-            if (flpBudgetCategories.Controls.OfType<GroupBox>().Any()) {
-                 // If re-populating for existing data, just re-render lines, not structure.
-                 // However, the current design rebuilds GroupBoxes too.
-                 // For simplicity, clear and rebuild. More advanced would be to update existing.
+            if (flpBudgetCategories.Controls.OfType<GroupBox>().Any())
+            {
+                // If re-populating for existing data, just re-render lines, not structure.
+                // However, the current design rebuilds GroupBoxes too.
+                // For simplicity, clear and rebuild. More advanced would be to update existing.
                 foreach (GroupBox gb in flpBudgetCategories.Controls.OfType<GroupBox>().ToList())
                 {
                     TableLayoutPanel tlp = gb.Controls.OfType<TableLayoutPanel>().FirstOrDefault();
                     if (tlp != null)
                     {
-                         BudgetCategoriesEnum catEnum = (BudgetCategoriesEnum)gb.Tag;
-                         RenderBudgetLinesForCategory(catEnum, tlp);
+                        BudgetCategoriesEnum catEnum = (BudgetCategoriesEnum)gb.Tag;
+                        RenderBudgetLinesForCategory(catEnum, tlp);
                     }
                 }
                 return; // Already initialized the main structure
@@ -1018,7 +1045,7 @@ namespace HumanitarianProjectManagement.Forms
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
                     CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
                     Padding = new Padding(5),
-                    Margin = new Padding(0,5,0,5),
+                    Margin = new Padding(0, 5, 0, 5),
                     Width = gbCategory.ClientSize.Width - gbCategory.Padding.Horizontal
                 };
 
@@ -1036,7 +1063,7 @@ namespace HumanitarianProjectManagement.Forms
                 string[] headers = { "Description", "Unit", "Qty", "Unit Cost", "Duration", "% CBPF", "Total Cost", "Action" };
                 for (int i = 0; i < headers.Length; i++)
                 {
-                    Label lblHeader = new Label { Text = headers[i], Font = new Font(this.Font, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, AutoSize = true};
+                    Label lblHeader = new Label { Text = headers[i], Font = new Font(this.Font, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, AutoSize = true };
                     tlpLines.Controls.Add(lblHeader, i, 0);
                 }
                 tlpLines.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Header row
@@ -1049,7 +1076,7 @@ namespace HumanitarianProjectManagement.Forms
                     Tag = catEnum,
                     Dock = DockStyle.Top, // Docks below the table inside the groupbox
                     AutoSize = true,
-                    Margin = new Padding(0,5,0,0)
+                    Margin = new Padding(0, 5, 0, 0)
                 };
                 btnAddLine.Click += BtnAddBudgetLine_Click;
                 gbCategory.Controls.Add(btnAddLine);
@@ -1068,7 +1095,7 @@ namespace HumanitarianProjectManagement.Forms
             while (uiTable.RowCount > 1)
             {
                 ClearControlsFromRow(uiTable, uiTable.RowCount - 1);
-                uiTable.RowStyles.RemoveAt(uiTable.RowCount -1); // Remove RowStyle too
+                uiTable.RowStyles.RemoveAt(uiTable.RowCount - 1); // Remove RowStyle too
                 uiTable.RowCount--;
             }
 
@@ -1083,7 +1110,7 @@ namespace HumanitarianProjectManagement.Forms
                     uiTable.RowCount++; // Increment row count
                     uiTable.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Add a style for the new row
 
-                    TextBox txtDesc = new TextBox { Text = line.Description, Dock = DockStyle.Fill, MaxLength = 1500, Multiline = true, MinimumSize = new Size(150, 40), ScrollBars = ScrollBars.Vertical, Height=40 };
+                    TextBox txtDesc = new TextBox { Text = line.Description, Dock = DockStyle.Fill, MaxLength = 1500, Multiline = true, MinimumSize = new Size(150, 40), ScrollBars = ScrollBars.Vertical, Height = 40 };
                     txtDesc.TextChanged += (s, e) => line.Description = ((TextBox)s).Text;
 
                     TextBox txtUnit = new TextBox { Text = line.Unit, Dock = DockStyle.Fill, MaxLength = 50 };
@@ -1301,4 +1328,8 @@ namespace HumanitarianProjectManagement.Forms
         }
     }
 }
+
 // Activity Plan Tab Implementation End
+
+
+

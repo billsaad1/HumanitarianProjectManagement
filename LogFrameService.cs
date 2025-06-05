@@ -450,7 +450,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             string query = @"SELECT ProjectIndicatorID, ProjectID, OutputID, IndicatorName, Description,
                                     TargetValue, ActualValue, UnitOfMeasure, BaselineValue,
                                     StartDate, EndDate, IsKeyIndicator,
-                                    TargetMen, TargetWomen, TargetBoys, TargetGirls, TargetTotal
+                                    TargetMen, TargetWomen, TargetBoys, TargetGirls, TargetTotal, MeansOfVerification
                              FROM ProjectIndicators
                              WHERE OutputID = @OutputID";
 
@@ -484,7 +484,8 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                     TargetWomen = reader["TargetWomen"] != DBNull.Value ? (int)reader["TargetWomen"] : 0,
                                     TargetBoys = reader["TargetBoys"] != DBNull.Value ? (int)reader["TargetBoys"] : 0,
                                     TargetGirls = reader["TargetGirls"] != DBNull.Value ? (int)reader["TargetGirls"] : 0,
-                                    TargetTotal = reader["TargetTotal"] != DBNull.Value ? (int)reader["TargetTotal"] : 0
+                                    TargetTotal = reader["TargetTotal"] != DBNull.Value ? (int)reader["TargetTotal"] : 0,
+                                    MeansOfVerification = reader["MeansOfVerification"] != DBNull.Value ? reader["MeansOfVerification"].ToString() : null
                                 });
                             }
                         }
@@ -509,9 +510,9 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             if (!indicator.OutputID.HasValue) throw new ArgumentException("OutputID must be set for the indicator.");
 
             string query = @"INSERT INTO ProjectIndicators
-                                (ProjectID, OutputID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator, TargetMen, TargetWomen, TargetBoys, TargetGirls, TargetTotal)
+                                (ProjectID, OutputID, IndicatorName, Description, TargetValue, ActualValue, UnitOfMeasure, BaselineValue, StartDate, EndDate, IsKeyIndicator, TargetMen, TargetWomen, TargetBoys, TargetGirls, TargetTotal, MeansOfVerification)
                              VALUES
-                                (@ProjectID, @OutputID, @IndicatorName, @Description, @TargetValue, @ActualValue, @UnitOfMeasure, @BaselineValue, @StartDate, @EndDate, @IsKeyIndicator, @TargetMen, @TargetWomen, @TargetBoys, @TargetGirls, @TargetTotal);
+                                (@ProjectID, @OutputID, @IndicatorName, @Description, @TargetValue, @ActualValue, @UnitOfMeasure, @BaselineValue, @StartDate, @EndDate, @IsKeyIndicator, @TargetMen, @TargetWomen, @TargetBoys, @TargetGirls, @TargetTotal, @MeansOfVerification);
                              SELECT CAST(SCOPE_IDENTITY() as int);";
             try
             {
@@ -535,6 +536,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         command.Parameters.AddWithValue("@TargetBoys", indicator.TargetBoys);
                         command.Parameters.AddWithValue("@TargetGirls", indicator.TargetGirls);
                         command.Parameters.AddWithValue("@TargetTotal", indicator.TargetTotal);
+                        command.Parameters.AddWithValue("@MeansOfVerification", (object)indicator.MeansOfVerification ?? DBNull.Value);
 
                         await connection.OpenAsync();
                         object newId = await command.ExecuteScalarAsync();
@@ -577,7 +579,8 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                 TargetWomen = @TargetWomen,
                                 TargetBoys = @TargetBoys,
                                 TargetGirls = @TargetGirls,
-                                TargetTotal = @TargetTotal
+                                TargetTotal = @TargetTotal,
+                                MeansOfVerification = @MeansOfVerification
                              WHERE ProjectIndicatorID = @ProjectIndicatorID;";
             try
             {
@@ -601,6 +604,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         command.Parameters.AddWithValue("@TargetBoys", indicator.TargetBoys);
                         command.Parameters.AddWithValue("@TargetGirls", indicator.TargetGirls);
                         command.Parameters.AddWithValue("@TargetTotal", indicator.TargetTotal);
+                        command.Parameters.AddWithValue("@MeansOfVerification", (object)indicator.MeansOfVerification ?? DBNull.Value);
                         command.Parameters.AddWithValue("@ProjectIndicatorID", indicator.ProjectIndicatorID);
 
                         await connection.OpenAsync();
