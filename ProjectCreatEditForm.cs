@@ -23,7 +23,20 @@ namespace HumanitarianProjectManagement.Forms
         private readonly bool _isEditMode;
         private int? _initialSectionId;
         private readonly LogFrameService _logFrameService;
-        private Panel sidebarPanel;
+        private Panel sidebarPanel; // For LogFrame
+        private Panel pnlBudgetMainContent; // For Budget Tab Main Content Area
+        private DataGridView dgvPrimaryBudgetLines;
+        private DataGridView dgvItemizedDetails;
+        private Button btnAddNewItemizedDetail;
+        private Label lblItemizedDetailsHeader;
+        private Button btnAddNewPrimaryLine;
+        private BudgetCategoriesEnum _selectedBudgetCateory; // Consider initializing if a "none" or "all" state is valid before first click
+        private DetailedBudgetLine _currentlyExpandedPrimaryLine = null;
+        private int _currentlyExpandedRowIndex = -1;
+        private Color defaultButtonBackColor = Color.FromArgb(225, 225, 225);
+        private Color selectedButtonBackColor = Color.FromArgb(0, 122, 204); // Theme blue for selection
+        private Panel pnlBudgetCategorySidebar; // To access sidebar buttons
+        private TableLayoutPanel tlpCategoryButtons; // For refreshing after delete
 
         private class ComboboxItem
         {
@@ -127,7 +140,22 @@ namespace HumanitarianProjectManagement.Forms
 
             int currentRow = 0;
             addControlToTable(new Label { Text = "ACTIONS", Font = new Font(this.Font.FontFamily, 10, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Margin = new Padding(0, 10, 0, 5) }, currentRow++);
-            Button btnAddOutcomeSidebar = CreateSidebarButton("Add Outcome", Color.FromArgb(0, 122, 204)); btnAddOutcomeSidebar.Click += btnAddOutcome_Click; addControlToTable(btnAddOutcomeSidebar, currentRow++);
+
+            Button btnAddOutcome = new Button();
+            btnAddOutcome.Text = "Add Outcome";
+            btnAddOutcome.Dock = DockStyle.Fill;
+            btnAddOutcome.Height = 40;
+            btnAddOutcome.Margin = new Padding(0, 5, 0, 5);
+            btnAddOutcome.BackColor = Color.FromArgb(0, 122, 204);
+            btnAddOutcome.ForeColor = Color.White;
+            btnAddOutcome.FlatStyle = FlatStyle.Flat;
+            btnAddOutcome.Font = new Font(this.Font.FontFamily, 9, FontStyle.Regular);
+            btnAddOutcome.TextAlign = ContentAlignment.MiddleLeft;
+            btnAddOutcome.Padding = new Padding(10, 0, 0, 0);
+            btnAddOutcome.Cursor = Cursors.Hand;
+            btnAddOutcome.FlatAppearance.BorderSize = 0;
+            btnAddOutcome.Click += btnAddOutcome_Click;
+            addControlToTable(btnAddOutcome, currentRow++);
 
             Button btnAddOutput = CreateSidebarButton("Add Output", Color.FromArgb(0, 122, 204)); btnAddOutput.Click += (s, e) => AddElementToLogFrame<Outcome>(null, BtnAddOutputToOutcome_Click); addControlToTable(btnAddOutput, currentRow++);
             Button btnAddIndicator = CreateSidebarButton("Add Indicator", Color.FromArgb(0, 122, 204)); btnAddIndicator.Click += (s, e) => AddElementToLogFrame<Output>(null, BtnAddIndicator_Click); addControlToTable(btnAddIndicator, currentRow++);
@@ -241,18 +269,11 @@ namespace HumanitarianProjectManagement.Forms
                 // Note: Iterating ProjectIndicators and Activities forward for numbering consistency with outputCounter
                 if (outputInstance.ProjectIndicators != null)
                 {
-                    for (int k = 0; k < outputInstance.ProjectIndicators.Count; k++)
+                    int indicatorIndex = 1; // Counter for numbering, initialized once per output
+                    foreach (var indicator in outputInstance.ProjectIndicators)
                     {
-                        if (outputInstance.ProjectIndicators != null)
-                        {
-                            int indicatorIndex = 1; // Counter for numbering
-                            foreach (var indicator in outputInstance.ProjectIndicators)
-                            {
-                                Panel pnlIndicatorEntry = CreateIndicatorPanel(outputInstance, indicator, $"{outcomeNumberString}.{outputCounter}", indicatorIndex++);
-                                pnlIndicators.Controls.Add(pnlIndicatorEntry);
-                            }
-                        }
-
+                        Panel pnlIndicatorEntry = CreateIndicatorPanel(outputInstance, indicator, $"{outcomeNumberString}.{outputCounter}", indicatorIndex++);
+                        pnlIndicators.Controls.Add(pnlIndicatorEntry);
                     }
                 }
 
@@ -262,18 +283,11 @@ namespace HumanitarianProjectManagement.Forms
                 // Note: Iterating ProjectIndicators and Activities forward for numbering consistency with outputCounter
                 if (outputInstance.Activities != null)
                 {
-                    for (int k = 0; k < outputInstance.Activities.Count; k++)
+                    int activityIndex = 1; // Counter for numbering, initialized once per output
+                    foreach (var activity in outputInstance.Activities)
                     {
-                        if (outputInstance.Activities != null)
-                        {
-                            int activityIndex = 1; // Counter for numbering
-                            foreach (var activity in outputInstance.Activities)
-                            {
-                                Panel pnlActivityEntry = CreateActivityPanel(outputInstance, activity, $"{outcomeNumberString}.{outputCounter}", activityIndex++);
-                                pnlActivities.Controls.Add(pnlActivityEntry);
-                            }
-                        }
-
+                        Panel pnlActivityEntry = CreateActivityPanel(outputInstance, activity, $"{outcomeNumberString}.{outputCounter}", activityIndex++);
+                        pnlActivities.Controls.Add(pnlActivityEntry);
                     }
                 }
 
@@ -529,24 +543,394 @@ namespace HumanitarianProjectManagement.Forms
         private void InitializeBudgetUITab()
         {
             if (flpBudgetCategories == null) return;
-            if (flpBudgetCategories.Controls.OfType<GroupBox>().Any()) { foreach (GroupBox gb in flpBudgetCategories.Controls.OfType<GroupBox>().ToList()) { TableLayoutPanel tlp = gb.Controls.OfType<TableLayoutPanel>().FirstOrDefault(); if (tlp != null) { BudgetCategoriesEnum catEnum = (BudgetCategoriesEnum)gb.Tag; RenderBudgetLinesForCategory(catEnum, tlp); } } return; }
-            flpBudgetCategories.Controls.Clear(); flpBudgetCategories.SuspendLayout();
-            foreach (BudgetCategoriesEnum catEnum in Enum.GetValues(typeof(BudgetCategoriesEnum)))
+
+            flpBudgetCategories.Controls.Clear();
+            flpBudgetCategories.SuspendLayout();
+            flpBudgetCategories.Padding = Padding.Empty;
+
+            SplitContainer scBudgetLayout = new SplitContainer
             {
-                GroupBox gbCategory = new GroupBox { Text = GetCategoryDisplayName(catEnum), Tag = catEnum, Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Padding = new Padding(10), Margin = new Padding(0, 0, 0, 10), Width = flpBudgetCategories.ClientSize.Width - (flpBudgetCategories.VerticalScroll.Visible ? SystemInformation.VerticalScrollBarWidth : 0) - flpBudgetCategories.Padding.Horizontal - 10 };
-                TableLayoutPanel tlpLines = new TableLayoutPanel { ColumnCount = 8, Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, CellBorderStyle = TableLayoutPanelCellBorderStyle.Single, Padding = new Padding(5), Margin = new Padding(0, 5, 0, 5), Width = gbCategory.ClientSize.Width - gbCategory.Padding.Horizontal };
-                tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F)); tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 8F)); tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 8F)); tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F)); tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 8F)); tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F)); tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12F)); tlpLines.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-                string[] headers = { "Description", "Unit", "Qty", "Unit Cost", "Duration", "% CBPF", "Total Cost", "Action" };
-                for (int i = 0; i < headers.Length; i++) { Label lblHeader = new Label { Text = headers[i], Font = new Font(this.Font, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, AutoSize = true }; tlpLines.Controls.Add(lblHeader, i, 0); }
-                tlpLines.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                gbCategory.Controls.Add(tlpLines);
-                Button btnAddLine = new Button { Text = "Add New Budget Line", Tag = catEnum, Dock = DockStyle.Top, AutoSize = true, Margin = new Padding(0, 5, 0, 0) };
-                btnAddLine.Click += BtnAddBudgetLine_Click;
-                gbCategory.Controls.Add(btnAddLine); tlpLines.BringToFront();
-                flpBudgetCategories.Controls.Add(gbCategory);
-                RenderBudgetLinesForCategory(catEnum, tlpLines);
+                Name = "scBudgetLayout",
+                Dock = DockStyle.Fill,
+                FixedPanel = FixedPanel.Panel1,
+                SplitterDistance = 230,
+                BackColor = Color.Gray
+            };
+
+            Panel pnlBudgetCategorySidebar = scBudgetLayout.Panel1;
+            pnlBudgetCategorySidebar.Name = "pnlBudgetCategorySidebar";
+            pnlBudgetCategorySidebar.AutoScroll = true;
+            pnlBudgetCategorySidebar.BackColor = Color.FromArgb(240, 240, 240);
+            pnlBudgetCategorySidebar.Padding = new Padding(5);
+
+            this.tlpCategoryButtons = new TableLayoutPanel // Assign to class field
+            {
+                Name = "tlpCategoryButtons",
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = Enum.GetValues(typeof(BudgetCategoriesEnum)).Length + 1,
+                AutoScroll = true,
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None
+            };
+            foreach (BudgetCategoriesEnum catEnum_iterator in Enum.GetValues(typeof(BudgetCategoriesEnum)))
+            {
+                tlpCategoryButtons.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             }
+
+            int currentCategoryRow = 0;
+            foreach (BudgetCategoriesEnum catEnum_iterator in Enum.GetValues(typeof(BudgetCategoriesEnum)))
+            {
+                Button btnCategory = new Button
+                {
+                    Text = GetCategoryDisplayName(catEnum_iterator),
+                    Tag = catEnum_iterator,
+                    Dock = DockStyle.Top,
+                    Height = 35,
+                    FlatStyle = FlatStyle.Flat,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding = new Padding(10, 0, 0, 0),
+                    Margin = new Padding(0, 3, 0, 3),
+                    BackColor = defaultButtonBackColor,
+                    ForeColor = Color.Black,
+                    Cursor = Cursors.Hand
+                };
+                btnCategory.FlatAppearance.BorderSize = 0;
+                btnCategory.Click += btnBudgetCategory_Click;
+                this.tlpCategoryButtons.Controls.Add(btnCategory, 0, currentCategoryRow++); // Use class field
+            }
+            pnlBudgetCategorySidebar.Controls.Add(this.tlpCategoryButtons); // Use class field
+            this.pnlBudgetCategorySidebar = pnlBudgetCategorySidebar;
+
+            pnlBudgetMainContent = scBudgetLayout.Panel2;
+            pnlBudgetMainContent.Name = "pnlBudgetMainContent";
+            pnlBudgetMainContent.AutoScroll = true;
+            pnlBudgetMainContent.Padding = new Padding(15);
+            pnlBudgetMainContent.BackColor = Color.White;
+
+            btnAddNewPrimaryLine = new Button
+            {
+                Name = "btnAddNewPrimaryLine",
+                Text = "Add New Budget Line",
+                Dock = DockStyle.Top,
+                Height = 30,
+                Enabled = false,
+                Margin = new Padding(0, 0, 0, 5)
+            };
+            btnAddNewPrimaryLine.Click += btnAddNewPrimaryLine_Click;
+
+            dgvPrimaryBudgetLines = new DataGridView
+            {
+                Name = "dgvPrimaryBudgetLines",
+                Dock = DockStyle.Top,
+                Height = 280,
+                AutoGenerateColumns = false,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
+                EnableHeadersVisualStyles = false,
+                BackgroundColor = Color.FromArgb(224, 224, 224),
+                GridColor = Color.FromArgb(200, 200, 200),
+                RowHeadersVisible = false,
+                ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single,
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(0, 122, 204),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.75F, FontStyle.Bold),
+                    Padding = new Padding(4)
+                },
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Font = new Font("Segoe UI", 9F),
+                    SelectionBackColor = Color.FromArgb(150, 180, 210),
+                    SelectionForeColor = Color.Black,
+                    Padding = new Padding(4)
+                },
+                AllowUserToResizeRows = false,
+                BorderStyle = BorderStyle.Fixed3D,
+                EditMode = DataGridViewEditMode.EditOnEnter
+            };
+            dgvPrimaryBudgetLines.CellContentClick += dgvPrimaryBudgetLines_CellContentClick;
+
+            var colExpand = new DataGridViewButtonColumn { Name = "ExpandDetails", HeaderText = "", Width = 30, Frozen = true, Text = "+", UseColumnTextForButtonValue = true, MinimumWidth = 30, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, FlatStyle = FlatStyle.System };
+            var colCode = new DataGridViewTextBoxColumn { Name = "Code", HeaderText = "Code", DataPropertyName = "Code", ReadOnly = true, Width = 70, MinimumWidth = 70, AutoSizeMode = DataGridViewAutoSizeColumnMode.None };
+            var colDesc = new DataGridViewTextBoxColumn { Name = "Description", HeaderText = "Budget Line Description", DataPropertyName = "Description", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill, FillWeight = 30, MinimumWidth = 200 };
+            var colUnit = new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "Unit", DataPropertyName = "Unit", Width = 80, MinimumWidth = 60, AutoSizeMode = DataGridViewAutoSizeColumnMode.None };
+            var colQty = new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "Qty", DataPropertyName = "Quantity", Width = 70, MinimumWidth = 50, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight } };
+            var colUnitCost = new DataGridViewTextBoxColumn { Name = "UnitCost", HeaderText = "Unit Cost", DataPropertyName = "UnitCost", Width = 90, MinimumWidth = 70, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, DefaultCellStyle = new DataGridViewCellStyle { Format = "C2", FormatProvider = CultureInfo.InvariantCulture, Alignment = DataGridViewContentAlignment.MiddleRight } };
+            var colDuration = new DataGridViewTextBoxColumn { Name = "Duration", HeaderText = "Duration", DataPropertyName = "Duration", Width = 70, MinimumWidth = 60, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight } };
+            var colCBPF = new DataGridViewTextBoxColumn { Name = "PercentageChargedToCBPF", HeaderText = "% CBPF", DataPropertyName = "PercentageChargedToCBPF", Width = 70, MinimumWidth = 60, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, DefaultCellStyle = new DataGridViewCellStyle { Format = "P0", Alignment = DataGridViewContentAlignment.MiddleRight } };
+            var colTotalCost = new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "Total Cost", DataPropertyName = "TotalCost", ReadOnly = true, Width = 100, MinimumWidth = 80, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, DefaultCellStyle = new DataGridViewCellStyle { Format = "C2", FormatProvider = CultureInfo.InvariantCulture, Alignment = DataGridViewContentAlignment.MiddleRight, BackColor = Color.FromArgb(230, 230, 230) } };
+            var colDelete = new DataGridViewButtonColumn { Name = "DeleteLine", HeaderText = "Action", Width = 70, Text = "Delete", UseColumnTextForButtonValue = true, MinimumWidth = 70, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, FlatStyle = FlatStyle.Popup };
+            dgvPrimaryBudgetLines.Columns.AddRange(colExpand, colCode, colDesc, colUnit, colQty, colUnitCost, colDuration, colCBPF, colTotalCost, colDelete);
+
+            lblItemizedDetailsHeader = new Label
+            {
+                Name = "lblItemizedDetailsHeader",
+                Text = "Itemized Details for Budget Line: [CODE] - [DESCRIPTION]",
+                Dock = DockStyle.Top,
+                Font = new Font(this.Font.FontFamily, 10F, FontStyle.Bold),
+                Padding = new Padding(0, 10, 0, 5),
+                Visible = false
+            };
+
+            btnAddNewItemizedDetail = new Button
+            {
+                Name = "btnAddNewItemizedDetail",
+                Text = "Add Detail Item",
+                Dock = DockStyle.Top,
+                Width = 150,
+                Visible = false,
+                Margin = new Padding(0, 0, 0, 5),
+                Height = 30,
+            };
+            btnAddNewItemizedDetail.Click += btnAddNewItemizedDetail_Click;
+
+            dgvItemizedDetails = new DataGridView
+            {
+                Name = "dgvItemizedDetails",
+                Dock = DockStyle.Fill,
+                AutoGenerateColumns = false,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = true,
+                Visible = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
+                EnableHeadersVisualStyles = false,
+                BackgroundColor = Color.FromArgb(235, 235, 235),
+                GridColor = Color.FromArgb(210, 210, 210),
+                RowHeadersVisible = false,
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(100, 100, 100),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                    Padding = new Padding(3)
+                },
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Font = new Font("Segoe UI", 8.5F),
+                    SelectionBackColor = Color.FromArgb(180, 200, 220),
+                    SelectionForeColor = Color.Black,
+                    Padding = new Padding(3)
+                },
+                AllowUserToResizeRows = false,
+                BorderStyle = BorderStyle.Fixed3D,
+                EditMode = DataGridViewEditMode.EditOnEnter
+            };
+
+            var colItemDescDGV = new DataGridViewTextBoxColumn { Name = "ItemDescription", HeaderText = "Item Description", DataPropertyName = "Description", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill, FillWeight = 60, MinimumWidth = 200, ReadOnly = false };
+            var colItemQtyDGV = new DataGridViewTextBoxColumn { Name = "ItemQuantity", HeaderText = "Quantity", DataPropertyName = "Quantity", Width = 100, MinimumWidth = 70, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight }, ReadOnly = false };
+            var colItemUnitPriceDGV = new DataGridViewTextBoxColumn { Name = "ItemUnitPrice", HeaderText = "Unit Price", DataPropertyName = "UnitPrice", Width = 120, MinimumWidth = 90, DefaultCellStyle = new DataGridViewCellStyle { Format = "C2", FormatProvider = CultureInfo.InvariantCulture, Alignment = DataGridViewContentAlignment.MiddleRight }, ReadOnly = false };
+            var colItemTotalDGV = new DataGridViewTextBoxColumn { Name = "ItemTotalCost", HeaderText = "Total Cost", DataPropertyName = "TotalCost", ReadOnly = true, Width = 120, MinimumWidth = 90, DefaultCellStyle = new DataGridViewCellStyle { Format = "C2", FormatProvider = CultureInfo.InvariantCulture, Alignment = DataGridViewContentAlignment.MiddleRight, BackColor = Color.FromArgb(240, 240, 240) } };
+            var colDeleteItemDGV = new DataGridViewButtonColumn { Name = "DeleteItemDetail", HeaderText = "Action", Width = 80, Text = "Delete", UseColumnTextForButtonValue = true, MinimumWidth = 80, FlatStyle = FlatStyle.Popup };
+            dgvItemizedDetails.Columns.AddRange(colItemDescDGV, colItemQtyDGV, colItemUnitPriceDGV, colItemTotalDGV, colDeleteItemDGV);
+            dgvItemizedDetails.CellContentClick += dgvItemizedDetails_CellContentClick; // Ensure this line is active
+            dgvItemizedDetails.CellValueChanged += dgvItemizedDetails_CellValueChanged;
+            dgvItemizedDetails.DataError += dgvItemizedDetails_DataError;
+
+            // Removed erroneous nested dgvPrimaryBudgetLines_CellContentClick method here
+
+            pnlBudgetMainContent.Controls.Add(btnAddNewPrimaryLine);
+            pnlBudgetMainContent.Controls.Add(dgvPrimaryBudgetLines);
+            pnlBudgetMainContent.Controls.Add(lblItemizedDetailsHeader);
+            pnlBudgetMainContent.Controls.Add(btnAddNewItemizedDetail);
+            pnlBudgetMainContent.Controls.Add(dgvItemizedDetails);
+
+            flpBudgetCategories.Controls.Add(scBudgetLayout);
             flpBudgetCategories.ResumeLayout(true);
+        }
+
+        // This is the correct btnAddNewPrimaryLine_Click, ensure it's not duplicated or removed.
+        private void btnAddNewPrimaryLine_Click(object sender, EventArgs e)
+        {
+            if (_currentProject.DetailedBudgetLines == null)
+            {
+                _currentProject.DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
+            }
+
+            var newLine = new DetailedBudgetLine
+            {
+                ProjectId = _currentProject.ProjectID,
+                Category = _selectedBudgetCateory, // Ensure _selectedBudgetCateory is set
+                // Initialize other properties as needed, e.g., Code might be set in btnBudgetCategory_Click
+            };
+            _currentProject.DetailedBudgetLines.Add(newLine);
+
+            // Refresh the DGV by re-clicking the category button
+            if (this.tlpCategoryButtons != null)
+            {
+                foreach (Control c in this.tlpCategoryButtons.Controls)
+                {
+                    if (c is Button btn && btn.Tag is BudgetCategoriesEnum tag && tag == _selectedBudgetCateory)
+                    {
+                        btn.PerformClick();
+                        break;
+                    }
+                }
+            }
+        }
+
+
+        private void btnBudgetCategory_Click(object sender, EventArgs e)
+        {
+            Button clickedButton = sender as Button;
+            if (clickedButton == null || !(clickedButton.Tag is BudgetCategoriesEnum))
+            {
+                return;
+            }
+
+            _selectedBudgetCateory = (BudgetCategoriesEnum)clickedButton.Tag;
+
+            dgvPrimaryBudgetLines.DataSource = null;
+
+            lblItemizedDetailsHeader.Visible = false;
+            btnAddNewItemizedDetail.Visible = false;
+            if (dgvItemizedDetails.DataSource != null) dgvItemizedDetails.DataSource = null;
+            if (dgvItemizedDetails.Rows.Count > 0) dgvItemizedDetails.Rows.Clear(); // Clear rows explicitly
+            dgvItemizedDetails.Visible = false;
+
+            _currentlyExpandedPrimaryLine = null;
+            _currentlyExpandedRowIndex = -1;
+
+            if (_currentProject.DetailedBudgetLines == null)
+            {
+                _currentProject.DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
+            }
+
+            var linesForCategory = _currentProject.DetailedBudgetLines
+                                        .Where(bl => bl.Category == _selectedBudgetCateory)
+                                        .ToList();
+
+            string categoryPrefix = GetCategoryDisplayName(_selectedBudgetCateory).Split('.')[0];
+            for (int i = 0; i < linesForCategory.Count; i++)
+            {
+                linesForCategory[i].Code = $"{categoryPrefix}.{i + 1}";
+            }
+
+            dgvPrimaryBudgetLines.DataSource = linesForCategory;
+
+            if (btnAddNewPrimaryLine != null)
+            {
+                btnAddNewPrimaryLine.Enabled = true;
+                btnAddNewPrimaryLine.Text = $"Add New Line to {categoryPrefix}";
+            }
+
+            if (this.pnlBudgetCategorySidebar != null)
+            {
+                TableLayoutPanel tlpButtons = this.pnlBudgetCategorySidebar.Controls.OfType<TableLayoutPanel>().FirstOrDefault();
+                if (tlpButtons != null)
+                {
+                    foreach (Button btn_loop in tlpButtons.Controls.OfType<Button>())
+                    {
+                        btn_loop.BackColor = defaultButtonBackColor; // Corrected: btn_loop instead of btn
+                        btn_loop.ForeColor = Color.Black;          // Corrected: btn_loop instead of btn
+                    }
+                }
+            }
+            clickedButton.BackColor = selectedButtonBackColor;
+            clickedButton.ForeColor = Color.White;
+        }
+
+        // THIS IS THE METHOD TO MODIFY FOR DELETE LOGIC
+        private void dgvPrimaryBudgetLines_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return; // Ignore header clicks or invalid index
+
+            if (dgvPrimaryBudgetLines.Columns[e.ColumnIndex].Name == "ExpandDetails")
+            {
+                DetailedBudgetLine selectedLine = dgvPrimaryBudgetLines.Rows[e.RowIndex].DataBoundItem as DetailedBudgetLine;
+                if (selectedLine == null) return;
+
+                // If a different row was previously expanded, reset its button
+                if (_currentlyExpandedRowIndex != -1 && _currentlyExpandedRowIndex != e.RowIndex && _currentlyExpandedRowIndex < dgvPrimaryBudgetLines.Rows.Count)
+                {
+                    if (dgvPrimaryBudgetLines.Rows[_currentlyExpandedRowIndex].Cells["ExpandDetails"] is DataGridViewButtonCell oldCell)
+                    {
+                        oldCell.Value = "+";
+                    }
+                }
+
+                if (selectedLine == _currentlyExpandedPrimaryLine && dgvItemizedDetails.Visible)
+                {
+                    // Collapse current row
+                    if (dgvPrimaryBudgetLines.Rows[e.RowIndex].Cells["ExpandDetails"] is DataGridViewButtonCell currentCell)
+                    {
+                        currentCell.Value = "+";
+                    }
+                    _currentlyExpandedPrimaryLine = null;
+                    _currentlyExpandedRowIndex = -1;
+
+                    lblItemizedDetailsHeader.Visible = false;
+                    btnAddNewItemizedDetail.Visible = false;
+                    dgvItemizedDetails.DataSource = null;
+                    if (dgvItemizedDetails.Rows.Count > 0) dgvItemizedDetails.Rows.Clear();
+                    dgvItemizedDetails.Visible = false;
+                }
+                else
+                {
+                    // Expand current row
+                    if (dgvPrimaryBudgetLines.Rows[e.RowIndex].Cells["ExpandDetails"] is DataGridViewButtonCell currentCell)
+                    {
+                        currentCell.Value = "-";
+                    }
+                    _currentlyExpandedPrimaryLine = selectedLine;
+                    _currentlyExpandedRowIndex = e.RowIndex;
+
+                    lblItemizedDetailsHeader.Text = $"Itemized Details for: {selectedLine.Code} - {selectedLine.Description}";
+
+                    selectedLine.ItemizedDetails = selectedLine.ItemizedDetails ?? new BindingList<ItemizedBudgetDetail>();
+                    dgvItemizedDetails.DataSource = null;
+                    dgvItemizedDetails.DataSource = selectedLine.ItemizedDetails;
+
+                    lblItemizedDetailsHeader.Visible = true;
+                    btnAddNewItemizedDetail.Visible = true;
+                    btnAddNewItemizedDetail.Enabled = true;
+                    dgvItemizedDetails.Visible = true;
+                }
+            }
+            // ADD DELETELINE LOGIC HERE
+            else if (dgvPrimaryBudgetLines.Columns[e.ColumnIndex].Name == "DeleteLine")
+            {
+                DetailedBudgetLine lineToDelete = dgvPrimaryBudgetLines.Rows[e.RowIndex].DataBoundItem as DetailedBudgetLine;
+                if (lineToDelete == null) return;
+
+                DialogResult confirmation = MessageBox.Show($"Are you sure you want to delete the budget line: '{lineToDelete.Description}' (Code: {lineToDelete.Code})? This will also delete all its itemized details.", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (confirmation == DialogResult.No) return;
+
+                bool removed = _currentProject.DetailedBudgetLines.Remove(lineToDelete);
+
+                if (removed && lineToDelete == _currentlyExpandedPrimaryLine)
+                {
+                    lblItemizedDetailsHeader.Visible = false;
+                    btnAddNewItemizedDetail.Visible = false;
+                    dgvItemizedDetails.DataSource = null;
+                    if (dgvItemizedDetails.Rows.Count > 0) dgvItemizedDetails.Rows.Clear();
+                    dgvItemizedDetails.Visible = false;
+                    _currentlyExpandedPrimaryLine = null;
+                    _currentlyExpandedRowIndex = -1;
+                }
+
+                if (removed)
+                {
+                    if (this.tlpCategoryButtons != null)
+                    {
+                        foreach (Control c in this.tlpCategoryButtons.Controls)
+                        {
+                            if (c is Button btn && btn.Tag is BudgetCategoriesEnum tag && tag == _selectedBudgetCateory)
+                            {
+                                btn.PerformClick();
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Error: Could not refresh budget lines automatically. Please re-select the category.", "Refresh Error");
+                    }
+                }
+            }
         }
 
         private void RenderBudgetLinesForCategory(BudgetCategoriesEnum category, TableLayoutPanel uiTable)
@@ -646,5 +1030,146 @@ namespace HumanitarianProjectManagement.Forms
             }
         }
         private void ProjectDatesChanged_RefreshActivityPlan(object sender, EventArgs e) { InitializeActivityPlanTab(); }
+
+        // The duplicated dgvPrimaryBudgetLines_CellContentClick that was here should be gone if the above SEARCH/REPLACE worked.
+        // The btnAddNewPrimaryLine_Click was also part of the cleanup in the first diff block.
+        // The btnAddNewItemizedDetail_Click is below and should remain.
+
+        private void dgvItemizedDetails_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            if (dgvItemizedDetails.Columns[e.ColumnIndex].Name == "DeleteItemDetail")
+            {
+                ItemizedBudgetDetail selectedDetail = dgvItemizedDetails.Rows[e.RowIndex].DataBoundItem as ItemizedBudgetDetail;
+                if (selectedDetail == null) return;
+
+                if (_currentlyExpandedPrimaryLine == null || _currentlyExpandedPrimaryLine.ItemizedDetails == null)
+                {
+                    MessageBox.Show("Error: No primary budget line context for deleting this item.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                DialogResult confirmation = MessageBox.Show($"Are you sure you want to delete item: '{selectedDetail.Description}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (confirmation == DialogResult.No) return;
+
+                bool removed = _currentlyExpandedPrimaryLine.ItemizedDetails.Remove(selectedDetail);
+
+                if (removed)
+                {
+                    UpdatePrimaryLineTotalCost(_currentlyExpandedPrimaryLine); // Call to update parent
+                }
+            }
+        }
+
+        private void RefreshPrimaryBudgetLineDisplay(DetailedBudgetLine lineToRefresh)
+        {
+            if (dgvPrimaryBudgetLines.DataSource == null || lineToRefresh == null) return;
+
+            // Find the row index for the lineToRefresh object.
+            for (int i = 0; i < dgvPrimaryBudgetLines.Rows.Count; i++)
+            {
+                if (dgvPrimaryBudgetLines.Rows[i].DataBoundItem is DetailedBudgetLine rowLine && rowLine.DetailedBudgetLineID == lineToRefresh.DetailedBudgetLineID)
+                {
+                    // Invalidate the row to trigger a repaint which should pick up the new TotalCost.
+                    dgvPrimaryBudgetLines.InvalidateRow(i);
+                    break;
+                }
+            }
+        }
+
+        private void UpdatePrimaryLineTotalCost(DetailedBudgetLine primaryLine)
+        {
+            if (primaryLine == null) return;
+
+            if (primaryLine.ItemizedDetails != null && primaryLine.ItemizedDetails.Any())
+            {
+                primaryLine.TotalCost = primaryLine.ItemizedDetails.Sum(d => d.TotalCost);
+            }
+            else
+            {
+                // Ensure PercentageChargedToCBPF is handled correctly as a percentage (e.g., 100 for 100%)
+                decimal percentage = primaryLine.PercentageChargedToCBPF / 100M;
+                primaryLine.TotalCost = primaryLine.Quantity * primaryLine.UnitCost * primaryLine.Duration * percentage;
+            }
+
+            // Refresh the specific row in dgvPrimaryBudgetLines
+            RefreshPrimaryBudgetLineDisplay(primaryLine);
+        }
+
+        private void dgvItemizedDetails_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return; // Ignore header/invalid cells
+            DataGridView dgv = sender as DataGridView;
+            if (dgv == null) return;
+
+            string columnName = dgv.Columns[e.ColumnIndex].Name;
+
+            if (columnName == "ItemQuantity" || columnName == "ItemUnitPrice")
+            {
+                ItemizedBudgetDetail currentItem = dgv.Rows[e.RowIndex].DataBoundItem as ItemizedBudgetDetail;
+                if (currentItem != null)
+                {
+                    // Assuming the bound object (currentItem) is updated by the time CellValueChanged fires.
+                    // If properties were not updated directly (e.g. if they were strings needing conversion),
+                    // you would parse them here:
+                    // try
+                    // {
+                    //    var quantityValue = dgv.Rows[e.RowIndex].Cells["ItemQuantity"].Value;
+                    //    var unitPriceValue = dgv.Rows[e.RowIndex].Cells["ItemUnitPrice"].Value;
+                    //
+                    //    currentItem.Quantity = Convert.ToDecimal(quantityValue);
+                    //    currentItem.UnitPrice = Convert.ToDecimal(unitPriceValue);
+                    // }
+                    // catch (FormatException ex)
+                    // {
+                    //    MessageBox.Show($"Invalid number format: {ex.Message}", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    //    // Optionally revert the cell value or handle error appropriately
+                    //    return; 
+                    // }
+
+                    currentItem.UpdateTotalCost(); // This calculates Quantity * UnitPrice
+
+                    // The DataGridView should auto-refresh the "ItemTotalCost" cell for this row due to BindingList.
+                    // If not, uncomment:
+                    // dgv.InvalidateCell(dgv.Columns["ItemTotalCost"].Index, e.RowIndex);
+
+                    // Trigger full recalculation and update of parent DetailedBudgetLine.
+                    if (_currentlyExpandedPrimaryLine != null)
+                    {
+                        UpdatePrimaryLineTotalCost(_currentlyExpandedPrimaryLine);
+                    }
+                }
+            }
+        }
+
+        private void dgvItemizedDetails_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            // Log the error, show a user-friendly message, or handle as appropriate.
+            // For example, prevent the exception from crashing the app:
+            MessageBox.Show($"Error in data input for column {dgvItemizedDetails.Columns[e.ColumnIndex].HeaderText}: {e.Exception.Message}", "Data Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            e.ThrowException = false; // Prevents the DGV from throwing the exception.
+            e.Cancel = false; // Allows the user to correct the value if edit is not committed. Or true to revert.
+        }
+
+        private void btnAddNewItemizedDetail_Click(object sender, EventArgs e)
+        {
+            if (_currentlyExpandedPrimaryLine == null)
+            {
+                MessageBox.Show("Please expand a primary budget line first to add details.", "No Primary Line Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            _currentlyExpandedPrimaryLine.ItemizedDetails = _currentlyExpandedPrimaryLine.ItemizedDetails ?? new BindingList<ItemizedBudgetDetail>();
+
+            ItemizedBudgetDetail newItem = new ItemizedBudgetDetail
+            {
+                ParentBudgetLineID = _currentlyExpandedPrimaryLine.DetailedBudgetLineID
+            };
+
+            _currentlyExpandedPrimaryLine.ItemizedDetails.Add(newItem);
+            UpdatePrimaryLineTotalCost(_currentlyExpandedPrimaryLine);
+            // BindingList should auto-update dgvItemizedDetails
+        }
     }
 }

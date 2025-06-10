@@ -4,24 +4,25 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
-using System.Linq; // For potential use with collections
+using System.Linq;
+using System.ComponentModel; // For BindingList
 
 namespace HumanitarianProjectManagement.DataAccessLayer
 {
     public class ProjectService
     {
-        private readonly LogFrameService _logFrameService; // Added LogFrameService field
+        private readonly LogFrameService _logFrameService;
 
-        public ProjectService() // Constructor
+        public ProjectService()
         {
-            _logFrameService = new LogFrameService(); // Initialize LogFrameService
+            _logFrameService = new LogFrameService();
         }
 
         #region DetailedBudgetLine CRUD
         public async Task<List<DetailedBudgetLine>> GetDetailedBudgetLinesByProjectIdAsync(int projectId)
         {
             List<DetailedBudgetLine> budgetLines = new List<DetailedBudgetLine>();
-            string query = "SELECT DetailedBudgetLineID, ProjectID, BudgetCategory, Description, Unit, Quantity, UnitCost, Duration, PercentChargedToCBPF, TotalCost FROM DetailedBudgetLines WHERE ProjectID = @ProjectID";
+            string query = "SELECT DetailedBudgetLineID, ProjectID, BudgetCategory, Code, Description, Unit, Quantity, UnitCost, Duration, PercentChargedToCBPF, TotalCost FROM DetailedBudgetLines WHERE ProjectID = @ProjectID";
 
             try
             {
@@ -35,133 +36,170 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         {
                             while (await reader.ReadAsync())
                             {
-                                budgetLines.Add(new DetailedBudgetLine
+                                DetailedBudgetLine budgetLine = new DetailedBudgetLine
                                 {
-                                    DetailedBudgetLineID = (int)reader["DetailedBudgetLineID"],
-                                    ProjectId = (int)reader["ProjectID"], // Model uses ProjectId
-                                    Category = (BudgetCategoriesEnum)Enum.Parse(typeof(BudgetCategoriesEnum), reader["BudgetCategory"].ToString()), // Use new enum
+                                    DetailedBudgetLineID = reader["DetailedBudgetLineID"] != DBNull.Value ? (Guid)reader["DetailedBudgetLineID"] : Guid.Empty,
+                                    ProjectId = (int)reader["ProjectID"],
+                                    Category = (BudgetCategoriesEnum)Enum.Parse(typeof(BudgetCategoriesEnum), reader["BudgetCategory"].ToString()),
+                                    Code = reader["Code"] != DBNull.Value ? reader["Code"].ToString() : string.Empty,
                                     Description = reader["Description"].ToString(),
                                     Unit = reader["Unit"] != DBNull.Value ? reader["Unit"].ToString() : null,
-                                    Quantity = Convert.ToDecimal(reader["Quantity"]), // DB stores as numeric/decimal
+                                    Quantity = Convert.ToDecimal(reader["Quantity"]),
                                     UnitCost = (decimal)reader["UnitCost"],
-                                    Duration = Convert.ToDecimal(reader["Duration"]), // DB stores as numeric/decimal
+                                    Duration = Convert.ToDecimal(reader["Duration"]),
                                     PercentageChargedToCBPF = (decimal)reader["PercentChargedToCBPF"],
                                     TotalCost = (decimal)reader["TotalCost"]
-                                });
+                                };
+                                // Populate ItemizedDetails
+                                if (budgetLine.DetailedBudgetLineID != Guid.Empty)
+                                {
+                                    List<ItemizedBudgetDetail> itemizedDetails = await GetItemizedBudgetDetailsByParentIdAsync(budgetLine.DetailedBudgetLineID);
+                                    budgetLine.ItemizedDetails = new System.ComponentModel.BindingList<ItemizedBudgetDetail>(itemizedDetails);
+                                }
+                                budgetLines.Add(budgetLine);
                             }
                         }
                     }
                 }
             }
-            catch (SqlException ex)
-            {
-                Console.WriteLine($"SQL Error in GetDetailedBudgetLinesByProjectIdAsync: {ex.Message}");
-            }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error in GetDetailedBudgetLinesByProjectIdAsync: {ex.Message}");
+                Console.WriteLine($"Error in GetDetailedBudgetLinesByProjectIdAsync: {ex.Message}");
             }
             return budgetLines;
         }
 
-        public async Task<int> AddDetailedBudgetLineAsync(DetailedBudgetLine budgetLine)
+        public async Task<bool> AddDetailedBudgetLineWithDetailsAsync(DetailedBudgetLine budgetLine)
         {
             if (budgetLine == null) throw new ArgumentNullException(nameof(budgetLine));
+            if (budgetLine.DetailedBudgetLineID == Guid.Empty) budgetLine.DetailedBudgetLineID = Guid.NewGuid();
 
-            // Ensure ProjectId is used from the model for consistency, DB column is ProjectID
             string query = @"INSERT INTO DetailedBudgetLines
-                                (ProjectID, BudgetCategory, Description, Unit, Quantity, UnitCost, Duration, PercentChargedToCBPF, TotalCost)
+                                (DetailedBudgetLineID, ProjectID, BudgetCategory, Code, Description, Unit, Quantity, UnitCost, Duration, PercentChargedToCBPF, TotalCost)
                              VALUES
-                                (@ProjectID, @BudgetCategory, @Description, @Unit, @Quantity, @UnitCost, @Duration, @PercentChargedToCBPF, @TotalCost);
-                             SELECT CAST(SCOPE_IDENTITY() as int);";
+                                (@DetailedBudgetLineID, @ProjectID, @BudgetCategory, @Code, @Description, @Unit, @Quantity, @UnitCost, @Duration, @PercentChargedToCBPF, @TotalCost);";
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
                 {
+                    await connection.OpenAsync();
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId); // Model uses ProjectId
-                        command.Parameters.AddWithValue("@BudgetCategory", budgetLine.Category.ToString()); // Model uses Category (new enum)
+                        command.Parameters.AddWithValue("@DetailedBudgetLineID", budgetLine.DetailedBudgetLineID);
+                        command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId);
+                        command.Parameters.AddWithValue("@BudgetCategory", budgetLine.Category.ToString());
+                        command.Parameters.AddWithValue("@Code", (object)budgetLine.Code ?? DBNull.Value);
                         command.Parameters.AddWithValue("@Description", budgetLine.Description);
                         command.Parameters.AddWithValue("@Unit", (object)budgetLine.Unit ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@Quantity", budgetLine.Quantity); // Model uses decimal
+                        command.Parameters.AddWithValue("@Quantity", budgetLine.Quantity);
                         command.Parameters.AddWithValue("@UnitCost", budgetLine.UnitCost);
-                        command.Parameters.AddWithValue("@Duration", budgetLine.Duration); // Model uses decimal
+                        command.Parameters.AddWithValue("@Duration", budgetLine.Duration);
                         command.Parameters.AddWithValue("@PercentChargedToCBPF", budgetLine.PercentageChargedToCBPF);
                         command.Parameters.AddWithValue("@TotalCost", budgetLine.TotalCost);
 
-                        await connection.OpenAsync();
-                        object newId = await command.ExecuteScalarAsync();
-                        if (newId != null && newId != DBNull.Value)
+                        int rowsAffected = await command.ExecuteNonQueryAsync();
+                        if (rowsAffected > 0)
                         {
-                            return Convert.ToInt32(newId);
+                            if (budgetLine.ItemizedDetails != null)
+                            {
+                                foreach (var itemDetail in budgetLine.ItemizedDetails)
+                                {
+                                    itemDetail.ParentBudgetLineID = budgetLine.DetailedBudgetLineID;
+                                    await AddItemizedBudgetDetailAsync(itemDetail);
+                                }
+                            }
+                            return true;
                         }
                     }
                 }
             }
-            catch (SqlException ex)
-            {
-                Console.WriteLine($"SQL Error in AddDetailedBudgetLineAsync: {ex.Message}");
-            }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error in AddDetailedBudgetLineAsync: {ex.Message}");
+                Console.WriteLine($"Error in AddDetailedBudgetLineWithDetailsAsync: {ex.Message}");
             }
-            return 0;
+            return false;
         }
 
-        public async Task<bool> UpdateDetailedBudgetLineAsync(DetailedBudgetLine budgetLine)
+        public async Task<bool> UpdateDetailedBudgetLineWithDetailsAsync(DetailedBudgetLine budgetLine)
         {
             if (budgetLine == null) throw new ArgumentNullException(nameof(budgetLine));
+            if (budgetLine.DetailedBudgetLineID == Guid.Empty)
+            {
+                Console.WriteLine("Error in UpdateDetailedBudgetLineWithDetailsAsync: DetailedBudgetLineID cannot be empty for an update.");
+                return false;
+            }
 
-            // Ensure ProjectId is used from the model for consistency, DB column is ProjectID
             string query = @"UPDATE DetailedBudgetLines SET
-                                ProjectID = @ProjectID,
-                                BudgetCategory = @BudgetCategory,
-                                Description = @Description,
-                                Unit = @Unit,
-                                Quantity = @Quantity,
-                                UnitCost = @UnitCost,
-                                Duration = @Duration,
-                                PercentChargedToCBPF = @PercentChargedToCBPF,
-                                TotalCost = @TotalCost
+                                ProjectID = @ProjectID, BudgetCategory = @BudgetCategory, Code = @Code, Description = @Description, Unit = @Unit, 
+                                Quantity = @Quantity, UnitCost = @UnitCost, Duration = @Duration, PercentChargedToCBPF = @PercentChargedToCBPF, TotalCost = @TotalCost
                              WHERE DetailedBudgetLineID = @DetailedBudgetLineID;";
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
                 {
+                    await connection.OpenAsync();
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId); // Model uses ProjectId
-                        command.Parameters.AddWithValue("@BudgetCategory", budgetLine.Category.ToString()); // Model uses Category (new enum)
+                        command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId);
+                        command.Parameters.AddWithValue("@BudgetCategory", budgetLine.Category.ToString());
+                        command.Parameters.AddWithValue("@Code", (object)budgetLine.Code ?? DBNull.Value);
                         command.Parameters.AddWithValue("@Description", budgetLine.Description);
                         command.Parameters.AddWithValue("@Unit", (object)budgetLine.Unit ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@Quantity", budgetLine.Quantity); // Model uses decimal
+                        command.Parameters.AddWithValue("@Quantity", budgetLine.Quantity);
                         command.Parameters.AddWithValue("@UnitCost", budgetLine.UnitCost);
-                        command.Parameters.AddWithValue("@Duration", budgetLine.Duration); // Model uses decimal
+                        command.Parameters.AddWithValue("@Duration", budgetLine.Duration);
                         command.Parameters.AddWithValue("@PercentChargedToCBPF", budgetLine.PercentageChargedToCBPF);
                         command.Parameters.AddWithValue("@TotalCost", budgetLine.TotalCost);
                         command.Parameters.AddWithValue("@DetailedBudgetLineID", budgetLine.DetailedBudgetLineID);
 
-                        await connection.OpenAsync();
                         int rowsAffected = await command.ExecuteNonQueryAsync();
-                        return rowsAffected > 0;
+                        if (rowsAffected > 0)
+                        {
+                            // Synchronize ItemizedDetails
+                            List<ItemizedBudgetDetail> dbItems = await GetItemizedBudgetDetailsByParentIdAsync(budgetLine.DetailedBudgetLineID);
+                            HashSet<Guid> incomingItemIds = new HashSet<Guid>(budgetLine.ItemizedDetails?.Select(i => i.ItemizedBudgetDetailID) ?? Enumerable.Empty<Guid>());
+
+                            foreach (var dbItem in dbItems)
+                            {
+                                if (!incomingItemIds.Contains(dbItem.ItemizedBudgetDetailID))
+                                {
+                                    await DeleteItemizedBudgetDetailAsync(dbItem.ItemizedBudgetDetailID);
+                                }
+                            }
+
+                            if (budgetLine.ItemizedDetails != null)
+                            {
+                                foreach (var itemDetail in budgetLine.ItemizedDetails)
+                                {
+                                    itemDetail.ParentBudgetLineID = budgetLine.DetailedBudgetLineID;
+                                    var existingDbItem = dbItems.FirstOrDefault(db => db.ItemizedBudgetDetailID == itemDetail.ItemizedBudgetDetailID && itemDetail.ItemizedBudgetDetailID != Guid.Empty);
+                                    if (existingDbItem != null)
+                                    {
+                                        await UpdateItemizedBudgetDetailAsync(itemDetail);
+                                    }
+                                    else if (itemDetail.ItemizedBudgetDetailID == Guid.Empty)
+                                    {
+                                        await AddItemizedBudgetDetailAsync(itemDetail);
+                                    }
+                                }
+                            }
+                            return true;
+                        }
+                        return false;
                     }
                 }
             }
-            catch (SqlException ex)
-            {
-                Console.WriteLine($"SQL Error in UpdateDetailedBudgetLineAsync: {ex.Message}");
-            }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error in UpdateDetailedBudgetLineAsync: {ex.Message}");
+                Console.WriteLine($"Error in UpdateDetailedBudgetLineWithDetailsAsync: {ex.Message}");
             }
             return false;
         }
 
-        public async Task<bool> DeleteDetailedBudgetLineAsync(int detailedBudgetLineId)
+        public async Task<bool> DeleteDetailedBudgetLineAsync(Guid detailedBudgetLineId)
         {
+            await DeleteAllItemizedDetailsByParentIdAsync(detailedBudgetLineId);
+
             string query = "DELETE FROM DetailedBudgetLines WHERE DetailedBudgetLineID = @DetailedBudgetLineID;";
             try
             {
@@ -176,15 +214,170 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     }
                 }
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"SQL Error in DeleteDetailedBudgetLineAsync: {ex.Message}");
+                Console.WriteLine($"Error in DeleteDetailedBudgetLineAsync: {ex.Message}");
+            }
+            return false;
+        }
+        #endregion
+
+        #region ItemizedBudgetDetail CRUD
+        public async Task<List<ItemizedBudgetDetail>> GetItemizedBudgetDetailsByParentIdAsync(Guid parentBudgetLineId)
+        {
+            List<ItemizedBudgetDetail> items = new List<ItemizedBudgetDetail>();
+            string query = "SELECT ItemizedBudgetDetailID, ParentBudgetLineID, Description, Quantity, UnitPrice, TotalCost FROM ItemizedBudgetDetails WHERE ParentBudgetLineID = @ParentBudgetLineID";
+            try
+            {
+                using (SqlConnection connection = DatabaseHelper.GetConnection())
+                {
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@ParentBudgetLineID", parentBudgetLineId);
+                        await connection.OpenAsync();
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                ItemizedBudgetDetail item = new ItemizedBudgetDetail
+                                {
+                                    ItemizedBudgetDetailID = (Guid)reader["ItemizedBudgetDetailID"],
+                                    ParentBudgetLineID = (Guid)reader["ParentBudgetLineID"],
+                                    Description = reader["Description"].ToString(),
+                                    Quantity = Convert.ToDecimal(reader["Quantity"]),
+                                    UnitPrice = Convert.ToDecimal(reader["UnitPrice"])
+                                    // TotalCost removed from direct assignment
+                                };
+                                item.UpdateTotalCost(); // Calculate TotalCost
+                                items.Add(item);
+                            }
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error in DeleteDetailedBudgetLineAsync: {ex.Message}");
+                Console.WriteLine($"Error in GetItemizedBudgetDetailsByParentIdAsync: {ex.Message}");
             }
-            return false;
+            return items;
+        }
+
+        public async Task<bool> AddItemizedBudgetDetailAsync(ItemizedBudgetDetail itemDetail)
+        {
+            if (itemDetail == null) throw new ArgumentNullException(nameof(itemDetail));
+            if (itemDetail.ItemizedBudgetDetailID == Guid.Empty) itemDetail.ItemizedBudgetDetailID = Guid.NewGuid();
+
+            string query = @"INSERT INTO ItemizedBudgetDetails 
+                                (ItemizedBudgetDetailID, ParentBudgetLineID, Description, Quantity, UnitPrice, TotalCost)
+                             VALUES 
+                                (@ItemizedBudgetDetailID, @ParentBudgetLineID, @Description, @Quantity, @UnitPrice, @TotalCost);";
+            try
+            {
+                using (SqlConnection connection = DatabaseHelper.GetConnection())
+                {
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@ItemizedBudgetDetailID", itemDetail.ItemizedBudgetDetailID);
+                        command.Parameters.AddWithValue("@ParentBudgetLineID", itemDetail.ParentBudgetLineID);
+                        command.Parameters.AddWithValue("@Description", itemDetail.Description);
+                        command.Parameters.AddWithValue("@Quantity", itemDetail.Quantity);
+                        command.Parameters.AddWithValue("@UnitPrice", itemDetail.UnitPrice);
+                        command.Parameters.AddWithValue("@TotalCost", itemDetail.TotalCost);
+
+                        await connection.OpenAsync();
+                        int rowsAffected = await command.ExecuteNonQueryAsync();
+                        return rowsAffected > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in AddItemizedBudgetDetailAsync: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> UpdateItemizedBudgetDetailAsync(ItemizedBudgetDetail itemDetail)
+        {
+            if (itemDetail == null) throw new ArgumentNullException(nameof(itemDetail));
+
+            string query = @"UPDATE ItemizedBudgetDetails SET
+                                ParentBudgetLineID = @ParentBudgetLineID,
+                                Description = @Description,
+                                Quantity = @Quantity,
+                                UnitPrice = @UnitPrice,
+                                TotalCost = @TotalCost
+                             WHERE ItemizedBudgetDetailID = @ItemizedBudgetDetailID;";
+            try
+            {
+                using (SqlConnection connection = DatabaseHelper.GetConnection())
+                {
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@ParentBudgetLineID", itemDetail.ParentBudgetLineID);
+                        command.Parameters.AddWithValue("@Description", itemDetail.Description);
+                        command.Parameters.AddWithValue("@Quantity", itemDetail.Quantity);
+                        command.Parameters.AddWithValue("@UnitPrice", itemDetail.UnitPrice);
+                        command.Parameters.AddWithValue("@TotalCost", itemDetail.TotalCost);
+                        command.Parameters.AddWithValue("@ItemizedBudgetDetailID", itemDetail.ItemizedBudgetDetailID);
+
+                        await connection.OpenAsync();
+                        int rowsAffected = await command.ExecuteNonQueryAsync();
+                        return rowsAffected > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UpdateItemizedBudgetDetailAsync: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> DeleteAllItemizedDetailsByParentIdAsync(Guid parentBudgetLineId)
+        {
+            string query = "DELETE FROM ItemizedBudgetDetails WHERE ParentBudgetLineID = @ParentBudgetLineID;";
+            try
+            {
+                using (SqlConnection connection = DatabaseHelper.GetConnection())
+                {
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@ParentBudgetLineID", parentBudgetLineId);
+                        await connection.OpenAsync();
+                        await command.ExecuteNonQueryAsync();
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in DeleteAllItemizedDetailsByParentIdAsync: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> DeleteItemizedBudgetDetailAsync(Guid itemizedBudgetDetailId)
+        {
+            string query = "DELETE FROM ItemizedBudgetDetails WHERE ItemizedBudgetDetailID = @ItemizedBudgetDetailID;";
+            try
+            {
+                using (SqlConnection connection = DatabaseHelper.GetConnection())
+                {
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@ItemizedBudgetDetailID", itemizedBudgetDetailId);
+                        await connection.OpenAsync();
+                        int rowsAffected = await command.ExecuteNonQueryAsync();
+                        return rowsAffected > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in DeleteItemizedBudgetDetailAsync: {ex.Message}");
+                return false;
+            }
         }
         #endregion
 
@@ -269,7 +462,6 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                     UpdatedAt = reader["UpdatedAt"] != DBNull.Value ? (DateTime?)reader["UpdatedAt"] : null
                                 };
 
-                                // Load related entities
                                 project.Outcomes = await _logFrameService.GetOutcomesByProjectIdAsync(projectId);
                                 foreach (var outcome in project.Outcomes)
                                 {
@@ -286,13 +478,9 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     }
                 }
             }
-            catch (SqlException ex)
-            {
-                Console.WriteLine($"SQL Error in GetProjectByIdAsync: {ex.Message}");
-            }
             catch (Exception ex)
             {
-                 Console.WriteLine($"General Error in GetProjectByIdAsync: {ex.Message}");
+                Console.WriteLine($"Error in GetProjectByIdAsync: {ex.Message}");
             }
             return project;
         }
@@ -314,10 +502,9 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         {
                             while (await reader.ReadAsync())
                             {
-                                // For lists, typically only main project info is loaded. Full details via GetProjectByIdAsync.
                                 projects.Add(new Project
                                 {
-                                     ProjectID = (int)reader["ProjectID"],
+                                    ProjectID = (int)reader["ProjectID"],
                                     ProjectName = reader["ProjectName"].ToString(),
                                     ProjectCode = reader["ProjectCode"] != DBNull.Value ? reader["ProjectCode"].ToString() : null,
                                     SectionID = reader["SectionID"] != DBNull.Value ? (int?)reader["SectionID"] : null,
@@ -337,17 +524,15 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     }
                 }
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"SQL Error in GetProjectsBySectionIdAsync: {ex.Message}");
+                Console.WriteLine($"Error in GetProjectsBySectionIdAsync: {ex.Message}");
             }
             return projects;
         }
 
         public async Task<bool> SaveProjectAsync(Project project)
         {
-            // Acknowledge limitation: This does not use a single transaction for all operations.
-            // If any step fails, previous steps are not rolled back.
             int rowsAffected = 0;
             bool mainProjectSaved = false;
 
@@ -355,11 +540,10 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
                 {
-                    await connection.OpenAsync(); // Open connection once if possible, or manage per command.
-                                                // For simplicity here, each service method call will manage its own connection.
+                    await connection.OpenAsync();
 
                     SqlCommand command;
-                    if (project.ProjectID == 0) // New project
+                    if (project.ProjectID == 0)
                     {
                         string insertQuery = @"
                             INSERT INTO Projects (ProjectName, ProjectCode, SectionID, StartDate, EndDate, Location, OverallObjective, ManagerUserID, Status, TotalBudget, Donor, CreatedAt, UpdatedAt)
@@ -368,7 +552,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         command = new SqlCommand(insertQuery, connection);
                         command.Parameters.AddWithValue("@CreatedAt", project.CreatedAt == DateTime.MinValue ? DateTime.UtcNow : project.CreatedAt);
                     }
-                    else // Existing project
+                    else
                     {
                         string updateQuery = @"
                             UPDATE Projects SET 
@@ -393,9 +577,6 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     command.Parameters.AddWithValue("@Donor", (object)project.Donor ?? DBNull.Value);
                     command.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow);
 
-                    // Re-open connection if it was closed by previous operations or manage it outside
-                    if (connection.State != ConnectionState.Open) await connection.OpenAsync();
-
                     if (project.ProjectID == 0)
                     {
                         object newId = await command.ExecuteScalarAsync();
@@ -410,21 +591,14 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         rowsAffected = await command.ExecuteNonQueryAsync();
                         mainProjectSaved = rowsAffected > 0;
                     }
-                } // Connection is disposed here.
+                }
 
-                if (!mainProjectSaved && project.ProjectID == 0) // If new project failed to save, ProjectID is still 0
+                if (!mainProjectSaved)
                 {
-                    Console.WriteLine("Failed to save the main project details. Aborting save of child entities.");
+                    Console.WriteLine("Failed to save/update the main project details. Aborting save of child entities.");
                     return false;
                 }
-                if (!mainProjectSaved && project.ProjectID !=0) // If existing project not found or failed to update
-                {
-                     Console.WriteLine($"Failed to update main project details for ProjectID: {project.ProjectID}. Child entities will not be processed.");
-                     return false; // Or handle as a partial success if desired.
-                }
 
-
-                // Save Outcomes and their children
                 if (project.Outcomes != null)
                 {
                     foreach (var outcome in project.Outcomes)
@@ -457,7 +631,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                         foreach (var indicator in output.ProjectIndicators)
                                         {
                                             indicator.OutputID = output.OutputID;
-                                            indicator.ProjectID = project.ProjectID; // Ensure ProjectID is set
+                                            indicator.ProjectID = project.ProjectID;
                                             if (indicator.ProjectIndicatorID == 0) await _logFrameService.AddProjectIndicatorToOutputAsync(indicator);
                                             else await _logFrameService.UpdateProjectIndicatorAsync(indicator);
                                         }
@@ -468,20 +642,16 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     }
                 }
 
-                // Save DetailedBudgetLines
                 if (project.DetailedBudgetLines != null)
                 {
-                    // Get existing budget lines from DB for comparison
-                    // Ensure ProjectID is valid before fetching
                     List<DetailedBudgetLine> existingDbLines = new List<DetailedBudgetLine>();
                     if (project.ProjectID > 0)
                     {
                         existingDbLines = await GetDetailedBudgetLinesByProjectIdAsync(project.ProjectID);
                     }
 
-                    var incomingLineIds = new HashSet<int>(project.DetailedBudgetLines.Where(bl => bl.DetailedBudgetLineID != 0).Select(bl => bl.DetailedBudgetLineID));
+                    var incomingLineIds = new HashSet<Guid>(project.DetailedBudgetLines.Where(bl => bl.DetailedBudgetLineID != Guid.Empty).Select(bl => bl.DetailedBudgetLineID));
 
-                    // Delete lines that are in DB but not in incoming project data
                     foreach (var dbLine in existingDbLines)
                     {
                         if (!incomingLineIds.Contains(dbLine.DetailedBudgetLineID))
@@ -490,29 +660,23 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         }
                     }
 
-                    // Add new lines or update existing ones
                     foreach (var budgetLine in project.DetailedBudgetLines)
                     {
-                        budgetLine.ProjectId = project.ProjectID; // Ensure ProjectId is correctly set from the parent project
-                        if (budgetLine.DetailedBudgetLineID == 0) // New line
+                        budgetLine.ProjectId = project.ProjectID;
+                        if (budgetLine.DetailedBudgetLineID == Guid.Empty)
                         {
-                            budgetLine.DetailedBudgetLineID = await AddDetailedBudgetLineAsync(budgetLine);
+                            await AddDetailedBudgetLineWithDetailsAsync(budgetLine);
                         }
-                        else // Existing line, ensure it was in the DB list before attempting update
+                        else
                         {
-                            if (existingDbLines.Any(dbl => dbl.DetailedBudgetLineID == budgetLine.DetailedBudgetLineID))
-                            {
-                                await UpdateDetailedBudgetLineAsync(budgetLine);
-                            }
-                            // Optional: else log a warning or error if an incoming line with ID > 0 was not in DB.
+                            await UpdateDetailedBudgetLineWithDetailsAsync(budgetLine);
                         }
                     }
                 }
-                else // If project.DetailedBudgetLines is null or empty, and it's an existing project
+                else
                 {
                     if (project.ProjectID > 0)
                     {
-                        // Delete all existing budget lines for this project from DB
                         var existingDbLines = await GetDetailedBudgetLinesByProjectIdAsync(project.ProjectID);
                         foreach (var dbLine in existingDbLines)
                         {
@@ -520,34 +684,25 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         }
                     }
                 }
-                return true; // Indicates main project and attempted child saves
-            }
-            catch (SqlException ex)
-            {
-                Console.WriteLine($"SQL Error in SaveProjectAsync (overall): {ex.Message}");
-                return false;
+                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error in SaveProjectAsync (overall): {ex.Message}");
+                Console.WriteLine($"Error in SaveProjectAsync (overall): {ex.Message}");
                 return false;
             }
         }
 
         public async Task<bool> DeleteProjectAsync(int projectId)
         {
-            // Acknowledge limitation: This does not use a single transaction.
-            // Order of deletion is important to avoid FK violations if cascade delete is not set up in DB.
             try
             {
-                // 1. Delete DetailedBudgetLines for the project
                 var budgetLines = await GetDetailedBudgetLinesByProjectIdAsync(projectId);
                 foreach (var line in budgetLines)
                 {
                     await DeleteDetailedBudgetLineAsync(line.DetailedBudgetLineID);
                 }
 
-                // 2. Delete LogFrame structure (Activities, Indicators, then Outputs, then Outcomes)
                 var outcomes = await _logFrameService.GetOutcomesByProjectIdAsync(projectId);
                 foreach (var outcome in outcomes)
                 {
@@ -569,11 +724,6 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     await _logFrameService.DeleteOutcomeAsync(outcome.OutcomeID);
                 }
 
-                // Delete other direct child entities of Project if they were not handled by cascade (e.g. ProjectReports, Feedbacks etc.)
-                // For brevity, these are omitted here but would follow a similar pattern.
-
-
-                // Finally, delete the project itself
                 string sql = "DELETE FROM Projects WHERE ProjectID = @ProjectID";
                 using (SqlConnection conn = DatabaseHelper.GetConnection())
                 {
@@ -586,14 +736,9 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     }
                 }
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"SQL Error in DeleteProjectAsync (overall): {ex.Message}");
-                return false;
-            }
-             catch (Exception ex)
-            {
-                Console.WriteLine($"General Error in DeleteProjectAsync (overall): {ex.Message}");
+                Console.WriteLine($"Error in DeleteProjectAsync: {ex.Message}");
                 return false;
             }
         }
