@@ -72,7 +72,7 @@ namespace HumanitarianProjectManagement.Models
         public virtual ICollection<FollowUpVisit> FollowUpVisits { get; set; }
 
         // New Navigation Properties
-        public virtual ICollection<Outcome> Outcomes { get; set; }
+        public virtual IList<Outcome> Outcomes { get; set; } // Changed from ICollection to IList
         public virtual ICollection<DetailedBudgetLine> DetailedBudgetLines { get; set; }
 
 
@@ -88,7 +88,7 @@ namespace HumanitarianProjectManagement.Models
             FollowUpVisits = new HashSet<FollowUpVisit>();
 
             // Initialize new collections
-            Outcomes = new HashSet<Outcome>();
+            Outcomes = new List<Outcome>(); // Changed from HashSet to List
             DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
 
             CreatedAt = DateTime.UtcNow;

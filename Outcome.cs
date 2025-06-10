@@ -19,11 +19,11 @@ namespace HumanitarianProjectManagement.Models
         [ForeignKey("ProjectID")]
         public virtual Project Project { get; set; }
 
-        public virtual ICollection<Output> Outputs { get; set; }
+        public virtual IList<Output> Outputs { get; set; } // Changed from ICollection to IList
 
         public Outcome()
         {
-            Outputs = new HashSet<Output>();
+            Outputs = new List<Output>(); // Changed from HashSet to List
         }
     }
 }

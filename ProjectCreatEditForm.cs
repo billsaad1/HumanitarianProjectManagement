@@ -127,8 +127,8 @@ namespace HumanitarianProjectManagement.Forms
 
             int currentRow = 0;
             addControlToTable(new Label { Text = "ACTIONS", Font = new Font(this.Font.FontFamily, 10, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Margin = new Padding(0, 10, 0, 5) }, currentRow++);
-
             Button btnAddOutcomeSidebar = CreateSidebarButton("Add Outcome", Color.FromArgb(0, 122, 204)); btnAddOutcomeSidebar.Click += btnAddOutcome_Click; addControlToTable(btnAddOutcomeSidebar, currentRow++);
+
             Button btnAddOutput = CreateSidebarButton("Add Output", Color.FromArgb(0, 122, 204)); btnAddOutput.Click += (s, e) => AddElementToLogFrame<Outcome>(null, BtnAddOutputToOutcome_Click); addControlToTable(btnAddOutput, currentRow++);
             Button btnAddIndicator = CreateSidebarButton("Add Indicator", Color.FromArgb(0, 122, 204)); btnAddIndicator.Click += (s, e) => AddElementToLogFrame<Output>(null, BtnAddIndicator_Click); addControlToTable(btnAddIndicator, currentRow++);
             Button btnAddActivity = CreateSidebarButton("Add Activity", Color.FromArgb(0, 122, 204)); btnAddActivity.Click += (s, e) => AddElementToLogFrame<Output>(null, BtnAddActivity_Click); addControlToTable(btnAddActivity, currentRow++);
