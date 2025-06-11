@@ -33,6 +33,13 @@ namespace HumanitarianProjectManagement.Forms
         private BudgetCategoriesEnum _selectedBudgetCateory; // Consider initializing if a "none" or "all" state is valid before first click
         private DetailedBudgetLine _currentlyExpandedPrimaryLine = null;
         private int _currentlyExpandedRowIndex = -1;
+
+        // New fields for SubCategory Management
+        private BudgetSubCategory _currentlySelectedSubCategory;
+        private Panel _currentSubCategoryItemsPanel; // To manage visibility of item DGV or other sub-category specific panels
+        private DetailedBudgetLine _currentlySelectedItemForDetailView; // For itemized details of a line within a subcategory
+        private BudgetTabUserControl _budgetTabControlInstance; // Instance of the new UserControl
+
         private Color defaultButtonBackColor = Color.FromArgb(225, 225, 225);
         private Color selectedButtonBackColor = Color.FromArgb(0, 122, 204); // Theme blue for selection
         private Panel pnlBudgetCategorySidebar; // To access sidebar buttons

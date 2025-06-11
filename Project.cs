@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using HumanitarianProjectManagement; // Added for BudgetSubCategory
 
 namespace HumanitarianProjectManagement.Models
 {
@@ -70,10 +71,11 @@ namespace HumanitarianProjectManagement.Models
         public virtual ICollection<StockTransaction> StockTransactions { get; set; }
         public virtual ICollection<Feedback> Feedbacks { get; set; }
         public virtual ICollection<FollowUpVisit> FollowUpVisits { get; set; }
+        public BindingList<BudgetSubCategory> BudgetSubCategories { get; set; } // Added
 
         // New Navigation Properties
         public virtual IList<Outcome> Outcomes { get; set; } // Changed from ICollection to IList
-        public virtual ICollection<DetailedBudgetLine> DetailedBudgetLines { get; set; }
+        // public virtual ICollection<DetailedBudgetLine> DetailedBudgetLines { get; set; } // Commented out
 
 
         public Project()
@@ -86,10 +88,11 @@ namespace HumanitarianProjectManagement.Models
             StockTransactions = new HashSet<StockTransaction>();
             Feedbacks = new HashSet<Feedback>();
             FollowUpVisits = new HashSet<FollowUpVisit>();
+            BudgetSubCategories = new BindingList<BudgetSubCategory>(); // Added
 
             // Initialize new collections
             Outcomes = new List<Outcome>(); // Changed from HashSet to List
-            DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
+            // DetailedBudgetLines = new HashSet<DetailedBudgetLine>(); // Commented out
 
             CreatedAt = DateTime.UtcNow;
         }
