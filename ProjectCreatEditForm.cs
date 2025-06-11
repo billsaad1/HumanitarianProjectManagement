@@ -24,17 +24,11 @@ namespace HumanitarianProjectManagement.Forms
         private int? _initialSectionId;
         private readonly LogFrameService _logFrameService;
         private Panel sidebarPanel; // For LogFrame
-        private Panel pnlBudgetMainContent; // For Budget Tab Main Content Area
-        private DataGridView dgvPrimaryBudgetLines;
-        private DataGridView dgvItemizedDetails;
-        private Button btnAddNewItemizedDetail;
-        private Label lblItemizedDetailsHeader;
-        private Button btnAddNewPrimaryLine;
-        private BudgetCategoriesEnum _selectedBudgetCateory; // Consider initializing if a "none" or "all" state is valid before first click
-        private DetailedBudgetLine _currentlyExpandedPrimaryLine = null;
-        private int _currentlyExpandedRowIndex = -1;
-
+    
+        // New fields for SubCategory Management
         
+        private BudgetTabUserControl _budgetTabControlInstance; // Instance of the new UserControl
+       
 
         private class ComboboxItem
         {
@@ -56,6 +50,8 @@ namespace HumanitarianProjectManagement.Forms
             _sectionService = new SectionService();
             _logFrameService = new LogFrameService();
             _initialSectionId = initialSectionId;
+            
+
 
             _isEditMode = (projectToEdit != null);
             this.WindowState = FormWindowState.Maximized;
@@ -78,6 +74,11 @@ namespace HumanitarianProjectManagement.Forms
             }
 
             this.Load += new System.EventHandler(this.ProjectCreateEditForm_Load);
+        }
+
+        private int InitializeBudgetUITab()
+        {
+            throw new NotImplementedException();
         }
 
         private async void ProjectCreateEditForm_Load(object sender, EventArgs e)
@@ -604,145 +605,5 @@ namespace HumanitarianProjectManagement.Forms
         }
         private void ProjectDatesChanged_RefreshActivityPlan(object sender, EventArgs e) { InitializeActivityPlanTab(); }
 
-        // The duplicated dgvPrimaryBudgetLines_CellContentClick that was here should be gone if the above SEARCH/REPLACE worked.
-        // The btnAddNewPrimaryLine_Click was also part of the cleanup in the first diff block.
-        // The btnAddNewItemizedDetail_Click is below and should remain.
-
-        private void dgvItemizedDetails_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex < 0) return;
-
-            if (dgvItemizedDetails.Columns[e.ColumnIndex].Name == "DeleteItemDetail")
-            {
-                ItemizedBudgetDetail selectedDetail = dgvItemizedDetails.Rows[e.RowIndex].DataBoundItem as ItemizedBudgetDetail;
-                if (selectedDetail == null) return;
-
-                if (_currentlyExpandedPrimaryLine == null || _currentlyExpandedPrimaryLine.ItemizedDetails == null)
-                {
-                    MessageBox.Show("Error: No primary budget line context for deleting this item.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                DialogResult confirmation = MessageBox.Show($"Are you sure you want to delete item: '{selectedDetail.Description}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (confirmation == DialogResult.No) return;
-
-                bool removed = _currentlyExpandedPrimaryLine.ItemizedDetails.Remove(selectedDetail);
-
-                if (removed)
-                {
-                    UpdatePrimaryLineTotalCost(_currentlyExpandedPrimaryLine); // Call to update parent
-                }
-            }
-        }
-
-        private void RefreshPrimaryBudgetLineDisplay(DetailedBudgetLine lineToRefresh)
-        {
-            if (dgvPrimaryBudgetLines.DataSource == null || lineToRefresh == null) return;
-
-            // Find the row index for the lineToRefresh object.
-            for (int i = 0; i < dgvPrimaryBudgetLines.Rows.Count; i++)
-            {
-                if (dgvPrimaryBudgetLines.Rows[i].DataBoundItem is DetailedBudgetLine rowLine && rowLine.DetailedBudgetLineID == lineToRefresh.DetailedBudgetLineID)
-                {
-                    // Invalidate the row to trigger a repaint which should pick up the new TotalCost.
-                    dgvPrimaryBudgetLines.InvalidateRow(i);
-                    break;
-                }
-            }
-        }
-
-        private void UpdatePrimaryLineTotalCost(DetailedBudgetLine primaryLine)
-        {
-            if (primaryLine == null) return;
-
-            if (primaryLine.ItemizedDetails != null && primaryLine.ItemizedDetails.Any())
-            {
-                primaryLine.TotalCost = primaryLine.ItemizedDetails.Sum(d => d.TotalCost);
-            }
-            else
-            {
-                // Ensure PercentageChargedToCBPF is handled correctly as a percentage (e.g., 100 for 100%)
-                decimal percentage = primaryLine.PercentageChargedToCBPF / 100M;
-                primaryLine.TotalCost = primaryLine.Quantity * primaryLine.UnitCost * primaryLine.Duration * percentage;
-            }
-
-            // Refresh the specific row in dgvPrimaryBudgetLines
-            RefreshPrimaryBudgetLineDisplay(primaryLine);
-        }
-
-        private void dgvItemizedDetails_CellValueChanged(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex < 0 || e.ColumnIndex < 0) return; // Ignore header/invalid cells
-            DataGridView dgv = sender as DataGridView;
-            if (dgv == null) return;
-
-            string columnName = dgv.Columns[e.ColumnIndex].Name;
-
-            if (columnName == "ItemQuantity" || columnName == "ItemUnitPrice")
-            {
-                ItemizedBudgetDetail currentItem = dgv.Rows[e.RowIndex].DataBoundItem as ItemizedBudgetDetail;
-                if (currentItem != null)
-                {
-                    // Assuming the bound object (currentItem) is updated by the time CellValueChanged fires.
-                    // If properties were not updated directly (e.g. if they were strings needing conversion),
-                    // you would parse them here:
-                    // try
-                    // {
-                    //    var quantityValue = dgv.Rows[e.RowIndex].Cells["ItemQuantity"].Value;
-                    //    var unitPriceValue = dgv.Rows[e.RowIndex].Cells["ItemUnitPrice"].Value;
-                    //
-                    //    currentItem.Quantity = Convert.ToDecimal(quantityValue);
-                    //    currentItem.UnitPrice = Convert.ToDecimal(unitPriceValue);
-                    // }
-                    // catch (FormatException ex)
-                    // {
-                    //    MessageBox.Show($"Invalid number format: {ex.Message}", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    //    // Optionally revert the cell value or handle error appropriately
-                    //    return; 
-                    // }
-
-                    currentItem.UpdateTotalCost(); // This calculates Quantity * UnitPrice
-
-                    // The DataGridView should auto-refresh the "ItemTotalCost" cell for this row due to BindingList.
-                    // If not, uncomment:
-                    // dgv.InvalidateCell(dgv.Columns["ItemTotalCost"].Index, e.RowIndex);
-
-                    // Trigger full recalculation and update of parent DetailedBudgetLine.
-                    if (_currentlyExpandedPrimaryLine != null)
-                    {
-                        UpdatePrimaryLineTotalCost(_currentlyExpandedPrimaryLine);
-                    }
-                }
-            }
-        }
-
-        private void dgvItemizedDetails_DataError(object sender, DataGridViewDataErrorEventArgs e)
-        {
-            // Log the error, show a user-friendly message, or handle as appropriate.
-            // For example, prevent the exception from crashing the app:
-            MessageBox.Show($"Error in data input for column {dgvItemizedDetails.Columns[e.ColumnIndex].HeaderText}: {e.Exception.Message}", "Data Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            e.ThrowException = false; // Prevents the DGV from throwing the exception.
-            e.Cancel = false; // Allows the user to correct the value if edit is not committed. Or true to revert.
-        }
-
-        private void btnAddNewItemizedDetail_Click(object sender, EventArgs e)
-        {
-            if (_currentlyExpandedPrimaryLine == null)
-            {
-                MessageBox.Show("Please expand a primary budget line first to add details.", "No Primary Line Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            _currentlyExpandedPrimaryLine.ItemizedDetails = _currentlyExpandedPrimaryLine.ItemizedDetails ?? new BindingList<ItemizedBudgetDetail>();
-
-            ItemizedBudgetDetail newItem = new ItemizedBudgetDetail
-            {
-                ParentBudgetLineID = _currentlyExpandedPrimaryLine.DetailedBudgetLineID
-            };
-
-            _currentlyExpandedPrimaryLine.ItemizedDetails.Add(newItem);
-            UpdatePrimaryLineTotalCost(_currentlyExpandedPrimaryLine);
-            // BindingList should auto-update dgvItemizedDetails
-        }
     }
 }
