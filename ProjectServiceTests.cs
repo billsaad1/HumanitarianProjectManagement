@@ -1,4 +1,5 @@
 using HumanitarianProjectManagement.Models;
+using ProjectActivity = HumanitarianProjectManagement.Models.Activity;
 using HumanitarianProjectManagement.DataAccessLayer;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -53,9 +54,9 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
                         Outputs = new HashSet<Output>
                         {
                             new Output { OutputDescription = "Test Output 1.1 for STP001",
-                                Activities = new HashSet<Activity>
+                                Activities = new HashSet<ProjectActivity>
                                 {
-                                    new Activity { ActivityDescription = "Activity 1.1.1", PlannedMonths = "Jan/2023,Feb/2023" }
+                                    new ProjectActivity { ActivityDescription = "Activity 1.1.1", PlannedMonths = "Jan/2023,Feb/2023" }
                                 }.ToList(),
                                 ProjectIndicators = new HashSet<ProjectIndicator>
                                 {
@@ -112,10 +113,10 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
             //     Debug.Assert(retrievedToUpdate != null, "TestUpdateExistingProject: Failed to retrieve project for update.");
             //
             //     retrievedToUpdate.ProjectName = "Service Test Project - Updated Name";
-            //     var newActivity = new Activity { ActivityDescription = "Newly Added Activity for Update Test" };
+            //     var newActivity = new ProjectActivity { ActivityDescription = "Newly Added Activity for Update Test" };
             //     if (retrievedToUpdate.Outcomes == null || !retrievedToUpdate.Outcomes.Any()) retrievedToUpdate.Outcomes = new HashSet<Outcome>{ new Outcome{ Outputs = new HashSet<Output>().ToList() } }.ToList();
             //     if (retrievedToUpdate.Outcomes.First().Outputs == null || !retrievedToUpdate.Outcomes.First().Outputs.Any()) retrievedToUpdate.Outcomes.First().Outputs = new HashSet<Output>{ new Output() }.ToList();
-            //     if (retrievedToUpdate.Outcomes.First().Outputs.First().Activities == null) retrievedToUpdate.Outcomes.First().Outputs.First().Activities = new HashSet<Activity>().ToList();
+            //     if (retrievedToUpdate.Outcomes.First().Outputs.First().Activities == null) retrievedToUpdate.Outcomes.First().Outputs.First().Activities = new HashSet<ProjectActivity>().ToList();
             //     retrievedToUpdate.Outcomes.First().Outputs.First().Activities.Add(newActivity);
             //
             //     Debug.WriteLine($"Conceptual: Attempting to update project ID {testProjectId}...");

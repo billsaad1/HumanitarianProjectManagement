@@ -1,4 +1,5 @@
 using HumanitarianProjectManagement.Models; // Assuming this path
+using ProjectActivity = HumanitarianProjectManagement.Models.Activity;
 using System.Diagnostics; // For Debug.Assert
 using System.Collections.Generic; // For List
 using System.Linq;
@@ -65,10 +66,10 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
         static void TestAddActivity_UpdatesModel()
         {
             var output = new Output();
-            var activity = new Activity { ActivityDescription = "Test Activity" };
-            if (output.Activities == null) output.Activities = new List<Activity>();
-            else if (!(output.Activities is List<Activity>)) output.Activities = output.Activities.OfType<Activity>().ToList();
-            ((IList<Activity>)output.Activities).Add(activity);
+            var activity = new ProjectActivity { ActivityDescription = "Test Activity" };
+            if (output.Activities == null) output.Activities = new List<ProjectActivity>();
+            else if (!(output.Activities is List<ProjectActivity>)) output.Activities = output.Activities.OfType<ProjectActivity>().ToList();
+            ((IList<ProjectActivity>)output.Activities).Add(activity);
             Debug.Assert(output.Activities.Count() == 1, "TestAddActivity_UpdatesModel: Failed - Count should be 1.");
             Debug.Assert(output.Activities.First().ActivityDescription == "Test Activity", "TestAddActivity_UpdatesModel: Failed - Description mismatch.");
         }
@@ -121,11 +122,11 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
         static void TestDeleteActivity_UpdatesModel()
         {
             var output = new Output();
-            var activity1 = new Activity { ActivityID = 1, ActivityDescription = "Test Activity 1" };
-            var activity2 = new Activity { ActivityID = 2, ActivityDescription = "Test Activity 2" };
-            if (output.Activities == null) output.Activities = new List<Activity>();
-            else if (!(output.Activities is List<Activity>)) output.Activities = output.Activities.OfType<Activity>().ToList();
-            var activitiesList = (IList<Activity>)output.Activities;
+            var activity1 = new ProjectActivity { ActivityID = 1, ActivityDescription = "Test Activity 1" };
+            var activity2 = new ProjectActivity { ActivityID = 2, ActivityDescription = "Test Activity 2" };
+            if (output.Activities == null) output.Activities = new List<ProjectActivity>();
+            else if (!(output.Activities is List<ProjectActivity>)) output.Activities = output.Activities.OfType<ProjectActivity>().ToList();
+            var activitiesList = (IList<ProjectActivity>)output.Activities;
             activitiesList.Add(activity1);
             activitiesList.Add(activity2);
             activitiesList.Remove(activity1);
@@ -197,7 +198,7 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
 
         static void TestActivityPlanPlannedMonthsUpdate()
         {
-            var activity = new Activity();
+            var activity = new ProjectActivity();
             string monthYearKey1 = "Jan/2023";
 
             List<string> plannedMonthsList = string.IsNullOrEmpty(activity.PlannedMonths) ? new List<string>() : activity.PlannedMonths.Split(',').ToList();

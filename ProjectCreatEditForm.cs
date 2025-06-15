@@ -1,6 +1,7 @@
 ﻿// Using statements from the original file - confirmed to be sufficient
 using HumanitarianProjectManagement.DataAccessLayer;
 using HumanitarianProjectManagement.Models;
+using ProjectActivity = HumanitarianProjectManagement.Models.Activity;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -438,7 +439,7 @@ namespace HumanitarianProjectManagement.Forms
             return pnlIndicator;
         }
 
-        private Panel CreateActivityPanel(Output outputInstance, Activity activity, string baseNumberString, int activityIndex)
+        private Panel CreateActivityPanel(Output outputInstance, ProjectActivity activity, string baseNumberString, int activityIndex)
         {
             Panel pnlActivity = new Panel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = new Padding(0, 0, 0, 10), Padding = new Padding(10), BorderStyle = BorderStyle.FixedSingle, BackColor = Color.White };
             TableLayoutPanel tlpActivityLayout = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3, RowCount = 1 };
@@ -446,7 +447,7 @@ namespace HumanitarianProjectManagement.Forms
             Label lblActivityLabel = new Label { Text = $"Activity {baseNumberString}.{activityIndex}:", Font = new Font(this.Font.FontFamily, 9, FontStyle.Regular), AutoSize = true, Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 3, 3, 0) };
             TextBox txtActivityDesc = new TextBox { Text = activity.ActivityDescription, Multiline = true, ScrollBars = ScrollBars.Vertical, Height = 40, Dock = DockStyle.Fill, BorderStyle = BorderStyle.FixedSingle, Font = new Font(this.Font.FontFamily, 9, FontStyle.Regular) };
             txtActivityDesc.TextChanged += (s, ev) => { activity.ActivityDescription = ((TextBox)s).Text; if (IsHandleCreated) InitializeActivityPlanTab(); };
-            Button btnDeleteActivity = new Button { Text = "Delete", Tag = new Tuple<Output, Activity>(outputInstance, activity), ForeColor = Color.White, BackColor = Color.FromArgb(204, 0, 0), FlatStyle = FlatStyle.Flat, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, Padding = new Padding(5, 2, 5, 2) };
+            Button btnDeleteActivity = new Button { Text = "Delete", Tag = new Tuple<Output, ProjectActivity>(outputInstance, activity), ForeColor = Color.White, BackColor = Color.FromArgb(204, 0, 0), FlatStyle = FlatStyle.Flat, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, Padding = new Padding(5, 2, 5, 2) };
             btnDeleteActivity.FlatAppearance.BorderSize = 0; btnDeleteActivity.Click += BtnDeleteActivity_Click;
             tlpActivityLayout.Controls.Add(lblActivityLabel, 0, 0); tlpActivityLayout.Controls.Add(txtActivityDesc, 1, 0); tlpActivityLayout.Controls.Add(btnDeleteActivity, 2, 0);
             pnlActivity.Controls.Add(tlpActivityLayout);
@@ -497,7 +498,7 @@ namespace HumanitarianProjectManagement.Forms
         {
             if (!((sender as Button)?.Tag is Outcome parentOutcome)) return;
             parentOutcome.Outputs = parentOutcome.Outputs ?? new List<Output>();
-            Output newOutput = new Output { OutcomeID = parentOutcome.OutcomeID, ProjectIndicators = new List<ProjectIndicator>(), Activities = new List<Activity>() };
+            Output newOutput = new Output { OutcomeID = parentOutcome.OutcomeID, ProjectIndicators = new List<ProjectIndicator>(), Activities = new List<ProjectActivity>() };
             parentOutcome.Outputs.Add(newOutput);
             RenderAllOutcomes();
         }
@@ -534,8 +535,8 @@ namespace HumanitarianProjectManagement.Forms
         private void BtnAddActivity_Click(object sender, EventArgs e)
         {
             if (!((sender as Button)?.Tag is Output parentOutput)) return;
-            parentOutput.Activities = parentOutput.Activities ?? new List<Activity>();
-            Activity newActivity = new Activity { OutputID = parentOutput.OutputID };
+            parentOutput.Activities = parentOutput.Activities ?? new List<ProjectActivity>();
+            ProjectActivity newActivity = new ProjectActivity { OutputID = parentOutput.OutputID };
             parentOutput.Activities.Add(newActivity);
             RenderAllOutcomes();
             if (IsHandleCreated) InitializeActivityPlanTab();
@@ -543,7 +544,7 @@ namespace HumanitarianProjectManagement.Forms
 
         private void BtnDeleteActivity_Click(object sender, EventArgs e)
         {
-            if (!((sender as Button)?.Tag is Tuple<Output, Activity> data)) return;
+            if (!((sender as Button)?.Tag is Tuple<Output, ProjectActivity> data)) return;
             if (MessageBox.Show($"Delete activity '{data.Item2.ActivityDescription}'?", "Confirm", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
                 data.Item1.Activities.Remove(data.Item2);
@@ -708,7 +709,7 @@ namespace HumanitarianProjectManagement.Forms
         private void dgvActivityPlan_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             if (!(sender is DataGridView dgv) || e.RowIndex < 0 || e.ColumnIndex < 0) return;
-            if (!(dgv.Rows[e.RowIndex].Tag is Activity activity)) return;
+            if (!(dgv.Rows[e.RowIndex].Tag is ProjectActivity activity)) return;
             DataGridViewColumn col = dgv.Columns[e.ColumnIndex];
             if (col is DataGridViewCheckBoxColumn && col.Name.StartsWith("Month_") && col.Tag is string monthYearKey)
             {
