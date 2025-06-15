@@ -11,6 +11,8 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using HumanitarianProjectManagement.UI;
 using System.Globalization;
+using HumanitarianProjectManagement; // Added for ApplicationState if not implicitly available
+using System.Diagnostics; // Added for Debug.WriteLine
 
 // Provided by user in feedback 2024-05-16
 namespace HumanitarianProjectManagement.Forms
@@ -24,11 +26,9 @@ namespace HumanitarianProjectManagement.Forms
         private int? _initialSectionId;
         private readonly LogFrameService _logFrameService;
         private Panel sidebarPanel; // For LogFrame
-    
-        // New fields for SubCategory Management
-        
+
         private BudgetTabUserControl _budgetTabControlInstance; // Instance of the new UserControl
-       
+
 
         private class ComboboxItem
         {
@@ -50,8 +50,6 @@ namespace HumanitarianProjectManagement.Forms
             _sectionService = new SectionService();
             _logFrameService = new LogFrameService();
             _initialSectionId = initialSectionId;
-            
-
 
             _isEditMode = (projectToEdit != null);
             this.WindowState = FormWindowState.Maximized;
@@ -76,20 +74,142 @@ namespace HumanitarianProjectManagement.Forms
             this.Load += new System.EventHandler(this.ProjectCreateEditForm_Load);
         }
 
-        private int InitializeBudgetUITab()
+        private void InitializeBudgetUITab()
         {
-            throw new NotImplementedException();
+            System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: Started.");
+            try
+            {
+                if (this.tabControlProjectDetails == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: tabControlProjectDetails is null. Cannot initialize Budget tab.");
+                    // Console.WriteLine("Error: tabControlProjectDetails is null. Cannot initialize Budget tab."); // Old logging
+                    return;
+                }
+
+                _budgetTabControlInstance = new BudgetTabUserControl();
+                _budgetTabControlInstance.Dock = DockStyle.Fill;
+
+                TabPage tabPageBudget = new TabPage();
+                tabPageBudget.Name = "tabPageBudget";
+                tabPageBudget.Text = "Budget";
+                tabPageBudget.Controls.Add(_budgetTabControlInstance);
+
+                if (this.tabControlProjectDetails.TabPages.ContainsKey("tabPageBudget"))
+                {
+                    System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: tabPageBudget already exists, removing to avoid duplication.");
+                    this.tabControlProjectDetails.TabPages.RemoveByKey("tabPageBudget");
+                }
+                this.tabControlProjectDetails.TabPages.Add(tabPageBudget);
+                System.Diagnostics.Debug.WriteLine($"InitializeBudgetUITab: tabPageBudget {(tabControlProjectDetails.TabPages.Contains(tabPageBudget) ? "successfully added" : "NOT found after adding")}. Name: {tabPageBudget.Name}");
+
+                System.Diagnostics.Debug.WriteLine($"InitializeBudgetUITab: _currentProject is {(_currentProject == null ? "null" : "not null, ProjectID: " + _currentProject.ProjectID)}");
+                if (_budgetTabControlInstance != null && _currentProject != null)
+                {
+                    _budgetTabControlInstance.LoadProject(_currentProject);
+                }
+                else if (_budgetTabControlInstance == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: _budgetTabControlInstance is null. Cannot load project data.");
+                    // Console.WriteLine("Error: _budgetTabControlInstance is null. Cannot load project data."); // Old logging
+                }
+                else if (_currentProject == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: _currentProject is null. Budget tab will be initialized without project data.");
+                    // Console.WriteLine("Info: _currentProject is null. Budget tab will be initialized without project data."); // Old logging
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"InitializeBudgetUITab: EXCEPTION: {ex.ToString()}");
+            }
         }
 
         private async void ProjectCreateEditForm_Load(object sender, EventArgs e)
         {
-            // System.Windows.Forms.MessageBox.Show("Form Load Started!"); 
+            System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Started.");
+            System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: tabControlProjectDetails is {(this.tabControlProjectDetails == null ? "null" : "found")}");
+
             try { await LoadComboBoxesAsync(); }
-            catch (Exception ex) { System.Windows.Forms.MessageBox.Show("Error during LoadComboBoxesAsync: " + ex.ToString(), "LoadComboBoxesAsync Exception"); return; }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: EXCEPTION during LoadComboBoxesAsync: {ex.ToString()}");
+                MessageBox.Show("Error loading sections/managers: " + ex.ToString(), "Load Data Exception");
+                return;
+            }
 
             InitializeLogFrameUI();
-           
             InitializeActivityPlanTab();
+            InitializeBudgetUITab();
+
+            System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Attempting to apply role-based visibility for budget tab.");
+            TabPage tabPageBudget = null; // Initialize to null
+            try
+            {
+                tabPageBudget = tabControlProjectDetails.TabPages["tabPageBudget"];
+                if (tabPageBudget == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Budget tab ('tabPageBudget') not found after initialization.");
+                }
+                else
+                {
+                    User currentUser = ApplicationState.CurrentUser;
+                    System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: ApplicationState.CurrentUser is {(currentUser == null ? "null" : currentUser.Username)}");
+
+                    if (currentUser == null)
+                    {
+                        System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: CurrentUser is null, preparing to hide budget tab.");
+                        System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Condition not met or user lacks permission, attempting to remove tabPageBudget.");
+                        tabControlProjectDetails.TabPages.Remove(tabPageBudget);
+                    }
+                    else
+                    {
+                        UserService userService = new UserService();
+                        List<int> roleIds = await userService.GetRoleIdsForUserAsync(currentUser.UserID);
+                        System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: Fetched role IDs for user {currentUser.Username}: {(roleIds == null ? "null" : string.Join(", ", roleIds))}");
+
+                        List<Role> allRoles = await userService.GetAllRolesAsync();
+                        System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: Fetched all roles: {(allRoles == null ? "null" : string.Join(", ", allRoles.Select(r => r.RoleName)))}");
+
+                        List<string> userRoleNames = roleIds
+                            .Select(id => allRoles.FirstOrDefault(r => r.RoleID == id)?.RoleName)
+                            .Where(name => name != null)
+                            .ToList();
+
+                        List<string> allowedRoleNames = new List<string> { "Administrator", "Project Manager", "Finance" };
+                        System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: Allowed role names for budget tab: {string.Join(", ", allowedRoleNames)}");
+
+                        bool userHasAllowedRole = userRoleNames.Any(userRole => allowedRoleNames.Contains(userRole));
+                        System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: User {currentUser.Username} {(userHasAllowedRole ? "HAS" : "DOES NOT HAVE")} an allowed role.");
+
+                        if (!userHasAllowedRole)
+                        {
+                            System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Condition not met or user lacks permission, attempting to remove tabPageBudget.");
+                            tabControlProjectDetails.TabPages.Remove(tabPageBudget);
+                        }
+                    }
+                }
+                // Final check on tab visibility
+                if (tabControlProjectDetails.TabPages.ContainsKey("tabPageBudget")) // Check by key if tabPageBudget variable might be stale after removal
+                {
+                    System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: tabPageBudget is visible/present.");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: tabPageBudget is hidden/removed.");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: EXCEPTION during role-based visibility: {ex.ToString()}");
+                if (tabPageBudget != null && tabControlProjectDetails.TabPages.Contains(tabPageBudget)) // Attempt to remove if error occurred and tab still exists
+                {
+                    tabControlProjectDetails.TabPages.Remove(tabPageBudget);
+                    System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: tabPageBudget removed due to exception in role check.");
+                }
+                MessageBox.Show("Error determining user permissions for the budget tab. The tab will be hidden as a precaution.", "Permissions Error");
+            }
+
 
             DataGridView dgvActivityPlan = this.Controls.Find("dgvActivityPlan", true).FirstOrDefault() as DataGridView;
             if (dgvActivityPlan != null)
@@ -106,7 +226,6 @@ namespace HumanitarianProjectManagement.Forms
 
         private void InitializeLogFrameUI()
         {
-            // System.Windows.Forms.MessageBox.Show("InitializeLogFrameUI Called!");
             SplitContainer splitLogframe = new SplitContainer { Dock = DockStyle.Fill, Panel1MinSize = 200, SplitterDistance = 220, FixedPanel = FixedPanel.Panel1, BorderStyle = BorderStyle.None };
             Control logFrameTabContainer = this.Controls.OfType<TabControl>().FirstOrDefault(c => c.Name == "tabControlProjectDetails")?.TabPages.Cast<TabPage>().FirstOrDefault(tp => tp.Name == "tabPageLogFrame") ?? this.Controls.Find("tabPageLogFrame", true).FirstOrDefault();
 
@@ -131,7 +250,7 @@ namespace HumanitarianProjectManagement.Forms
             Panel fixedButtonsPanel = new Panel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(0, 0, 0, 10) };
             TableLayoutPanel buttonsTable = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 1 };
 
-            buttonsTable.RowStyles.Clear(); // Clear existing styles if any
+            buttonsTable.RowStyles.Clear();
             Action<Control, int> addControlToTable = (control, rowIndex) => {
                 buttonsTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 buttonsTable.Controls.Add(control, 0, rowIndex);
@@ -179,13 +298,13 @@ namespace HumanitarianProjectManagement.Forms
         {
             if (_currentProject == null || _currentProject.Outcomes == null) { MessageBox.Show("Project or Outcomes not initialized.", "Error"); return; }
 
-            if (typeof(TElementType) == typeof(Outcome)) // Adding an Output (parent is Outcome)
+            if (typeof(TElementType) == typeof(Outcome))
             {
                 Outcome firstOutcome = parentElementTag as Outcome ?? _currentProject.Outcomes.FirstOrDefault();
                 if (firstOutcome == null) { MessageBox.Show("Please add an outcome first.", "No Outcomes"); return; }
                 specificAddHandler(new Button { Tag = firstOutcome }, EventArgs.Empty);
             }
-            else if (typeof(TElementType) == typeof(Output)) // Adding an Indicator or Activity (parent is Output)
+            else if (typeof(TElementType) == typeof(Output))
             {
                 Output firstOutput = parentElementTag as Output ?? _currentProject.Outcomes.SelectMany(o => o.Outputs ?? new List<Output>()).FirstOrDefault();
                 if (firstOutput == null) { MessageBox.Show("Please add an outcome and an output first.", "No Outputs"); return; }
@@ -239,10 +358,10 @@ namespace HumanitarianProjectManagement.Forms
             if (parentOutputPanel == null || outcome?.Outputs == null) return;
             parentOutputPanel.SuspendLayout(); parentOutputPanel.Controls.Clear();
 
-            int outputCounter = 0; // Counter for display numbering
-            foreach (var outputInstance in outcome.Outputs.ToList()) // Iterate safely and in natural (insertion) order
+            int outputCounter = 0;
+            foreach (var outputInstance in outcome.Outputs.ToList())
             {
-                outputCounter++; // Increment for 1-based numbering
+                outputCounter++;
 
                 Panel pnlLogicalUnit = new Panel { Name = $"pnlLogicalUnit_{outcome.OutcomeID}_{outputInstance.OutputID}_{outputCounter}", Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = new Padding(0, 0, 0, 15), Padding = new Padding(15), BorderStyle = BorderStyle.FixedSingle, BackColor = Color.FromArgb(250, 250, 250) };
 
@@ -265,10 +384,9 @@ namespace HumanitarianProjectManagement.Forms
                 Panel pnlIndicators = new Panel { Name = $"pnlIndicators_{outputInstance.OutputID}_{outputCounter}", Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = new Padding(0, 10, 0, 0), Padding = new Padding(10, 0, 0, 0) };
                 Label lblIndicatorsHeader = new Label { Text = "Indicators:", Font = new Font(this.Font.FontFamily, 9, FontStyle.Bold), ForeColor = Color.FromArgb(102, 102, 102), Dock = DockStyle.Top, AutoSize = true, Margin = new Padding(0, 0, 0, 5) };
                 pnlIndicators.Controls.Add(lblIndicatorsHeader);
-                // Note: Iterating ProjectIndicators and Activities forward for numbering consistency with outputCounter
                 if (outputInstance.ProjectIndicators != null)
                 {
-                    int indicatorIndex = 1; // Counter for numbering, initialized once per output
+                    int indicatorIndex = 1;
                     foreach (var indicator in outputInstance.ProjectIndicators)
                     {
                         Panel pnlIndicatorEntry = CreateIndicatorPanel(outputInstance, indicator, $"{outcomeNumberString}.{outputCounter}", indicatorIndex++);
@@ -279,10 +397,9 @@ namespace HumanitarianProjectManagement.Forms
                 Panel pnlActivities = new Panel { Name = $"pnlActivities_{outputInstance.OutputID}_{outputCounter}", Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = new Padding(0, 10, 0, 0), Padding = new Padding(10, 0, 0, 0) };
                 Label lblActivitiesHeader = new Label { Text = "Activities:", Font = new Font(this.Font.FontFamily, 9, FontStyle.Bold), ForeColor = Color.FromArgb(102, 102, 102), Dock = DockStyle.Top, AutoSize = true, Margin = new Padding(0, 0, 0, 5) };
                 pnlActivities.Controls.Add(lblActivitiesHeader);
-                // Note: Iterating ProjectIndicators and Activities forward for numbering consistency with outputCounter
                 if (outputInstance.Activities != null)
                 {
-                    int activityIndex = 1; // Counter for numbering, initialized once per output
+                    int activityIndex = 1;
                     foreach (var activity in outputInstance.Activities)
                     {
                         Panel pnlActivityEntry = CreateActivityPanel(outputInstance, activity, $"{outcomeNumberString}.{outputCounter}", activityIndex++);
@@ -362,7 +479,7 @@ namespace HumanitarianProjectManagement.Forms
             if (_currentProject == null) { MessageBox.Show("Project data is not initialized.", "Error"); return; }
             _currentProject.Outcomes = _currentProject.Outcomes ?? new List<Outcome>();
             Outcome newOutcome = new Outcome { ProjectID = _currentProject.ProjectID, Outputs = new List<Output>() };
-            _currentProject.Outcomes.Add(newOutcome); // Changed from Insert(0,...)
+            _currentProject.Outcomes.Add(newOutcome);
             RenderAllOutcomes();
         }
 
@@ -381,8 +498,8 @@ namespace HumanitarianProjectManagement.Forms
             if (!((sender as Button)?.Tag is Outcome parentOutcome)) return;
             parentOutcome.Outputs = parentOutcome.Outputs ?? new List<Output>();
             Output newOutput = new Output { OutcomeID = parentOutcome.OutcomeID, ProjectIndicators = new List<ProjectIndicator>(), Activities = new List<Activity>() };
-            parentOutcome.Outputs.Add(newOutput); // Changed from Insert(0,...)
-            RenderAllOutcomes(); // Re-render all to reflect new output in correct place
+            parentOutcome.Outputs.Add(newOutput);
+            RenderAllOutcomes();
         }
 
         private void BtnDeleteOutput_Click(object sender, EventArgs e)
@@ -391,7 +508,7 @@ namespace HumanitarianProjectManagement.Forms
             if (MessageBox.Show($"Delete output '{data.Item2.OutputDescription}'?", "Confirm", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
                 data.Item1.Outputs.Remove(data.Item2);
-                RenderAllOutcomes(); // Re-render all
+                RenderAllOutcomes();
             }
         }
 
@@ -400,7 +517,7 @@ namespace HumanitarianProjectManagement.Forms
             if (!((sender as Button)?.Tag is Output parentOutput)) return;
             parentOutput.ProjectIndicators = parentOutput.ProjectIndicators ?? new List<ProjectIndicator>();
             ProjectIndicator newIndicator = new ProjectIndicator { OutputID = parentOutput.OutputID, ProjectID = _currentProject.ProjectID };
-            parentOutput.ProjectIndicators.Add(newIndicator); // Changed from Insert(0,...)
+            parentOutput.ProjectIndicators.Add(newIndicator);
             RenderAllOutcomes();
         }
 
@@ -419,7 +536,7 @@ namespace HumanitarianProjectManagement.Forms
             if (!((sender as Button)?.Tag is Output parentOutput)) return;
             parentOutput.Activities = parentOutput.Activities ?? new List<Activity>();
             Activity newActivity = new Activity { OutputID = parentOutput.OutputID };
-            parentOutput.Activities.Add(newActivity); // Changed from Insert(0,...)
+            parentOutput.Activities.Add(newActivity);
             RenderAllOutcomes();
             if (IsHandleCreated) InitializeActivityPlanTab();
         }
@@ -435,7 +552,6 @@ namespace HumanitarianProjectManagement.Forms
             }
         }
 
-        // --- Original methods below, ensure they are preserved and adapted if necessary ---
         private void SetAccessibilityProperties()
         {
             txtProjectName.AccessibleName = "Project Name";
@@ -497,8 +613,8 @@ namespace HumanitarianProjectManagement.Forms
             txtStatus.Text = _currentProject.Status;
             txtDonor.Text = _currentProject.Donor;
             nudTotalBudget.Value = _currentProject.TotalBudget ?? 0;
-            if (_isEditMode)InitializeActivityPlanTab(); }
-        
+        }
+
 
         private bool CollectAndValidateData()
         {
@@ -539,7 +655,7 @@ namespace HumanitarianProjectManagement.Forms
         private string GetCategoryDisplayName(BudgetCategoriesEnum category) { string name = category.ToString(); if (name.Length > 2 && name[1] == '_') { name = name[0] + ". " + name.Substring(2); } return System.Text.RegularExpressions.Regex.Replace(name, "([A-Z])", " $1").Trim(); }
         void ClearControlsFromRow(TableLayoutPanel panel, int rowIndex) { for (int i = 0; i < panel.ColumnCount; i++) { Control control = panel.GetControlFromPosition(i, rowIndex); if (control != null) { panel.Controls.Remove(control); control.Dispose(); } } }
 
-       
+
 
         private void InitializeActivityPlanTab()
         {
@@ -605,5 +721,9 @@ namespace HumanitarianProjectManagement.Forms
         }
         private void ProjectDatesChanged_RefreshActivityPlan(object sender, EventArgs e) { InitializeActivityPlanTab(); }
 
+        private void ProjectCreateEditForm_Load_1(object sender, EventArgs e)
+        {
+
+        }
     }
 }

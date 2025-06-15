@@ -33,9 +33,10 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
         {
             var project = new Project();
             var outcome = new Outcome { OutcomeDescription = "Test Outcome" };
-            if (project.Outcomes == null) project.Outcomes = new HashSet<Outcome>();
-            project.Outcomes.Add(outcome);
-            Debug.Assert(project.Outcomes.Count == 1, "TestAddOutcome_UpdatesModel: Failed - Count should be 1.");
+            if (project.Outcomes == null) project.Outcomes = new List<Outcome>(); // Assuming IList or ICollection from previous fixes
+            else if (!(project.Outcomes is List<Outcome>)) project.Outcomes = project.Outcomes.OfType<Outcome>().ToList();
+            ((IList<Outcome>)project.Outcomes).Add(outcome);
+            Debug.Assert(project.Outcomes.Count() == 1, "TestAddOutcome_UpdatesModel: Failed - Count should be 1.");
             Debug.Assert(project.Outcomes.First().OutcomeDescription == "Test Outcome", "TestAddOutcome_UpdatesModel: Failed - Description mismatch.");
         }
 
@@ -43,9 +44,10 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
         {
             var outcome = new Outcome();
             var output = new Output { OutputDescription = "Test Output" };
-            if (outcome.Outputs == null) outcome.Outputs = new HashSet<Output>();
-            outcome.Outputs.Add(output);
-            Debug.Assert(outcome.Outputs.Count == 1, "TestAddOutput_UpdatesModel: Failed - Count should be 1.");
+            if (outcome.Outputs == null) outcome.Outputs = new List<Output>();
+            else if (!(outcome.Outputs is List<Output>)) outcome.Outputs = outcome.Outputs.OfType<Output>().ToList();
+            ((IList<Output>)outcome.Outputs).Add(output);
+            Debug.Assert(outcome.Outputs.Count() == 1, "TestAddOutput_UpdatesModel: Failed - Count should be 1.");
             Debug.Assert(outcome.Outputs.First().OutputDescription == "Test Output", "TestAddOutput_UpdatesModel: Failed - Description mismatch.");
         }
 
@@ -53,9 +55,10 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
         {
             var output = new Output();
             var indicator = new ProjectIndicator { IndicatorName = "Test Indicator" };
-            if (output.ProjectIndicators == null) output.ProjectIndicators = new HashSet<ProjectIndicator>();
-            output.ProjectIndicators.Add(indicator);
-            Debug.Assert(output.ProjectIndicators.Count == 1, "TestAddIndicator_UpdatesModel: Failed - Count should be 1.");
+            if (output.ProjectIndicators == null) output.ProjectIndicators = new List<ProjectIndicator>();
+            else if (!(output.ProjectIndicators is List<ProjectIndicator>)) output.ProjectIndicators = output.ProjectIndicators.OfType<ProjectIndicator>().ToList();
+            ((IList<ProjectIndicator>)output.ProjectIndicators).Add(indicator);
+            Debug.Assert(output.ProjectIndicators.Count() == 1, "TestAddIndicator_UpdatesModel: Failed - Count should be 1.");
             Debug.Assert(output.ProjectIndicators.First().IndicatorName == "Test Indicator", "TestAddIndicator_UpdatesModel: Failed - Name mismatch.");
         }
 
@@ -63,9 +66,10 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
         {
             var output = new Output();
             var activity = new Activity { ActivityDescription = "Test Activity" };
-            if (output.Activities == null) output.Activities = new HashSet<Activity>();
-            output.Activities.Add(activity);
-            Debug.Assert(output.Activities.Count == 1, "TestAddActivity_UpdatesModel: Failed - Count should be 1.");
+            if (output.Activities == null) output.Activities = new List<Activity>();
+            else if (!(output.Activities is List<Activity>)) output.Activities = output.Activities.OfType<Activity>().ToList();
+            ((IList<Activity>)output.Activities).Add(activity);
+            Debug.Assert(output.Activities.Count() == 1, "TestAddActivity_UpdatesModel: Failed - Count should be 1.");
             Debug.Assert(output.Activities.First().ActivityDescription == "Test Activity", "TestAddActivity_UpdatesModel: Failed - Description mismatch.");
         }
 
@@ -74,11 +78,13 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
             var project = new Project();
             var outcome1 = new Outcome { OutcomeID = 1, OutcomeDescription = "Test Outcome 1" };
             var outcome2 = new Outcome { OutcomeID = 2, OutcomeDescription = "Test Outcome 2" };
-            if (project.Outcomes == null) project.Outcomes = new HashSet<Outcome>();
-            project.Outcomes.Add(outcome1);
-            project.Outcomes.Add(outcome2);
-            project.Outcomes.Remove(outcome1);
-            Debug.Assert(project.Outcomes.Count == 1, "TestDeleteOutcome_UpdatesModel: Failed - Count should be 1 after delete.");
+            if (project.Outcomes == null) project.Outcomes = new List<Outcome>();
+            else if (!(project.Outcomes is List<Outcome>)) project.Outcomes = project.Outcomes.OfType<Outcome>().ToList();
+            var outcomesList = (IList<Outcome>)project.Outcomes;
+            outcomesList.Add(outcome1);
+            outcomesList.Add(outcome2);
+            outcomesList.Remove(outcome1);
+            Debug.Assert(project.Outcomes.Count() == 1, "TestDeleteOutcome_UpdatesModel: Failed - Count should be 1 after delete.");
             Debug.Assert(project.Outcomes.First().OutcomeID == 2, "TestDeleteOutcome_UpdatesModel: Failed - Remaining outcome mismatch.");
         }
 
@@ -87,11 +93,13 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
             var outcome = new Outcome();
             var output1 = new Output { OutputID = 1, OutputDescription = "Test Output 1" };
             var output2 = new Output { OutputID = 2, OutputDescription = "Test Output 2" };
-            if (outcome.Outputs == null) outcome.Outputs = new HashSet<Output>();
-            outcome.Outputs.Add(output1);
-            outcome.Outputs.Add(output2);
-            outcome.Outputs.Remove(output1);
-            Debug.Assert(outcome.Outputs.Count == 1, "TestDeleteOutput_UpdatesModel: Failed - Count should be 1 after delete.");
+            if (outcome.Outputs == null) outcome.Outputs = new List<Output>();
+            else if (!(outcome.Outputs is List<Output>)) outcome.Outputs = outcome.Outputs.OfType<Output>().ToList();
+            var outputsList = (IList<Output>)outcome.Outputs;
+            outputsList.Add(output1);
+            outputsList.Add(output2);
+            outputsList.Remove(output1);
+            Debug.Assert(outcome.Outputs.Count() == 1, "TestDeleteOutput_UpdatesModel: Failed - Count should be 1 after delete.");
             Debug.Assert(outcome.Outputs.First().OutputID == 2, "TestDeleteOutput_UpdatesModel: Failed - Remaining output mismatch.");
         }
 
@@ -100,11 +108,13 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
             var output = new Output();
             var indicator1 = new ProjectIndicator { ProjectIndicatorID = 1, IndicatorName = "Test Indicator 1" };
             var indicator2 = new ProjectIndicator { ProjectIndicatorID = 2, IndicatorName = "Test Indicator 2" };
-            if (output.ProjectIndicators == null) output.ProjectIndicators = new HashSet<ProjectIndicator>();
-            output.ProjectIndicators.Add(indicator1);
-            output.ProjectIndicators.Add(indicator2);
-            output.ProjectIndicators.Remove(indicator1);
-            Debug.Assert(output.ProjectIndicators.Count == 1, "TestDeleteIndicator_UpdatesModel: Failed - Count should be 1 after delete.");
+            if (output.ProjectIndicators == null) output.ProjectIndicators = new List<ProjectIndicator>();
+            else if (!(output.ProjectIndicators is List<ProjectIndicator>)) output.ProjectIndicators = output.ProjectIndicators.OfType<ProjectIndicator>().ToList();
+            var indicatorsList = (IList<ProjectIndicator>)output.ProjectIndicators;
+            indicatorsList.Add(indicator1);
+            indicatorsList.Add(indicator2);
+            indicatorsList.Remove(indicator1);
+            Debug.Assert(output.ProjectIndicators.Count() == 1, "TestDeleteIndicator_UpdatesModel: Failed - Count should be 1 after delete.");
             Debug.Assert(output.ProjectIndicators.First().ProjectIndicatorID == 2, "TestDeleteIndicator_UpdatesModel: Failed - Remaining indicator mismatch.");
         }
 
@@ -113,11 +123,13 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
             var output = new Output();
             var activity1 = new Activity { ActivityID = 1, ActivityDescription = "Test Activity 1" };
             var activity2 = new Activity { ActivityID = 2, ActivityDescription = "Test Activity 2" };
-            if (output.Activities == null) output.Activities = new HashSet<Activity>();
-            output.Activities.Add(activity1);
-            output.Activities.Add(activity2);
-            output.Activities.Remove(activity1);
-            Debug.Assert(output.Activities.Count == 1, "TestDeleteActivity_UpdatesModel: Failed - Count should be 1 after delete.");
+            if (output.Activities == null) output.Activities = new List<Activity>();
+            else if (!(output.Activities is List<Activity>)) output.Activities = output.Activities.OfType<Activity>().ToList();
+            var activitiesList = (IList<Activity>)output.Activities;
+            activitiesList.Add(activity1);
+            activitiesList.Add(activity2);
+            activitiesList.Remove(activity1);
+            Debug.Assert(output.Activities.Count() == 1, "TestDeleteActivity_UpdatesModel: Failed - Count should be 1 after delete.");
             Debug.Assert(output.Activities.First().ActivityID == 2, "TestDeleteActivity_UpdatesModel: Failed - Remaining activity mismatch.");
         }
 
@@ -136,49 +148,72 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
         {
             var project = new Project();
             var budgetLine = new DetailedBudgetLine { Description = "Test Budget Line", UnitCost = 100 };
-            if (project.DetailedBudgetLines == null) project.DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
-            project.DetailedBudgetLines.Add(budgetLine);
-            Debug.Assert(project.DetailedBudgetLines.Count == 1, "TestAddBudgetLine_UpdatesModel: Failed - Count should be 1.");
+
+            List<DetailedBudgetLine> linesList;
+            if (project.DetailedBudgetLines == null)
+            {
+                linesList = new List<DetailedBudgetLine>();
+            }
+            else
+            {
+                // Ensure working with a List<DetailedBudgetLine>
+                linesList = project.DetailedBudgetLines.OfType<DetailedBudgetLine>().ToList();
+            }
+
+            linesList.Add(budgetLine);
+            project.DetailedBudgetLines = linesList;
+
+            Debug.Assert(project.DetailedBudgetLines.Count() == 1, "TestAddBudgetLine_UpdatesModel: Failed - Count should be 1.");
             Debug.Assert(project.DetailedBudgetLines.First().Description == "Test Budget Line", "TestAddBudgetLine_UpdatesModel: Failed - Description mismatch.");
         }
 
         static void TestDeleteBudgetLine_UpdatesModel()
         {
             var project = new Project();
-            var line1 = new DetailedBudgetLine { DetailedBudgetLineID = 1, Description = "Line 1" };
-            var line2 = new DetailedBudgetLine { DetailedBudgetLineID = 2, Description = "Line 2" };
-            if (project.DetailedBudgetLines == null) project.DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
-            project.DetailedBudgetLines.Add(line1);
-            project.DetailedBudgetLines.Add(line2);
-            project.DetailedBudgetLines.Remove(line1);
-            Debug.Assert(project.DetailedBudgetLines.Count == 1, "TestDeleteBudgetLine_UpdatesModel: Failed - Count should be 1 after delete.");
-            Debug.Assert(project.DetailedBudgetLines.First().DetailedBudgetLineID == 2, "TestDeleteBudgetLine_UpdatesModel: Failed - Remaining line mismatch.");
+            var line1 = new DetailedBudgetLine { Description = "Line 1" };
+            var line2 = new DetailedBudgetLine { Description = "Line 2" };
+
+            List<DetailedBudgetLine> linesList;
+            if (project.DetailedBudgetLines == null)
+            {
+                linesList = new List<DetailedBudgetLine>();
+            }
+            else
+            {
+                linesList = project.DetailedBudgetLines.OfType<DetailedBudgetLine>().ToList();
+            }
+
+            linesList.Add(line1);
+            linesList.Add(line2);
+            project.DetailedBudgetLines = linesList;
+
+            var currentLines = project.DetailedBudgetLines.OfType<DetailedBudgetLine>().ToList();
+            currentLines.Remove(line1);
+            project.DetailedBudgetLines = currentLines;
+
+            Debug.Assert(project.DetailedBudgetLines.Count() == 1, "TestDeleteBudgetLine_UpdatesModel: Failed - Count should be 1 after delete.");
+            Debug.Assert(project.DetailedBudgetLines.First().Description == "Line 2", "TestDeleteBudgetLine_UpdatesModel: Failed - Remaining line mismatch. Expected 'Line 2'.");
         }
 
         static void TestActivityPlanPlannedMonthsUpdate()
         {
             var activity = new Activity();
-            string monthYearKey1 = "Jan/2023"; // Key format used in Activity Plan UI
+            string monthYearKey1 = "Jan/2023";
 
-            // Simulate adding first month
             List<string> plannedMonthsList = string.IsNullOrEmpty(activity.PlannedMonths) ? new List<string>() : activity.PlannedMonths.Split(',').ToList();
             if (!plannedMonthsList.Contains(monthYearKey1)) plannedMonthsList.Add(monthYearKey1);
             activity.PlannedMonths = string.Join(",", plannedMonthsList);
             Debug.Assert(activity.PlannedMonths == "Jan/2023", $"TestActivityPlanPlannedMonthsUpdate: Failed for single month. Got {activity.PlannedMonths}");
 
-            // Simulate adding second month
             string monthYearKey2 = "Feb/2023";
-            if (!plannedMonthsList.Contains(monthYearKey2)) plannedMonthsList.Add(monthYearKey2); // plannedMonthsList still has monthYearKey1
-            activity.PlannedMonths = string.Join(",", plannedMonthsList); // Now contains both
-            // Order might vary depending on List.Add behavior and string.Join, so check for both parts
-            Debug.Assert(activity.PlannedMonths.Contains("Jan/2023") && activity.PlannedMonths.Contains("Feb/2023") && activity.PlannedMonths.Length == "Jan/2023,Feb/2023".Length , $"TestActivityPlanPlannedMonthsUpdate: Failed for two months. Got {activity.PlannedMonths}");
+            if (!plannedMonthsList.Contains(monthYearKey2)) plannedMonthsList.Add(monthYearKey2);
+            activity.PlannedMonths = string.Join(",", plannedMonthsList);
+            Debug.Assert(activity.PlannedMonths.Contains("Jan/2023") && activity.PlannedMonths.Contains("Feb/2023") && activity.PlannedMonths.Length == "Jan/2023,Feb/2023".Length, $"TestActivityPlanPlannedMonthsUpdate: Failed for two months. Got {activity.PlannedMonths}");
 
-            // Simulate removing first month
             plannedMonthsList.Remove(monthYearKey1);
             activity.PlannedMonths = string.Join(",", plannedMonthsList);
             Debug.Assert(activity.PlannedMonths == "Feb/2023", $"TestActivityPlanPlannedMonthsUpdate: Failed after removing a month. Got {activity.PlannedMonths}");
 
-            // Simulate removing last month
             plannedMonthsList.Remove(monthYearKey2);
             activity.PlannedMonths = string.Join(",", plannedMonthsList);
             Debug.Assert(activity.PlannedMonths == "", $"TestActivityPlanPlannedMonthsUpdate: Failed after removing all months. Got {activity.PlannedMonths}");

@@ -12,7 +12,8 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
         // connection string management, and potentially data seeding/cleanup
         // to be run as integration tests. The LogFrameService currently uses ADO.NET.
 
-        public static async Task RunAllConceptualTestsAsync()
+        // Removed async Task, changed to void as no await operations are currently performed
+        public static void RunAllConceptualTests()
         {
             Console.WriteLine("Running LogFrameServiceTests conceptual outlines...");
             LogFrameService service = new LogFrameService(); // Assumes parameterless constructor
@@ -21,7 +22,7 @@ namespace HumanitarianProjectManagement.Tests // Or any appropriate namespace
             // int testOutcomeId = 0;
             // Outcome testOutcome = new Outcome { ProjectID = 1, OutcomeDescription = "Test LogFrame Outcome" }; // Assuming ProjectID 1 exists
             // Debug.WriteLine($"Conceptual: Attempting to add Outcome '{testOutcome.OutcomeDescription}'...");
-            // testOutcomeId = await service.AddOutcomeAsync(testOutcome);
+            // testOutcomeId = await service.AddOutcomeAsync(testOutcome); // This would require async Task
             // Debug.Assert(testOutcomeId > 0, "LogFrameServiceTests: AddOutcomeAsync failed.");
 
             // if (testOutcomeId > 0)

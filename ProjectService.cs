@@ -642,38 +642,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     }
                 }
 
-                if (project.DetailedBudgetLines != null)
-                {
-                    List<DetailedBudgetLine> existingDbLines = new List<DetailedBudgetLine>();
-                    if (project.ProjectID > 0)
-                    {
-                        existingDbLines = await GetDetailedBudgetLinesByProjectIdAsync(project.ProjectID);
-                    }
-
-                    var incomingLineIds = new HashSet<Guid>(project.DetailedBudgetLines.Where(bl => bl.DetailedBudgetLineID != Guid.Empty).Select(bl => bl.DetailedBudgetLineID));
-
-                    foreach (var dbLine in existingDbLines)
-                    {
-                        if (!incomingLineIds.Contains(dbLine.DetailedBudgetLineID))
-                        {
-                            await DeleteDetailedBudgetLineAsync(dbLine.DetailedBudgetLineID);
-                        }
-                    }
-
-                    foreach (var budgetLine in project.DetailedBudgetLines)
-                    {
-                        budgetLine.ProjectId = project.ProjectID;
-                        if (budgetLine.DetailedBudgetLineID == Guid.Empty)
-                        {
-                            await AddDetailedBudgetLineWithDetailsAsync(budgetLine);
-                        }
-                        else
-                        {
-                            await UpdateDetailedBudgetLineWithDetailsAsync(budgetLine);
-                        }
-                    }
-                }
-                else
+               
                 {
                     if (project.ProjectID > 0)
                     {

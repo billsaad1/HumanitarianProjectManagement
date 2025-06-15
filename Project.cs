@@ -75,7 +75,7 @@ namespace HumanitarianProjectManagement.Models
 
         // New Navigation Properties
         public virtual IList<Outcome> Outcomes { get; set; } // Changed from ICollection to IList
-        // public virtual ICollection<DetailedBudgetLine> DetailedBudgetLines { get; set; } // Commented out
+        public virtual ICollection<DetailedBudgetLine> DetailedBudgetLines { get; set; } // Uncommented and correctly typed
 
 
         public Project()
@@ -92,7 +92,7 @@ namespace HumanitarianProjectManagement.Models
 
             // Initialize new collections
             Outcomes = new List<Outcome>(); // Changed from HashSet to List
-            // DetailedBudgetLines = new HashSet<DetailedBudgetLine>(); // Commented out
+            DetailedBudgetLines = new HashSet<DetailedBudgetLine>(); // Uncommented and initialized
 
             CreatedAt = DateTime.UtcNow;
         }

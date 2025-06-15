@@ -47,7 +47,7 @@ namespace HumanitarianProjectManagement
             this.scMainBudgetLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.scMainBudgetLayout.Name = "scMainBudgetLayout";
             this.scMainBudgetLayout.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
-            this.scMainBudgetLayout.SplitterDistance = 230; 
+            this.scMainBudgetLayout.SplitterDistance = 230;
             this.scMainBudgetLayout.TabIndex = 1; // Main container
             // 
             // scMainBudgetLayout.Panel1 (Category Sidebar)
@@ -85,14 +85,14 @@ namespace HumanitarianProjectManagement
             this.pnlBudgetMainArea.Location = new System.Drawing.Point(0, 0); // Relative to Panel2
             this.pnlBudgetMainArea.Name = "pnlBudgetMainArea";
             // Example size, actual size will be determined by SplitContainer's Panel2
-            this.pnlBudgetMainArea.Size = new System.Drawing.Size(463, 494); 
+            this.pnlBudgetMainArea.Size = new System.Drawing.Size(463, 494);
             this.pnlBudgetMainArea.TabIndex = 0;
             this.pnlBudgetMainArea.Padding = new System.Windows.Forms.Padding(5);
             // 
             // btnAddNewSubCategory
             // 
             this.btnAddNewSubCategory.Dock = System.Windows.Forms.DockStyle.Top;
-            this.btnAddNewSubCategory.Location = new System.Drawing.Point(5, 5); 
+            this.btnAddNewSubCategory.Location = new System.Drawing.Point(5, 5);
             this.btnAddNewSubCategory.Name = "btnAddNewSubCategory";
             // Width should be relative to parent pnlBudgetMainArea's client area minus padding
             this.btnAddNewSubCategory.Size = new System.Drawing.Size(453, 30); // Example: 463 (parent width) - 5 - 5 (padding)
@@ -103,7 +103,7 @@ namespace HumanitarianProjectManagement
             // 
             // pnlSubCategoryListArea
             // 
-            this.pnlSubCategoryListArea.Dock = System.Windows.Forms.DockStyle.Fill; 
+            this.pnlSubCategoryListArea.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlSubCategoryListArea.Location = new System.Drawing.Point(5, 35); // Below btnAddNewSubCategory
             this.pnlSubCategoryListArea.Name = "pnlSubCategoryListArea";
             this.pnlSubCategoryListArea.AutoScroll = true;
@@ -117,9 +117,9 @@ namespace HumanitarianProjectManagement
             this.pnlItemizedDetailsHolder.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlItemizedDetailsHolder.Location = new System.Drawing.Point(5, 339); // Example: 35 (btnAddNewSubCategory.Bottom) + 304 (pnlSubCategoryListArea.Height)
             this.pnlItemizedDetailsHolder.Name = "pnlItemizedDetailsHolder";
-            this.pnlItemizedDetailsHolder.Size = new System.Drawing.Size(453, 150); 
+            this.pnlItemizedDetailsHolder.Size = new System.Drawing.Size(453, 150);
             this.pnlItemizedDetailsHolder.TabIndex = 2;
-            this.pnlItemizedDetailsHolder.Visible = false; 
+            this.pnlItemizedDetailsHolder.Visible = false;
             this.pnlItemizedDetailsHolder.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlItemizedDetailsHolder.Padding = new System.Windows.Forms.Padding(3);
             // 
@@ -158,23 +158,23 @@ namespace HumanitarianProjectManagement
             // 
             this.dgvItemizedDetails.AllowUserToAddRows = false;
             this.dgvItemizedDetails.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvItemizedDetails.Dock = System.Windows.Forms.DockStyle.Fill; 
-            this.dgvItemizedDetails.Location = new System.Drawing.Point(3, 33); 
+            this.dgvItemizedDetails.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvItemizedDetails.Location = new System.Drawing.Point(3, 33);
             this.dgvItemizedDetails.Name = "dgvItemizedDetails";
             this.dgvItemizedDetails.Size = new System.Drawing.Size(447, 114); // 150 - 30 - 3 - 3
             this.dgvItemizedDetails.TabIndex = 1;
             //
             // Add controls to pnlItemizedDetailsHolder
             //
-            this.pnlItemizedDetailsHolder.Controls.Add(this.dgvItemizedDetails); 
-            this.pnlItemizedDetailsHolder.Controls.Add(this.pnlItemizedDetailsControls); 
+            this.pnlItemizedDetailsHolder.Controls.Add(this.dgvItemizedDetails);
+            this.pnlItemizedDetailsHolder.Controls.Add(this.pnlItemizedDetailsControls);
             //
             // Add controls to pnlBudgetMainArea (Order matters for Dock.Fill)
             //
-            this.pnlBudgetMainArea.Controls.Add(this.pnlSubCategoryListArea); 
-            this.pnlBudgetMainArea.Controls.Add(this.btnAddNewSubCategory); 
+            this.pnlBudgetMainArea.Controls.Add(this.pnlSubCategoryListArea);
+            this.pnlBudgetMainArea.Controls.Add(this.btnAddNewSubCategory);
             this.pnlBudgetMainArea.Controls.Add(this.pnlItemizedDetailsHolder);
-            
+
             // 
             // BudgetTabUserControl
             // 
@@ -182,7 +182,7 @@ namespace HumanitarianProjectManagement
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.scMainBudgetLayout); // Top level control is now the SplitContainer
             this.Name = "BudgetTabUserControl";
-            this.Size = new System.Drawing.Size(700, 500); 
+            this.Size = new System.Drawing.Size(700, 500);
 
             this.scMainBudgetLayout.Panel1.ResumeLayout(false);
             this.scMainBudgetLayout.Panel2.ResumeLayout(false);

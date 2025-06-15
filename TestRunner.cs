@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using System; // For Console
+using System.Diagnostics; // Added for Debug.WriteLine
 // Ensure correct using for test classes if they are in a different namespace
 // using HumanitarianProjectManagement.Tests;
 
@@ -7,7 +8,8 @@ namespace HumanitarianProjectManagement // Or a suitable namespace like Humanita
 {
     public class TestRunner
     {
-        public static async Task MainTestEntry()
+        // Changed from async Task to void as called methods are now synchronous
+        public static void MainTestEntry()
         {
             Console.WriteLine("Starting conceptual tests...");
             Console.WriteLine("====================================");
@@ -27,9 +29,8 @@ namespace HumanitarianProjectManagement // Or a suitable namespace like Humanita
             // Run ProjectService Conceptual Tests
             try
             {
-                // These are async but currently contain mostly comments.
-                // If they were real async tests, await would be important.
-                await HumanitarianProjectManagement.Tests.ProjectServiceTests.RunAllConceptualTestsAsync();
+                // Calls are now to synchronous methods
+                HumanitarianProjectManagement.Tests.ProjectServiceTests.RunAllConceptualTests();
             }
             catch (Exception ex)
             {
@@ -41,7 +42,8 @@ namespace HumanitarianProjectManagement // Or a suitable namespace like Humanita
             // Run LogFrameService Conceptual Tests
             try
             {
-                await HumanitarianProjectManagement.Tests.LogFrameServiceTests.RunAllConceptualTestsAsync();
+                // Calls are now to synchronous methods
+                HumanitarianProjectManagement.Tests.LogFrameServiceTests.RunAllConceptualTests();
             }
             catch (Exception ex)
             {
