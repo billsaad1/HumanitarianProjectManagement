@@ -5,7 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 using System.Linq;
-using System.ComponentModel; // For BindingList
+using System.ComponentModel;
 
 namespace HumanitarianProjectManagement.DataAccessLayer
 {
@@ -22,7 +22,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
         public async Task<List<DetailedBudgetLine>> GetDetailedBudgetLinesByProjectIdAsync(int projectId)
         {
             List<DetailedBudgetLine> budgetLines = new List<DetailedBudgetLine>();
-            string query = "SELECT DetailedBudgetLineID, ProjectID, BudgetCategory, Code, Description, Unit, Quantity, UnitCost, Duration, PercentChargedToCBPF, TotalCost FROM DetailedBudgetLines WHERE ProjectID = @ProjectID";
+            string query = "SELECT DetailedBudgetLineID, ProjectID, Category, Code, Description, Unit, Quantity, UnitCost, Duration, PercentageChargedToCBPF, TotalCost FROM DetailedBudgetLine WHERE ProjectID = @ProjectID"; // Changed BudgetCategory to Category, PercentChargedToCBPF to PercentageChargedToCBPF
 
             try
             {
@@ -40,17 +40,16 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                 {
                                     DetailedBudgetLineID = reader["DetailedBudgetLineID"] != DBNull.Value ? (Guid)reader["DetailedBudgetLineID"] : Guid.Empty,
                                     ProjectId = (int)reader["ProjectID"],
-                                    Category = (BudgetCategoriesEnum)Enum.Parse(typeof(BudgetCategoriesEnum), reader["BudgetCategory"].ToString()),
+                                    Category = (BudgetCategoriesEnum)Convert.ToInt32(reader["Category"]), // Changed mapping
                                     Code = reader["Code"] != DBNull.Value ? reader["Code"].ToString() : string.Empty,
                                     Description = reader["Description"].ToString(),
                                     Unit = reader["Unit"] != DBNull.Value ? reader["Unit"].ToString() : null,
                                     Quantity = Convert.ToDecimal(reader["Quantity"]),
                                     UnitCost = (decimal)reader["UnitCost"],
                                     Duration = Convert.ToDecimal(reader["Duration"]),
-                                    PercentageChargedToCBPF = (decimal)reader["PercentChargedToCBPF"],
+                                    PercentageChargedToCBPF = (decimal)reader["PercentageChargedToCBPF"], // Uses corrected column name
                                     TotalCost = (decimal)reader["TotalCost"]
                                 };
-                                // Populate ItemizedDetails
                                 if (budgetLine.DetailedBudgetLineID != Guid.Empty)
                                 {
                                     List<ItemizedBudgetDetail> itemizedDetails = await GetItemizedBudgetDetailsByParentIdAsync(budgetLine.DetailedBudgetLineID);
@@ -74,10 +73,10 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             if (budgetLine == null) throw new ArgumentNullException(nameof(budgetLine));
             if (budgetLine.DetailedBudgetLineID == Guid.Empty) budgetLine.DetailedBudgetLineID = Guid.NewGuid();
 
-            string query = @"INSERT INTO DetailedBudgetLines
+            string query = @"INSERT INTO DetailedBudgetLine
                                 (DetailedBudgetLineID, ProjectID, BudgetCategory, Code, Description, Unit, Quantity, UnitCost, Duration, PercentChargedToCBPF, TotalCost)
                              VALUES
-                                (@DetailedBudgetLineID, @ProjectID, @BudgetCategory, @Code, @Description, @Unit, @Quantity, @UnitCost, @Duration, @PercentChargedToCBPF, @TotalCost);";
+                                (@DetailedBudgetLineID, @ProjectID, @BudgetCategory, @Code, @Description, @Unit, @Quantity, @UnitCost, @Duration, @PercentChargedToCBPF, @TotalCost);"; // Changed
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
@@ -129,10 +128,10 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 return false;
             }
 
-            string query = @"UPDATE DetailedBudgetLines SET
+            string query = @"UPDATE DetailedBudgetLine SET
                                 ProjectID = @ProjectID, BudgetCategory = @BudgetCategory, Code = @Code, Description = @Description, Unit = @Unit, 
                                 Quantity = @Quantity, UnitCost = @UnitCost, Duration = @Duration, PercentChargedToCBPF = @PercentChargedToCBPF, TotalCost = @TotalCost
-                             WHERE DetailedBudgetLineID = @DetailedBudgetLineID;";
+                             WHERE DetailedBudgetLineID = @DetailedBudgetLineID;"; // Changed
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
@@ -155,7 +154,6 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         int rowsAffected = await command.ExecuteNonQueryAsync();
                         if (rowsAffected > 0)
                         {
-                            // Synchronize ItemizedDetails
                             List<ItemizedBudgetDetail> dbItems = await GetItemizedBudgetDetailsByParentIdAsync(budgetLine.DetailedBudgetLineID);
                             HashSet<Guid> incomingItemIds = new HashSet<Guid>(budgetLine.ItemizedDetails?.Select(i => i.ItemizedBudgetDetailID) ?? Enumerable.Empty<Guid>());
 
@@ -200,7 +198,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
         {
             await DeleteAllItemizedDetailsByParentIdAsync(detailedBudgetLineId);
 
-            string query = "DELETE FROM DetailedBudgetLines WHERE DetailedBudgetLineID = @DetailedBudgetLineID;";
+            string query = "DELETE FROM DetailedBudgetLine WHERE DetailedBudgetLineID = @DetailedBudgetLineID;"; // Changed
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
@@ -226,7 +224,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
         public async Task<List<ItemizedBudgetDetail>> GetItemizedBudgetDetailsByParentIdAsync(Guid parentBudgetLineId)
         {
             List<ItemizedBudgetDetail> items = new List<ItemizedBudgetDetail>();
-            string query = "SELECT ItemizedBudgetDetailID, ParentBudgetLineID, Description, Quantity, UnitPrice, TotalCost FROM ItemizedBudgetDetails WHERE ParentBudgetLineID = @ParentBudgetLineID";
+            string query = "SELECT ItemizedBudgetDetailID, ParentBudgetLineID, Description, Quantity, UnitPrice, TotalCost FROM ItemizedBudgetDetail WHERE ParentBudgetLineID = @ParentBudgetLineID"; // Changed
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
@@ -246,9 +244,8 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                                     Description = reader["Description"].ToString(),
                                     Quantity = Convert.ToDecimal(reader["Quantity"]),
                                     UnitPrice = Convert.ToDecimal(reader["UnitPrice"])
-                                    // TotalCost removed from direct assignment
                                 };
-                                item.UpdateTotalCost(); // Calculate TotalCost
+                                item.UpdateTotalCost();
                                 items.Add(item);
                             }
                         }
@@ -267,10 +264,10 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             if (itemDetail == null) throw new ArgumentNullException(nameof(itemDetail));
             if (itemDetail.ItemizedBudgetDetailID == Guid.Empty) itemDetail.ItemizedBudgetDetailID = Guid.NewGuid();
 
-            string query = @"INSERT INTO ItemizedBudgetDetails 
+            string query = @"INSERT INTO ItemizedBudgetDetail 
                                 (ItemizedBudgetDetailID, ParentBudgetLineID, Description, Quantity, UnitPrice, TotalCost)
                              VALUES 
-                                (@ItemizedBudgetDetailID, @ParentBudgetLineID, @Description, @Quantity, @UnitPrice, @TotalCost);";
+                                (@ItemizedBudgetDetailID, @ParentBudgetLineID, @Description, @Quantity, @UnitPrice, @TotalCost);"; // Changed
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
@@ -301,13 +298,13 @@ namespace HumanitarianProjectManagement.DataAccessLayer
         {
             if (itemDetail == null) throw new ArgumentNullException(nameof(itemDetail));
 
-            string query = @"UPDATE ItemizedBudgetDetails SET
+            string query = @"UPDATE ItemizedBudgetDetail SET
                                 ParentBudgetLineID = @ParentBudgetLineID,
                                 Description = @Description,
                                 Quantity = @Quantity,
                                 UnitPrice = @UnitPrice,
                                 TotalCost = @TotalCost
-                             WHERE ItemizedBudgetDetailID = @ItemizedBudgetDetailID;";
+                             WHERE ItemizedBudgetDetailID = @ItemizedBudgetDetailID;"; // Changed
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
@@ -336,7 +333,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
 
         public async Task<bool> DeleteAllItemizedDetailsByParentIdAsync(Guid parentBudgetLineId)
         {
-            string query = "DELETE FROM ItemizedBudgetDetails WHERE ParentBudgetLineID = @ParentBudgetLineID;";
+            string query = "DELETE FROM ItemizedBudgetDetail WHERE ParentBudgetLineID = @ParentBudgetLineID;"; // Changed
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
@@ -359,7 +356,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
 
         public async Task<bool> DeleteItemizedBudgetDetailAsync(Guid itemizedBudgetDetailId)
         {
-            string query = "DELETE FROM ItemizedBudgetDetails WHERE ItemizedBudgetDetailID = @ItemizedBudgetDetailID;";
+            string query = "DELETE FROM ItemizedBudgetDetail WHERE ItemizedBudgetDetailID = @ItemizedBudgetDetailID;"; // Changed
             try
             {
                 using (SqlConnection connection = DatabaseHelper.GetConnection())
@@ -642,7 +639,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     }
                 }
 
-               
+
                 {
                     if (project.ProjectID > 0)
                     {

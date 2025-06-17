@@ -1,5 +1,6 @@
 ﻿using HumanitarianProjectManagement.Models;
 using Microsoft.EntityFrameworkCore; // Required for DbContext and ModelBuilder
+using BCrypt.Net;
 
 namespace HumanitarianProjectManagement.DataAccessLayer
 {
@@ -102,7 +103,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 entity.HasOne(d => d.BudgetSubCategory)
                       .WithMany(bsc => bsc.DetailedBudgetLines)
                       .HasForeignKey(d => d.BudgetSubCategoryID)
-                      .OnDelete(DeleteBehavior.Cascade);
+                      .OnDelete(DeleteBehavior.Restrict); // Key change here
 
                 entity.Property(e => e.UnitCost).HasColumnType("decimal(18, 2)");
                 entity.Property(e => e.Quantity).HasColumnType("decimal(18, 3)");
@@ -126,14 +127,18 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             // --- ItemizedBudgetDetail Configuration ---
             modelBuilder.Entity<ItemizedBudgetDetail>(entity =>
             {
-                entity.HasOne(ibd => ibd.ParentBudgetLine)  // No explicit type for ibd
-                      .WithMany(dbl => ((DetailedBudgetLine)dbl).ItemizedDetails)
-                      .HasForeignKey(ibd => ibd.ParentBudgetLineID) // No explicit type for ibd
+                // PK is already defined globally for ItemizedBudgetDetail.
+                // entity.HasKey(ibd => ibd.ItemizedBudgetDetailID); 
+
+                entity.HasOne(ibd => ibd.ParentBudgetLine)
+                      .WithMany(dbl => dbl.ItemizedDetails)
+                      .HasForeignKey(ibd => ibd.ParentBudgetLineID)
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.Property(e => e.UnitPrice).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.TotalCost).HasColumnType("decimal(18,2)");
-                // Any other configurations for ItemizedBudgetDetail...
+                entity.Property(e => e.Description).IsRequired(false);
+                entity.Property(e => e.Quantity).HasColumnType("decimal(18,2)");
             });
             // --- LogFrame Component Relationships ---
             modelBuilder.Entity<Outcome>()
@@ -148,11 +153,11 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 .HasForeignKey(op => op.OutcomeID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Output>()
-                .HasMany(op => op.ProjectIndicators)
-                .WithOne(pi => pi.Output)
-                .HasForeignKey(pi => pi.OutputID)
-                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<ProjectIndicator>()
+                .HasOne(pi => pi.Output) // ProjectIndicator has one Output
+                .WithMany(o => o.ProjectIndicators) // Output has many ProjectIndicators
+                .HasForeignKey(pi => pi.OutputID) // Foreign key in ProjectIndicator
+                .OnDelete(DeleteBehavior.ClientSetNull); // Key change: OutputID is nullable
 
             modelBuilder.Entity<Output>()
                 .HasMany(op => op.Activities)
@@ -170,6 +175,53 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 .HasOne(ur => ur.Role)
                 .WithMany(r => r.UserRoles)
                 .HasForeignKey(ur => ur.RoleID);
+
+            // Configure the relationship for CreatedByUser
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasOne(po => po.CreatedByUser) // PurchaseOrder has one CreatedByUser
+                .WithMany(u => u.CreatedPurchaseOrders) // User has many CreatedPurchaseOrders
+                .HasForeignKey(po => po.CreatedByUserID) // Foreign key in PurchaseOrder
+                .OnDelete(DeleteBehavior.ClientSetNull); // FK is nullable
+
+            // Configure the relationship for ApprovedByUser
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasOne(po => po.ApprovedByUser) // PurchaseOrder has one ApprovedByUser
+                .WithMany(u => u.ApprovedPurchaseOrders) // User has many ApprovedPurchaseOrders
+                .HasForeignKey(po => po.ApprovedByUserID) // Foreign key in PurchaseOrder
+                .OnDelete(DeleteBehavior.ClientSetNull); // FK is nullable
+
+            // --- Data Seeding ---
+
+            // 1. Seed Roles
+            modelBuilder.Entity<Role>().HasData(
+                new Role { RoleID = 1, RoleName = "Administrator", Description = "Full system access" }
+                // Add other roles if needed, ensuring unique RoleID
+            );
+
+            // 2. Seed Users
+            // IMPORTANT: Hash the password. Never store plain text passwords.
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword("123"); // Password provided by user
+
+            modelBuilder.Entity<User>().HasData(
+                new User
+                {
+                    UserID = 1,
+                    Username = "bill", // Username provided by user
+                    PasswordHash = hashedPassword,
+                    Email = "bill@example.com", // Placeholder email
+                    FullName = "Bill Admin",    // Placeholder full name
+                    IsActive = true,
+                    CreatedAt = new System.DateTime(2024, 1, 1, 0, 0, 0, System.DateTimeKind.Utc), // Use a fixed UTC DateTime
+                    PhoneNumber = null, // Explicitly null if not provided
+                    LastLogin = null   // Explicitly null
+                }
+                // Add other users if needed, ensuring unique UserID
+            );
+
+            // 3. Seed UserRoles (Link user "bill" to "Administrator" role)
+            modelBuilder.Entity<UserRole>().HasData(
+                new UserRole { UserID = 1, RoleID = 1 }
+            );
         }
     }
 }

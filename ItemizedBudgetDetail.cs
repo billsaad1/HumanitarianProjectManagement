@@ -6,6 +6,7 @@ namespace HumanitarianProjectManagement.Models
     {
         public Guid ItemizedBudgetDetailID { get; set; }
         public Guid ParentBudgetLineID { get; set; } // Links to DetailedBudgetLine
+        public virtual DetailedBudgetLine ParentBudgetLine { get; set; }
         public string Description { get; set; }
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
