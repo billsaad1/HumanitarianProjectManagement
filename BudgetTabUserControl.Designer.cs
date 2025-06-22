@@ -82,16 +82,7 @@ namespace HumanitarianProjectManagement
             this.pnlBudgetMainArea.TabIndex = 0;
             this.pnlBudgetMainArea.Padding = new System.Windows.Forms.Padding(5);
             // 
-            // btnAddNewSubCategory
-            // 
-            this.btnAddNewSubCategory.Dock = System.Windows.Forms.DockStyle.Top;
-            this.btnAddNewSubCategory.Location = new System.Drawing.Point(5, 5);
-            this.btnAddNewSubCategory.Name = "btnAddNewSubCategory";
-            this.btnAddNewSubCategory.Size = new System.Drawing.Size(453, 30);
-            this.btnAddNewSubCategory.TabIndex = 0;
-            this.btnAddNewSubCategory.Text = "Add New Subcategory";
-            this.btnAddNewSubCategory.UseVisualStyleBackColor = true;
-            this.btnAddNewSubCategory.Enabled = false;
+            
             // 
             // pnlMainBudgetContentArea (Renamed from pnlSubCategoryListArea)
             // 
@@ -107,7 +98,7 @@ namespace HumanitarianProjectManagement
 
             // Add controls to pnlBudgetMainArea (Order matters for Dock.Fill)
             this.pnlBudgetMainArea.Controls.Add(this.pnlMainBudgetContentArea); // Renamed
-            this.pnlBudgetMainArea.Controls.Add(this.btnAddNewSubCategory);
+            
             // Removed: this.pnlBudgetMainArea.Controls.Add(this.pnlItemizedDetailsHolder);
 
             // 

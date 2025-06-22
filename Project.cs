@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using HumanitarianProjectManagement; // Added for BudgetSubCategory
+// Removed: using HumanitarianProjectManagement; 
 
 namespace HumanitarianProjectManagement.Models
 {
@@ -71,11 +71,10 @@ namespace HumanitarianProjectManagement.Models
         public virtual ICollection<StockTransaction> StockTransactions { get; set; }
         public virtual ICollection<Feedback> Feedbacks { get; set; }
         public virtual ICollection<FollowUpVisit> FollowUpVisits { get; set; }
-        public BindingList<BudgetSubCategory> BudgetSubCategories { get; set; } // Added
+        // Removed: public BindingList<BudgetSubCategory> BudgetSubCategories { get; set; } 
 
-        // New Navigation Properties
-        public virtual IList<Outcome> Outcomes { get; set; } // Changed from ICollection to IList
-        public virtual ICollection<DetailedBudgetLine> DetailedBudgetLines { get; set; } // Uncommented and correctly typed
+        public virtual IList<Outcome> Outcomes { get; set; }
+        public virtual ICollection<DetailedBudgetLine> DetailedBudgetLines { get; set; }
 
 
         public Project()
@@ -88,11 +87,10 @@ namespace HumanitarianProjectManagement.Models
             StockTransactions = new HashSet<StockTransaction>();
             Feedbacks = new HashSet<Feedback>();
             FollowUpVisits = new HashSet<FollowUpVisit>();
-            BudgetSubCategories = new BindingList<BudgetSubCategory>(); // Added
+            // Removed: BudgetSubCategories = new BindingList<BudgetSubCategory>(); 
 
-            // Initialize new collections
-            Outcomes = new List<Outcome>(); // Changed from HashSet to List
-            DetailedBudgetLines = new HashSet<DetailedBudgetLine>(); // Uncommented and initialized
+            Outcomes = new List<Outcome>();
+            DetailedBudgetLines = new HashSet<DetailedBudgetLine>();
 
             CreatedAt = DateTime.UtcNow;
         }

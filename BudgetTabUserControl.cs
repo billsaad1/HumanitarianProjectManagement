@@ -2,26 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using HumanitarianProjectManagement.Models;
-using System.Globalization;
-using System.Diagnostics;
 
 namespace HumanitarianProjectManagement
 {
     public partial class BudgetTabUserControl : UserControl
     {
         private Project _currentProject;
-        private BudgetCategoriesEnum _selectedMainCategory;
+        private BudgetCategoriesEnum? _selectedMainCategory;
 
-        private Color defaultButtonBackColor = Color.FromArgb(225, 225, 225);
-        private Color selectedButtonBackColor = Color.FromArgb(0, 122, 204);
-
-        // Fields for dynamically created controls for direct budget lines
+        // Main input fields
         private TextBox txtDirectItem;
         private TextBox txtDirectDescription;
         private TextBox txtDirectUnit;
@@ -30,70 +22,53 @@ namespace HumanitarianProjectManagement
         private NumericUpDown numDirectDuration;
         private NumericUpDown numDirectPercentageCBPF;
         private Button btnDirectAddLine;
-        private DataGridView dgvDirectLines;
 
         public BudgetTabUserControl()
         {
             InitializeComponent();
-            this.btnAddNewSubCategory.Click += btnAddNewSubCategory_Click;
+
+            // Ensure pnlMainBudgetContentArea is a FlowLayoutPanel for vertical stacking
+            if (!(this.pnlMainBudgetContentArea is FlowLayoutPanel))
+            {
+                var flp = new FlowLayoutPanel
+                {
+                    Name = "pnlMainBudgetContentArea",
+                    Dock = DockStyle.Fill,
+                    AutoScroll = true,
+                    FlowDirection = FlowDirection.TopDown,
+                    WrapContents = false,
+                    Padding = new Padding(0),
+                    Margin = new Padding(0)
+                };
+                this.pnlBudgetMainArea.Controls.Remove(this.pnlMainBudgetContentArea);
+                this.pnlBudgetMainArea.Controls.Add(flp);
+                this.pnlMainBudgetContentArea = flp;
+            }
         }
 
         public void LoadProject(Project project)
         {
-            System.Diagnostics.Debug.WriteLine($"BudgetTabUserControl.LoadProject: Method called. Project is {(project == null ? "null" : "not null, ProjectID: " + project.ProjectID)}");
-            try
+            _currentProject = project;
+            if (_currentProject == null)
             {
-                _currentProject = project;
-                if (_currentProject == null)
-                {
-                    System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.LoadProject: Project is null, calling ClearAndHideAll.");
-                    ClearAndHideAll();
-                    InitializeMainCategoryButtons();
-                    return;
-                }
-
-                if (_currentProject.BudgetSubCategories == null)
-                {
-                    _currentProject.BudgetSubCategories = new BindingList<BudgetSubCategory>();
-                }
-                if (_currentProject.DetailedBudgetLines == null)
-                {
-                    _currentProject.DetailedBudgetLines = new List<DetailedBudgetLine>();
-                }
-
+                ClearAndHideAll();
                 InitializeMainCategoryButtons();
-
-                if (tlpCategoryButtons.Controls.Count > 0 && tlpCategoryButtons.Controls[0] is Button firstCatButton)
-                {
-                    System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.LoadProject: Performing click on the first category button.");
-                    firstCatButton.PerformClick();
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.LoadProject: No category buttons found after initialization, calling ClearAndHideAll.");
-                    ClearAndHideAll();
-                }
+                return;
             }
-            catch (Exception ex)
+            _currentProject.DetailedBudgetLines = _currentProject.DetailedBudgetLines ?? new BindingList<DetailedBudgetLine>();
+            InitializeMainCategoryButtons();
+            if (tlpCategoryButtons.Controls.Count > 0 && tlpCategoryButtons.Controls[0] is Button firstCatButton)
             {
-                System.Diagnostics.Debug.WriteLine($"BudgetTabUserControl.LoadProject: EXCEPTION: {ex.ToString()}");
-                MessageBox.Show($"Error loading project budget: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                firstCatButton.PerformClick();
             }
+            else { ClearAndHideAllContentArea(); }
         }
 
         private void InitializeMainCategoryButtons()
         {
-            if (this.tlpCategoryButtons == null)
-            {
-                System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.InitializeMainCategoryButtons: tlpCategoryButtons is null, cannot initialize.");
-                return;
-            }
-            System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.InitializeMainCategoryButtons: Started.");
-
+            if (this.tlpCategoryButtons == null) return;
             this.tlpCategoryButtons.SuspendLayout();
-            this.tlpCategoryButtons.Controls.Clear();
-            this.tlpCategoryButtons.RowStyles.Clear();
-
+            this.tlpCategoryButtons.Controls.Clear(); this.tlpCategoryButtons.RowStyles.Clear();
             int currentRow = 0;
             foreach (BudgetCategoriesEnum catEnum in Enum.GetValues(typeof(BudgetCategoriesEnum)))
             {
@@ -108,7 +83,7 @@ namespace HumanitarianProjectManagement
                     TextAlign = ContentAlignment.MiddleLeft,
                     Padding = new Padding(10, 0, 0, 0),
                     Margin = new Padding(0, 3, 0, 3),
-                    BackColor = defaultButtonBackColor,
+                    BackColor = Color.FromArgb(225, 225, 225),
                     ForeColor = Color.Black,
                     Cursor = Cursors.Hand
                 };
@@ -116,311 +91,239 @@ namespace HumanitarianProjectManagement
                 btnCategory.Click += btnBudgetCategory_Internal_Click;
                 this.tlpCategoryButtons.Controls.Add(btnCategory, 0, currentRow++);
             }
-            this.tlpCategoryButtons.RowCount = currentRow;
-            this.tlpCategoryButtons.ResumeLayout(true);
-            System.Diagnostics.Debug.WriteLine($"BudgetTabUserControl.InitializeMainCategoryButtons: Finished. Added {currentRow} buttons.");
+            this.tlpCategoryButtons.RowCount = currentRow; this.tlpCategoryButtons.ResumeLayout(true);
         }
 
-        private string GetCategoryDisplayName(BudgetCategoriesEnum category)
+        private string GetCategoryDisplayName(BudgetCategoriesEnum? category)
         {
-            string name = category.ToString();
-            if (name.Length > 2 && name[1] == '_')
+            if (!category.HasValue) return "No Category Selected";
+            string name = category.Value.ToString();
+            if (name.Contains("_"))
             {
-                name = name[0] + ". " + System.Text.RegularExpressions.Regex.Replace(name.Substring(2), "([a-z])([A-Z])", "$1 $2");
+                var parts = name.Split('_');
+                name = parts[0] + ". " + string.Join(" ", parts.Skip(1).Select(p => System.Text.RegularExpressions.Regex.Replace(p, "([a-z])([A-Z])", "$1 $2")));
             }
-            else
-            {
-                name = System.Text.RegularExpressions.Regex.Replace(name, "([a-z])([A-Z])", "$1 $2");
-            }
+            else { name = System.Text.RegularExpressions.Regex.Replace(name, "([a-z])([A-Z])", "$1 $2"); }
             return name;
+        }
+
+        private string GetCategoryPrefix(BudgetCategoriesEnum? category)
+        {
+            if (!category.HasValue) return "N/A";
+            string name = category.Value.ToString();
+            if (name.Contains("_")) return name.Split('_')[0];
+            if (string.IsNullOrEmpty(name)) return "ERR";
+            return name.Substring(0, 1);
         }
 
         private void btnBudgetCategory_Internal_Click(object sender, EventArgs e)
         {
             Button clickedButton = sender as Button;
-            if (clickedButton == null || !(clickedButton.Tag is BudgetCategoriesEnum))
-            {
-                System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.btnBudgetCategory_Internal_Click: Clicked button or its tag is invalid.");
-                return;
-            }
+            if (clickedButton == null || !(clickedButton.Tag is BudgetCategoriesEnum)) return;
+            _selectedMainCategory = (BudgetCategoriesEnum?)clickedButton.Tag;
+            foreach (Control c in this.tlpCategoryButtons.Controls) { if (c is Button btn) { btn.BackColor = Color.FromArgb(225, 225, 225); btn.ForeColor = Color.Black; } }
+            clickedButton.BackColor = Color.FromArgb(0, 122, 204); clickedButton.ForeColor = Color.White;
 
-            _selectedMainCategory = (BudgetCategoriesEnum)clickedButton.Tag;
-            System.Diagnostics.Debug.WriteLine($"BudgetTabUserControl.btnBudgetCategory_Internal_Click: Selected main category: {_selectedMainCategory}");
+            var flp = this.pnlMainBudgetContentArea as FlowLayoutPanel;
+            if (flp == null) return;
+            flp.SuspendLayout();
+            flp.Controls.Clear();
 
-            foreach (Control c in this.tlpCategoryButtons.Controls)
-            {
-                if (c is Button btn)
-                {
-                    btn.BackColor = defaultButtonBackColor;
-                    btn.ForeColor = Color.Black;
-                }
-            }
-            clickedButton.BackColor = selectedButtonBackColor;
-            clickedButton.ForeColor = Color.White;
-
-            string categoryDisplayPrefix = GetCategoryDisplayName(_selectedMainCategory).Split('.')[0];
-            this.btnAddNewSubCategory.Text = $"Add New Subcategory to {categoryDisplayPrefix} (Future)";
-            this.btnAddNewSubCategory.Enabled = true;
-
-            if (this.pnlMainBudgetContentArea == null)
-            {
-                System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.btnBudgetCategory_Internal_Click: pnlMainBudgetContentArea is null. Cannot update UI.");
-                return;
-            }
-
-            this.pnlMainBudgetContentArea.SuspendLayout();
-            this.pnlMainBudgetContentArea.Controls.Clear();
-
+            // 1. Category title at the very top
             Label lblCategoryHeader = new Label
             {
-                Text = GetCategoryDisplayName(_selectedMainCategory),
-                Font = new Font(this.Font.FontFamily, 12F, FontStyle.Bold),
+                Text = "Budget for: " + GetCategoryDisplayName(_selectedMainCategory),
+                Font = new Font(this.Font.FontFamily, 13F, FontStyle.Bold),
                 AutoSize = true,
-                Dock = DockStyle.Top,
-                Padding = new Padding(5),
-                TextAlign = ContentAlignment.MiddleLeft
+                Padding = new Padding(3, 8, 3, 8),
+                Margin = new Padding(0, 6, 0, 6),
+                ForeColor = Color.Black,
+                BackColor = Color.Transparent // No gray background
             };
-            this.pnlMainBudgetContentArea.Controls.Add(lblCategoryHeader);
+            flp.Controls.Add(lblCategoryHeader);
 
-            TableLayoutPanel tlpInputRow = new TableLayoutPanel
+            // 2. Input row for adding top-level direct lines
+            flp.Controls.Add(CreateInputRowForLine(null));
+
+            // 3. Render all top-level lines for this category
+            if (_currentProject != null && _selectedMainCategory.HasValue)
+            {
+                var topLines = _currentProject.DetailedBudgetLines
+                    .Where(l => l.Category == _selectedMainCategory.Value && l.ParentDetailedBudgetLineID == null)
+                    .OrderBy(l => l.Code)
+                    .ToList();
+
+                foreach (var line in topLines)
+                {
+                    RenderBudgetLineWithChildren(line, 0, flp);
+                }
+            }
+
+            flp.ResumeLayout(true);
+            flp.PerformLayout();
+        }
+
+        private TableLayoutPanel CreateInputRowForLine(DetailedBudgetLine parentLine)
+        {
+            TableLayoutPanel inputRow = new TableLayoutPanel
             {
                 ColumnCount = 8,
                 RowCount = 2,
                 AutoSize = true,
                 Dock = DockStyle.Top,
                 Padding = new Padding(0, 5, 0, 10),
-                CellBorderStyle = TableLayoutPanelCellBorderStyle.None
+                Margin = new Padding(parentLine == null ? 0 : 20, 0, 0, 5),
+                BackColor = Color.White
             };
-            for (int i = 0; i < 7; i++) { tlpInputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5F)); }
-            tlpInputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5F));
+            for (int i = 0; i < 7; i++) inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.0F));
+            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.0F));
+            string[] directLabels = { "Item/Activity:", "Description:", "Unit:", "Quantity:", "Unit Cost:", "Duration:", "% CBPF:" };
 
-            string[] labels = { "Item:", "Description:", "Unit:", "Quantity:", "Unit Cost:", "Duration:", "% CBPF:" };
-            Control[] inputs = new Control[7];
-
-            txtDirectItem = new TextBox { Dock = DockStyle.Fill, Name = "txtDirectItem" };
-            inputs[0] = txtDirectItem;
-            txtDirectDescription = new TextBox { Dock = DockStyle.Fill, Multiline = true, Height = 40, Name = "txtDirectDescription" };
-            inputs[1] = txtDirectDescription;
-            txtDirectUnit = new TextBox { Dock = DockStyle.Fill, Name = "txtDirectUnit" };
-            inputs[2] = txtDirectUnit;
-            numDirectQuantity = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 2, Minimum = 0, Maximum = 999999, Name = "numDirectQuantity" };
-            inputs[3] = numDirectQuantity;
-            numDirectUnitCost = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 2, Minimum = 0, Maximum = 99999999, Name = "numDirectUnitCost" };
-            inputs[4] = numDirectUnitCost;
-            numDirectDuration = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 2, Minimum = 1, Maximum = 9999, Value = 1, Name = "numDirectDuration" };
-            inputs[5] = numDirectDuration;
-            numDirectPercentageCBPF = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 0, Minimum = 0, Maximum = 100, Value = 100, Name = "numDirectPercentageCBPF" };
-            inputs[6] = numDirectPercentageCBPF;
-
-            for (int i = 0; i < labels.Length; i++)
+            TextBox txtItem = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+            TextBox txtDescription = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+            TextBox txtUnit = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+            NumericUpDown numQuantity = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 2, Minimum = 0, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+            NumericUpDown numUnitCost = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 2, Minimum = 0, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+            NumericUpDown numDuration = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 1, Minimum = 0, Value = 1, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+            NumericUpDown numPercentageCBPF = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 0, Minimum = 0, Maximum = 100, Value = 100, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+            Control[] directInputs = { txtItem, txtDescription, txtUnit, numQuantity, numUnitCost, numDuration, numPercentageCBPF };
+            for (int i = 0; i < directLabels.Length; i++)
             {
-                tlpInputRow.Controls.Add(new Label { Text = labels[i], AutoSize = true, Anchor = AnchorStyles.Left, TextAlign = ContentAlignment.MiddleLeft }, i, 0);
-                tlpInputRow.Controls.Add(inputs[i], i, 1);
+                inputRow.Controls.Add(new Label { Text = directLabels[i], AutoSize = true, Anchor = AnchorStyles.Left, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) }, i, 0);
+                inputRow.Controls.Add(directInputs[i], i, 1);
             }
-
-            btnDirectAddLine = new Button { Text = "Add Line", Dock = DockStyle.Fill, Name = "btnDirectAddLine" };
-            btnDirectAddLine.Click += BtnDirectAddLine_Click; // Register event handler
-            tlpInputRow.Controls.Add(btnDirectAddLine, 7, 1);
-
-            this.pnlMainBudgetContentArea.Controls.Add(tlpInputRow);
-
-            dgvDirectLines = new DataGridView
+            Button btnAddLine = new Button { Text = parentLine == null ? "Add Top-Level Direct Line" : "Add Sub-line", Dock = DockStyle.Fill, FlatStyle = FlatStyle.System, Height = 30, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+            btnAddLine.Click += (s, e) =>
             {
-                Dock = DockStyle.Fill,
-                AllowUserToAddRows = false,
-                AllowUserToDeleteRows = false,
-                AutoGenerateColumns = false,
-                Name = "dgvDirectLines",
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 9.75F, FontStyle.Bold) }
+                if (_currentProject == null || !_selectedMainCategory.HasValue) { MessageBox.Show("Project or Main Category not selected."); return; }
+                if (string.IsNullOrWhiteSpace(txtItem.Text)) { MessageBox.Show("Item name required."); txtItem.Focus(); return; }
+                if (numQuantity.Value <= 0) { MessageBox.Show("Quantity must be > 0."); numQuantity.Focus(); return; }
+
+                DetailedBudgetLine newLine = new DetailedBudgetLine
+                {
+                    DetailedBudgetLineID = Guid.NewGuid(),
+                    ProjectId = _currentProject.ProjectID,
+                    Category = _selectedMainCategory.Value,
+                    ItemName = txtItem.Text.Trim(),
+                    Description = txtDescription.Text.Trim(),
+                    Unit = txtUnit.Text.Trim(),
+                    Quantity = numQuantity.Value,
+                    UnitCost = numUnitCost.Value,
+                    Duration = numDuration.Value,
+                    PercentageChargedToCBPF = numPercentageCBPF.Value,
+                    Code = parentLine == null ? GenerateDirectLineCode(_selectedMainCategory.Value) : GenerateChildLineCode(parentLine),
+                    ParentDetailedBudgetLineID = parentLine?.DetailedBudgetLineID
+                };
+                RecalculateItemTotal(newLine);
+                _currentProject.DetailedBudgetLines.Add(newLine);
+
+                // Refresh view
+                Button btnToRefresh = tlpCategoryButtons.Controls.OfType<Button>().FirstOrDefault(b => b.Tag is BudgetCategoriesEnum tag && tag == _selectedMainCategory.Value);
+                if (btnToRefresh != null) btnBudgetCategory_Internal_Click(btnToRefresh, EventArgs.Empty);
+            };
+            inputRow.Controls.Add(btnAddLine, 7, 1);
+            return inputRow;
+        }
+
+        private void RenderBudgetLineWithChildren(DetailedBudgetLine line, int indentLevel, FlowLayoutPanel flp)
+        {
+            TableLayoutPanel row = new TableLayoutPanel
+            {
+                ColumnCount = 10,
+                RowCount = 1,
+                AutoSize = true,
+                Dock = DockStyle.Top,
+                Margin = new Padding(indentLevel * 20, 2, 0, 2),
+                BackColor = indentLevel % 2 == 0 ? Color.White : Color.FromArgb(245, 245, 245)
             };
 
-            string[] headers = { "Code", "Item", "Description", "Unit", "Qty", "Unit Cost", "Duration", "% CBPF", "Total Cost", "Actions" };
-            string[] dataProps = { "Code", "ItemName", "Description", "Unit", "Quantity", "UnitCost", "Duration", "PercentageChargedToCBPF", "TotalCost", "" }; // Assuming ItemName will be added to model or handled
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // Code
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15)); // Item
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25)); // Description
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // Unit
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // Qty
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80)); // Unit Cost
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // Duration
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // % CBPF
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80)); // Total
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100)); // Actions
 
-            for (int i = 0; i < headers.Length; i++)
+            row.Controls.Add(new Label { Text = line.Code, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10F) }, 0, 0);
+            row.Controls.Add(new Label { Text = line.ItemName, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10F) }, 1, 0);
+            row.Controls.Add(new Label { Text = line.Description, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10F) }, 2, 0);
+            row.Controls.Add(new Label { Text = line.Unit, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10F) }, 3, 0);
+            row.Controls.Add(new Label { Text = line.Quantity.ToString("N2"), AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 4, 0);
+            row.Controls.Add(new Label { Text = line.UnitCost.ToString("C2"), AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 5, 0);
+            row.Controls.Add(new Label { Text = line.Duration.ToString("N1"), AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 6, 0);
+            row.Controls.Add(new Label { Text = line.PercentageChargedToCBPF.ToString("N0") + "%", AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 7, 0);
+            row.Controls.Add(new Label { Text = line.TotalCost.ToString("C2"), AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 8, 0);
+
+            // Actions
+            FlowLayoutPanel actionsPanel = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight, Dock = DockStyle.Fill };
+            Button btnAddSubLine = new Button { Text = "+ Sub", Tag = line, AutoSize = true, Font = new Font("Segoe UI", 10F) };
+            btnAddSubLine.Click += (s, e) =>
             {
-                DataGridViewColumn col;
-                if (headers[i] == "Actions")
-                {
-                    col = new DataGridViewButtonColumn { Name = headers[i], HeaderText = headers[i], Text = "Edit/Del", UseColumnTextForButtonValue = true, Width = 100, Frozen = false };
-                }
-                else
-                {
-                    col = new DataGridViewTextBoxColumn { Name = headers[i].Replace(" ", "").Replace("%", "Perc"), HeaderText = headers[i], DataPropertyName = dataProps[i] };
-                    if (headers[i] == "Code" || headers[i] == "Total Cost") ((DataGridViewTextBoxColumn)col).ReadOnly = true;
-                    if (headers[i] == "Description") ((DataGridViewTextBoxColumn)col).MinimumWidth = 150; else if (headers[i] != "Item") col.Width = 75;
+                var inputRow = CreateInputRowForLine(line);
+                flp.Controls.Add(inputRow);
+                flp.Controls.SetChildIndex(inputRow, flp.Controls.GetChildIndex(row) + 1);
+            };
+            actionsPanel.Controls.Add(btnAddSubLine);
+            // Add Edit/Delete buttons as needed
+            row.Controls.Add(actionsPanel, 9, 0);
 
-                    if (new[] { "Qty", "Unit Cost", "Duration", "% CBPF", "Total Cost" }.Contains(headers[i]))
-                    {
-                        col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-                        if (headers[i] == "Unit Cost" || headers[i] == "Total Cost") col.DefaultCellStyle.Format = "C2";
-                        else if (headers[i] == "% CBPF") col.DefaultCellStyle.Format = "P0";
-                        else col.DefaultCellStyle.Format = "N2";
-                    }
-                }
-                dgvDirectLines.Columns.Add(col);
-            }
-            this.pnlMainBudgetContentArea.Controls.Add(dgvDirectLines);
-            dgvDirectLines.BringToFront();
-            this.pnlMainBudgetContentArea.ResumeLayout(true);
-            System.Diagnostics.Debug.WriteLine($"BudgetTabUserControl.btnBudgetCategory_Internal_Click: Added input row and DGV for {_selectedMainCategory}.");
+            flp.Controls.Add(row);
+
+            // Recursively add children, if any
+            var childLines = _currentProject.DetailedBudgetLines
+                .Where(l => l.ParentDetailedBudgetLineID == line.DetailedBudgetLineID)
+                .OrderBy(l => l.Code)
+                .ToList();
+
+            foreach (var child in childLines)
+                RenderBudgetLineWithChildren(child, indentLevel + 1, flp);
         }
 
-        private void ClearAndHideAll()
+        private string GenerateDirectLineCode(BudgetCategoriesEnum mainCategory)
         {
-            System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.ClearAndHideAll: Method called.");
-            if (this.pnlMainBudgetContentArea != null) this.pnlMainBudgetContentArea.Controls.Clear();
-
-            if (this.btnAddNewSubCategory != null)
-            {
-                this.btnAddNewSubCategory.Enabled = false;
-                this.btnAddNewSubCategory.Text = "Add New Subcategory";
-            }
-            _selectedMainCategory = default(BudgetCategoriesEnum);
-
-            if (this.tlpCategoryButtons != null)
-            {
-                foreach (Control c in this.tlpCategoryButtons.Controls)
-                {
-                    if (c is Button btn)
-                    {
-                        btn.BackColor = defaultButtonBackColor;
-                        btn.ForeColor = Color.Black;
-                    }
-                }
-            }
-            System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.ClearAndHideAll: Finished clearing UI elements.");
+            if (_currentProject == null) return GetCategoryPrefix(mainCategory) + ".ERR";
+            string prefix = GetCategoryPrefix(mainCategory) + ".";
+            int maxSuffix = _currentProject.DetailedBudgetLines
+                .Where(line => line.Category == mainCategory && line.ParentDetailedBudgetLineID == null)
+                .Select(line => { if (line.Code != null && line.Code.StartsWith(prefix) && !line.Code.Substring(prefix.Length).Contains(".")) { string s = line.Code.Substring(prefix.Length); return int.TryParse(s, out int n) ? n : 0; } return 0; })
+                .DefaultIfEmpty(0).Max();
+            return prefix + (maxSuffix + 1).ToString();
         }
 
-        private void btnAddNewSubCategory_Click(object sender, EventArgs e)
+        private string GenerateChildLineCode(DetailedBudgetLine parentLine)
         {
-            MessageBox.Show($"Add New Subcategory to {_selectedMainCategory} - Functionality to be implemented in a future iteration.", "Coming Soon", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            System.Diagnostics.Debug.WriteLine($"BudgetTabUserControl.btnAddNewSubCategory_Click: Clicked for category {_selectedMainCategory}. Placeholder action.");
-        }
-
-        private string GetCategoryPrefix(BudgetCategoriesEnum category)
-        {
-            string name = category.ToString();
-            if (name.Length > 2 && name[1] == '_') { return name.Substring(0, 1); } // E.g. "A_StaffAndPersonnel" -> "A"
-            // For categories like "Equipment", "Travel", take the first letter.
-            // This might need adjustment if multiple categories start with the same letter and are not prefixed like "A_".
-            return name.Substring(0, 1);
+            if (_currentProject == null || parentLine == null) return "ERR.CODE";
+            string basePrefix = parentLine.Code + ".";
+            int maxSuffix = _currentProject.DetailedBudgetLines
+                .Where(line => line.ParentDetailedBudgetLineID == parentLine.DetailedBudgetLineID && line.Code != null && line.Code.StartsWith(basePrefix))
+                .Select(line => { string suffixPart = line.Code.Substring(basePrefix.Length); return int.TryParse(suffixPart, out int num) ? num : 0; })
+                .DefaultIfEmpty(0).Max();
+            return basePrefix + (maxSuffix + 1).ToString();
         }
 
         private void RecalculateItemTotal(DetailedBudgetLine item)
         {
             if (item == null) return;
-            decimal percentageFactor = item.PercentageChargedToCBPF > 0 ? item.PercentageChargedToCBPF / 100M : 1M;
-            item.TotalCost = item.Quantity * item.UnitCost * item.Duration * percentageFactor;
-            System.Diagnostics.Debug.WriteLine($"BudgetTabUserControl.RecalculateItemTotal: Item '{item.Description}' total cost is {item.TotalCost}.");
+            decimal pf = item.PercentageChargedToCBPF > 0 ? item.PercentageChargedToCBPF / 100M : 1M;
+            item.TotalCost = item.Quantity * item.UnitCost * item.Duration * pf;
         }
 
-        private string GenerateDirectLineCode(BudgetCategoriesEnum mainCategory)
+        private void ClearAndHideAll()
         {
-            if (_currentProject == null || _currentProject.DetailedBudgetLines == null)
-            {
-                System.Diagnostics.Debug.WriteLine("GenerateDirectLineCode: _currentProject or DetailedBudgetLines is null. Returning default code.");
-                return GetCategoryPrefix(mainCategory) + ".1";
-            }
-
-            string prefix = GetCategoryPrefix(mainCategory) + ".";
-            int maxSuffix = 0;
-
-            var directLinesForCategory = _currentProject.DetailedBudgetLines
-                .Where(line => line.Category == mainCategory &&
-                               (line.BudgetSubCategoryID == Guid.Empty || line.BudgetSubCategoryID == null) && // Direct lines
-                               line.Code != null && line.Code.StartsWith(prefix))
-                .ToList();
-
-            foreach (var line in directLinesForCategory)
-            {
-                string suffixPart = line.Code.Substring(prefix.Length);
-                if (int.TryParse(suffixPart, out int currentSuffix))
-                {
-                    if (currentSuffix > maxSuffix)
-                    {
-                        maxSuffix = currentSuffix;
-                    }
-                }
-            }
-            return prefix + (maxSuffix + 1).ToString();
+            ClearAndHideAllContentArea();
+            if (this.tlpCategoryButtons != null)
+                foreach (Control c in this.tlpCategoryButtons.Controls)
+                    if (c is Button btn) { btn.BackColor = Color.FromArgb(225, 225, 225); btn.ForeColor = Color.Black; }
         }
 
-        private void BtnDirectAddLine_Click(object sender, EventArgs e)
+        private void ClearAndHideAllContentArea()
         {
-            System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.BtnDirectAddLine_Click: Initiated.");
-            if (_currentProject == null)
-            {
-                MessageBox.Show("No project is currently loaded.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            // Validation
-            if (string.IsNullOrWhiteSpace(txtDirectItem.Text))
-            {
-                MessageBox.Show("Item name is required.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtDirectItem.Focus();
-                return;
-            }
-            if (numDirectQuantity.Value <= 0)
-            {
-                MessageBox.Show("Quantity must be greater than zero.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                numDirectQuantity.Focus();
-                return;
-            }
-            if (numDirectUnitCost.Value < 0) // Allow zero cost, but not negative
-            {
-                MessageBox.Show("Unit Cost cannot be negative.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                numDirectUnitCost.Focus();
-                return;
-            }
-
-
-            DetailedBudgetLine newLine = new DetailedBudgetLine
-            {
-                ProjectId = _currentProject.ProjectID,
-                Category = _selectedMainCategory,
-                BudgetSubCategoryID = Guid.Empty, // Indicates a direct line
-                // Assuming txtDirectItem is the main short name, txtDirectDescription is further detail.
-                // Model's Description field will store this combined or primary info.
-                // For now, let's combine if txtDirectDescription is not empty.
-                Description = string.IsNullOrWhiteSpace(txtDirectDescription.Text) ? txtDirectItem.Text.Trim() : $"{txtDirectItem.Text.Trim()} - {txtDirectDescription.Text.Trim()}",
-                Unit = txtDirectUnit.Text.Trim(),
-                Quantity = numDirectQuantity.Value,
-                UnitCost = numDirectUnitCost.Value,
-                Duration = numDirectDuration.Value,
-                PercentageChargedToCBPF = numDirectPercentageCBPF.Value,
-                Code = GenerateDirectLineCode(_selectedMainCategory)
-            };
-
-            RecalculateItemTotal(newLine);
-
-            _currentProject.DetailedBudgetLines.Add(newLine);
-            System.Diagnostics.Debug.WriteLine($"BudgetTabUserControl.BtnDirectAddLine_Click: Added new direct line '{newLine.Code} - {newLine.Description}' to category {_selectedMainCategory}.");
-
-            // Clear input fields
-            txtDirectItem.Clear();
-            txtDirectDescription.Clear();
-            txtDirectUnit.Clear();
-            numDirectQuantity.Value = 0;
-            numDirectUnitCost.Value = 0;
-            numDirectDuration.Value = 1;
-            numDirectPercentageCBPF.Value = 100;
-
-            // Refresh DataGridView (Full refresh logic will be in Part 3)
-            // For now, this is a placeholder for the refresh.
-            // If dgvDirectLines.DataSource is set to a BindingList<DetailedBudgetLine>,
-            // adding to that list would auto-refresh.
-            // If it's List<T>, manual refresh like below is needed.
-            if (dgvDirectLines != null)
-            {
-                var directLinesForCategory = _currentProject.DetailedBudgetLines
-                    .Where(line => line.Category == _selectedMainCategory && (line.BudgetSubCategoryID == Guid.Empty || line.BudgetSubCategoryID == null))
-                    .ToList();
-                dgvDirectLines.DataSource = null;
-                dgvDirectLines.DataSource = directLinesForCategory;
-                System.Diagnostics.Debug.WriteLine("BudgetTabUserControl.BtnDirectAddLine_Click: dgvDirectLines refreshed (basic).");
-            }
+            if (this.pnlMainBudgetContentArea != null) this.pnlMainBudgetContentArea.Controls.Clear();
+            _selectedMainCategory = null;
         }
     }
 }

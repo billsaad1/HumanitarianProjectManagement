@@ -303,7 +303,6 @@
     <Compile Include="Activity.cs" />
     <Compile Include="BudgetCategoriesEnum.cs" />
     <Compile Include="BudgetCategoryEnum.cs" />
-    <Compile Include="BudgetSubCategory.cs" />
     <Compile Include="BudgetTabUserControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -319,6 +318,14 @@
     <Compile Include="Migrations\20250617140620_SeedInitialUserAndRole.cs" />
     <Compile Include="Migrations\20250617140620_SeedInitialUserAndRole.Designer.cs">
       <DependentUpon>20250617140620_SeedInitialUserAndRole.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\20250620193930_ImplementFullBudgetHierarchyFKs_NoCascade.cs" />
+    <Compile Include="Migrations\20250620193930_ImplementFullBudgetHierarchyFKs_NoCascade.Designer.cs">
+      <DependentUpon>20250620193930_ImplementFullBudgetHierarchyFKs_NoCascade.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\20250620231141_ImplementLineOnlyHierarchy_V4.cs" />
+    <Compile Include="Migrations\20250620231141_ImplementLineOnlyHierarchy_V4.Designer.cs">
+      <DependentUpon>20250620231141_ImplementLineOnlyHierarchy_V4.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\HpmDbContextModelSnapshot.cs" />
     <Compile Include="Outcome.cs" />

@@ -1,13 +1,8 @@
 using System;
-using System.Collections.Generic; // Required for ICollection and HashSet
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using HumanitarianProjectManagement; // Added for BudgetSubCategory
-
-// Ensure this using directive is present if BudgetCategoriesEnum is in a different namespace,
-// but given the plan, it should be in HumanitarianProjectManagement.Models as well.
-// using HumanitarianProjectManagement.Models;
 
 namespace HumanitarianProjectManagement.Models
 {
@@ -20,10 +15,6 @@ namespace HumanitarianProjectManagement.Models
         public int ProjectId { get; set; }
         [ForeignKey("ProjectId")]
         public virtual Project Project { get; set; }
-
-        public Guid BudgetSubCategoryID { get; set; }
-        [ForeignKey("BudgetSubCategoryID")]
-        public virtual BudgetSubCategory BudgetSubCategory { get; set; }
 
         [Required]
         public BudgetCategoriesEnum Category { get; set; }
@@ -44,7 +35,13 @@ namespace HumanitarianProjectManagement.Models
         public decimal PercentageChargedToCBPF { get; set; }
         public decimal TotalCost { get; set; }
 
-        // Changed from BindingList<ItemizedBudgetDetail> to virtual ICollection<ItemizedBudgetDetail>
+        // Self-referencing parent-child relationship
+        public Guid? ParentDetailedBudgetLineID { get; set; }
+        [ForeignKey("ParentDetailedBudgetLineID")]
+        public virtual DetailedBudgetLine ParentDetailedBudgetLine { get; set; }
+        public virtual ICollection<DetailedBudgetLine> ChildDetailedBudgetLines { get; set; }
+
+        // Itemized details (if needed)
         public virtual ICollection<ItemizedBudgetDetail> ItemizedDetails { get; set; }
 
         public DetailedBudgetLine()
@@ -59,8 +56,8 @@ namespace HumanitarianProjectManagement.Models
             Duration = 1;
             PercentageChargedToCBPF = 100;
             TotalCost = 0;
-            // Initialized with HashSet<ItemizedBudgetDetail>
             ItemizedDetails = new HashSet<ItemizedBudgetDetail>();
+            ChildDetailedBudgetLines = new HashSet<DetailedBudgetLine>();
         }
     }
 }
