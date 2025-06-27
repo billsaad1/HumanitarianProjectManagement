@@ -306,7 +306,9 @@
     <Compile Include="BudgetTabUserControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="BudgetTabUserControl.Designer.cs" />
+    <Compile Include="BudgetTabUserControl.Designer.cs">
+      <DependentUpon>BudgetTabUserControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="DetailedBudgetLine.cs" />
     <Compile Include="ItemizedBudgetDetail.cs" />
     <Compile Include="LogFrameService.cs" />

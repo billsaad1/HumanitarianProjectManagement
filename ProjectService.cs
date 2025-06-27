@@ -394,7 +394,72 @@ namespace HumanitarianProjectManagement.DataAccessLayer
 
         // BudgetSubCategory CRUD methods are removed.
 
-        public async Task<List<Project>> GetAllProjectsAsync() { /* ... existing ... */ return new List<Project>(); }
+        public async Task<List<Project>> GetAllProjectsAsync()
+        {
+            List<Project> projects = new List<Project>();
+            string query = @"
+                SELECT ProjectID, ProjectName, ProjectCode, SectionID, StartDate, EndDate, 
+                       Status, TotalBudget, Donor, CreatedAt, UpdatedAt, ManagerUserID, 
+                       Location, OverallObjective 
+                FROM Projects 
+                ORDER BY ProjectName;";
+
+            try
+            {
+                using (SqlConnection connection = DatabaseHelper.GetConnection())
+                {
+                    await connection.OpenAsync();
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                Project project = new Project
+                                {
+                                    ProjectID = (int)reader["ProjectID"],
+                                    ProjectName = reader["ProjectName"].ToString(),
+                                    ProjectCode = reader["ProjectCode"] != DBNull.Value ? reader["ProjectCode"].ToString() : null,
+                                    SectionID = reader["SectionID"] != DBNull.Value ? (int?)reader["SectionID"] : null,
+                                    StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader["StartDate"] : null,
+                                    EndDate = reader["EndDate"] != DBNull.Value ? (DateTime?)reader["EndDate"] : null,
+                                    Status = reader["Status"] != DBNull.Value ? reader["Status"].ToString() : null,
+                                    TotalBudget = reader["TotalBudget"] != DBNull.Value ? (decimal?)reader["TotalBudget"] : null,
+                                    Donor = reader["Donor"] != DBNull.Value ? reader["Donor"].ToString() : null,
+                                    CreatedAt = reader["CreatedAt"] != DBNull.Value ? (DateTime)reader["CreatedAt"] : DateTime.MinValue,
+                                    UpdatedAt = reader["UpdatedAt"] != DBNull.Value ? (DateTime?)reader["UpdatedAt"] : null,
+                                    ManagerUserID = reader["ManagerUserID"] != DBNull.Value ? (int?)reader["ManagerUserID"] : null,
+                                    Location = reader["Location"] != DBNull.Value ? reader["Location"].ToString() : null,
+                                    OverallObjective = reader["OverallObjective"] != DBNull.Value ? reader["OverallObjective"].ToString() : null,
+
+                                    // Initialize collections to empty for a summary view
+                                    Outcomes = new BindingList<Outcome>(),
+                                    DetailedBudgetLines = new BindingList<DetailedBudgetLine>(),
+                                    BeneficiaryLists = new BindingList<BeneficiaryList>(),
+                                    ProjectIndicators = new BindingList<ProjectIndicator>(),
+                                    // Budgets = new BindingList<Budget>(), // If Budget model exists and is needed
+                                    PurchaseOrders = new BindingList<PurchaseOrder>(),
+                                    ProjectReports = new BindingList<ProjectReport>(),
+                                    StockTransactions = new BindingList<StockTransaction>(),
+                                    Feedbacks = new BindingList<Feedback>(),
+                                    FollowUpVisits = new BindingList<FollowUpVisit>()
+                                };
+                                projects.Add(project);
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (e.g., to a logging framework or console)
+                Console.WriteLine($"Error in GetAllProjectsAsync: {ex.Message}");
+                // Optionally, rethrow or handle as per application's error handling strategy
+                // For now, we'll return an empty list or a list potentially partially filled before error
+            }
+            return projects;
+        }
 
         public async Task<Project> GetProjectByIdAsync(int projectId)
         {
@@ -466,7 +531,70 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             return project;
         }
 
-        public async Task<List<Project>> GetProjectsBySectionIdAsync(int sectionId) { /* ... existing ... */ return new List<Project>(); }
+        public async Task<List<Project>> GetProjectsBySectionIdAsync(int sectionId)
+        {
+            List<Project> projects = new List<Project>();
+            string query = @"
+                SELECT ProjectID, ProjectName, ProjectCode, SectionID, StartDate, EndDate, 
+                       Status, TotalBudget, Donor, CreatedAt, UpdatedAt, ManagerUserID, 
+                       Location, OverallObjective 
+                FROM Projects 
+                WHERE SectionID = @SectionID 
+                ORDER BY ProjectName;";
+
+            try
+            {
+                using (SqlConnection connection = DatabaseHelper.GetConnection())
+                {
+                    await connection.OpenAsync();
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@SectionID", sectionId);
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                Project project = new Project
+                                {
+                                    ProjectID = (int)reader["ProjectID"],
+                                    ProjectName = reader["ProjectName"].ToString(),
+                                    ProjectCode = reader["ProjectCode"] != DBNull.Value ? reader["ProjectCode"].ToString() : null,
+                                    SectionID = reader["SectionID"] != DBNull.Value ? (int?)reader["SectionID"] : null,
+                                    StartDate = reader["StartDate"] != DBNull.Value ? (DateTime?)reader["StartDate"] : null,
+                                    EndDate = reader["EndDate"] != DBNull.Value ? (DateTime?)reader["EndDate"] : null,
+                                    Status = reader["Status"] != DBNull.Value ? reader["Status"].ToString() : null,
+                                    TotalBudget = reader["TotalBudget"] != DBNull.Value ? (decimal?)reader["TotalBudget"] : null,
+                                    Donor = reader["Donor"] != DBNull.Value ? reader["Donor"].ToString() : null,
+                                    CreatedAt = reader["CreatedAt"] != DBNull.Value ? (DateTime)reader["CreatedAt"] : DateTime.MinValue,
+                                    UpdatedAt = reader["UpdatedAt"] != DBNull.Value ? (DateTime?)reader["UpdatedAt"] : null,
+                                    ManagerUserID = reader["ManagerUserID"] != DBNull.Value ? (int?)reader["ManagerUserID"] : null,
+                                    Location = reader["Location"] != DBNull.Value ? reader["Location"].ToString() : null,
+                                    OverallObjective = reader["OverallObjective"] != DBNull.Value ? reader["OverallObjective"].ToString() : null,
+
+                                    // Initialize collections to empty for a summary view
+                                    Outcomes = new BindingList<Outcome>(),
+                                    DetailedBudgetLines = new BindingList<DetailedBudgetLine>(),
+                                    BeneficiaryLists = new BindingList<BeneficiaryList>(),
+                                    ProjectIndicators = new BindingList<ProjectIndicator>(),
+                                    PurchaseOrders = new BindingList<PurchaseOrder>(),
+                                    ProjectReports = new BindingList<ProjectReport>(),
+                                    StockTransactions = new BindingList<StockTransaction>(),
+                                    Feedbacks = new BindingList<Feedback>(),
+                                    FollowUpVisits = new BindingList<FollowUpVisit>()
+                                };
+                                projects.Add(project);
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetProjectsBySectionIdAsync (SectionID: {sectionId}): {ex.Message}");
+            }
+            return projects;
+        }
 
         public async Task<bool> SaveProjectAsync(Project project)
         {

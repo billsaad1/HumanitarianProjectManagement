@@ -12,10 +12,9 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using HumanitarianProjectManagement.UI;
 using System.Globalization;
-using HumanitarianProjectManagement; // Added for ApplicationState if not implicitly available
-using System.Diagnostics; // Added for Debug.WriteLine
+using HumanitarianProjectManagement;
+using System.Diagnostics;
 
-// Provided by user in feedback 2024-05-16
 namespace HumanitarianProjectManagement.Forms
 {
     public partial class ProjectCreateEditForm : Form
@@ -23,12 +22,12 @@ namespace HumanitarianProjectManagement.Forms
         private readonly ProjectService _projectService;
         private readonly SectionService _sectionService;
         private Project _currentProject;
-        private readonly bool _isEditMode;
+        private bool _isEditMode;
         private int? _initialSectionId;
         private readonly LogFrameService _logFrameService;
-        private Panel sidebarPanel; // For LogFrame
-
-        private BudgetTabUserControl _budgetTabControlInstance; // Instance of the new UserControl
+        private Panel sidebarPanel;
+        private BudgetTabUserControl _budgetTabControlInstance;
+        private bool _formInitialLoadComplete = false; // Flag to manage initial load logic
 
 
         private class ComboboxItem
@@ -60,13 +59,15 @@ namespace HumanitarianProjectManagement.Forms
                 _currentProject = projectToEdit;
                 this.Text = $"Edit Project - {_currentProject.ProjectName}";
                 if (_currentProject.Outcomes == null) _currentProject.Outcomes = new List<Outcome>();
+                if (_currentProject.DetailedBudgetLines == null) _currentProject.DetailedBudgetLines = new BindingList<DetailedBudgetLine>();
                 PopulateControls();
             }
             else
             {
-                _currentProject = new Project();
+                _currentProject = new Project(); // ProjectID will be 0
                 this.Text = "Add New Project";
                 _currentProject.Outcomes = new List<Outcome>();
+                _currentProject.DetailedBudgetLines = new BindingList<DetailedBudgetLine>();
                 dtpStartDate.Value = DateTime.Now;
                 dtpStartDate.Checked = false;
                 dtpEndDate.Checked = false;
@@ -77,145 +78,145 @@ namespace HumanitarianProjectManagement.Forms
 
         private void InitializeBudgetUITab()
         {
-            System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: Started.");
+            // This method now primarily ensures the tab and control are created and added.
+            // Data loading is handled by HandleBudgetTabVisibilityAndStateAsync.
+            Debug.WriteLine("InitializeBudgetUITab: Started.");
             try
             {
                 if (this.tabControlProjectDetails == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: tabControlProjectDetails is null. Cannot initialize Budget tab.");
-                    // Console.WriteLine("Error: tabControlProjectDetails is null. Cannot initialize Budget tab."); // Old logging
+                    Debug.WriteLine("InitializeBudgetUITab: tabControlProjectDetails is null. Cannot initialize Budget tab.");
                     return;
                 }
 
-                _budgetTabControlInstance = new BudgetTabUserControl();
-                _budgetTabControlInstance.Dock = DockStyle.Fill;
-
-                TabPage tabPageBudget = new TabPage();
-                tabPageBudget.Name = "tabPageBudget";
-                tabPageBudget.Text = "Budget";
-                tabPageBudget.Controls.Add(_budgetTabControlInstance);
-
-                if (this.tabControlProjectDetails.TabPages.ContainsKey("tabPageBudget"))
+                if (_budgetTabControlInstance == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: tabPageBudget already exists, removing to avoid duplication.");
-                    this.tabControlProjectDetails.TabPages.RemoveByKey("tabPageBudget");
+                    _budgetTabControlInstance = new BudgetTabUserControl();
+                    _budgetTabControlInstance.Dock = DockStyle.Fill;
+                    Debug.WriteLine("InitializeBudgetUITab: _budgetTabControlInstance created.");
                 }
-                this.tabControlProjectDetails.TabPages.Add(tabPageBudget);
-                System.Diagnostics.Debug.WriteLine($"InitializeBudgetUITab: tabPageBudget {(tabControlProjectDetails.TabPages.Contains(tabPageBudget) ? "successfully added" : "NOT found after adding")}. Name: {tabPageBudget.Name}");
 
-                System.Diagnostics.Debug.WriteLine($"InitializeBudgetUITab: _currentProject is {(_currentProject == null ? "null" : "not null, ProjectID: " + _currentProject.ProjectID)}");
-                if (_budgetTabControlInstance != null && _currentProject != null)
+                TabPage tabPageBudget = tabControlProjectDetails.TabPages["tabPageBudget"];
+                if (tabPageBudget == null)
                 {
-                    _budgetTabControlInstance.LoadProject(_currentProject);
+                    tabPageBudget = new TabPage();
+                    tabPageBudget.Name = "tabPageBudget";
+                    tabPageBudget.Text = "Budget";
+                    tabControlProjectDetails.TabPages.Add(tabPageBudget);
+                    Debug.WriteLine($"InitializeBudgetUITab: tabPageBudget created and added.");
                 }
-                else if (_budgetTabControlInstance == null)
+
+                if (!tabPageBudget.Controls.Contains(_budgetTabControlInstance))
                 {
-                    System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: _budgetTabControlInstance is null. Cannot load project data.");
-                    // Console.WriteLine("Error: _budgetTabControlInstance is null. Cannot load project data."); // Old logging
-                }
-                else if (_currentProject == null)
-                {
-                    System.Diagnostics.Debug.WriteLine("InitializeBudgetUITab: _currentProject is null. Budget tab will be initialized without project data.");
-                    // Console.WriteLine("Info: _currentProject is null. Budget tab will be initialized without project data."); // Old logging
+                    tabPageBudget.Controls.Clear();
+                    tabPageBudget.Controls.Add(_budgetTabControlInstance);
+                    System.Diagnostics.Debug.WriteLine($"InitializeBudgetUITab: _budgetTabControlInstance added to tabPageBudget.");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"InitializeBudgetUITab: EXCEPTION: {ex.ToString()}");
+                Debug.WriteLine($"InitializeBudgetUITab: EXCEPTION: {ex.ToString()}");
             }
+        }
+
+        private async Task HandleBudgetTabVisibilityAndStateAsync()
+        {
+            Debug.WriteLine($"HandleBudgetTabVisibilityAndStateAsync: Started. _isEditMode: {_isEditMode}, _currentProject.ProjectID: {_currentProject?.ProjectID ?? -1}");
+
+            // Ensure BudgetTab and its control are initialized
+            InitializeBudgetUITab();
+            TabPage tabPageBudget = tabControlProjectDetails.TabPages["tabPageBudget"];
+
+            if (tabPageBudget == null || _budgetTabControlInstance == null)
+            {
+                Debug.WriteLine("HandleBudgetTabVisibilityAndStateAsync: Budget tab or control instance is null even after InitializeBudgetUITab. Aborting.");
+                return;
+            }
+
+            bool userHasBudgetAccess = false;
+            try
+            {
+                User currentUser = ApplicationState.CurrentUser;
+                Debug.WriteLine($"HandleBudgetTabVisibilityAndStateAsync: ApplicationState.CurrentUser is {(currentUser == null ? "null" : currentUser.Username)}");
+
+                if (currentUser != null)
+                {
+                    UserService userService = new UserService();
+                    List<int> roleIds = await userService.GetRoleIdsForUserAsync(currentUser.UserID);
+                    List<Role> allRoles = await userService.GetAllRolesAsync();
+                    List<string> userRoleNames = roleIds
+                        .Select(id => allRoles.FirstOrDefault(r => r.RoleID == id)?.RoleName)
+                        .Where(name => name != null)
+                        .ToList();
+                    List<string> allowedRoleNames = new List<string> { "Administrator", "Project Manager", "Finance" };
+                    userHasBudgetAccess = userRoleNames.Any(userRole => allowedRoleNames.Contains(userRole));
+                }
+
+                if (!userHasBudgetAccess)
+                {
+                    if (tabControlProjectDetails.TabPages.Contains(tabPageBudget))
+                    {
+                        tabControlProjectDetails.TabPages.Remove(tabPageBudget);
+                        Debug.WriteLine("HandleBudgetTabVisibilityAndStateAsync: User lacks permission, tabPageBudget removed.");
+                    }
+                }
+                else
+                {
+                    if (!tabControlProjectDetails.TabPages.Contains(tabPageBudget))
+                    {
+                        tabControlProjectDetails.TabPages.Add(tabPageBudget);
+                        if (!tabPageBudget.Controls.Contains(_budgetTabControlInstance))
+                        {
+                            tabPageBudget.Controls.Clear();
+                            tabPageBudget.Controls.Add(_budgetTabControlInstance);
+                        }
+                        Debug.WriteLine("HandleBudgetTabVisibilityAndStateAsync: Budget tab (re-)added for permitted user.");
+                    }
+                    // Load project data into the budget control.
+                    // BudgetTabUserControl.LoadProject should internally handle if ProjectID is 0 (new) or >0 (existing/saved)
+                    _budgetTabControlInstance.LoadProject(_currentProject);
+                    Debug.WriteLine($"HandleBudgetTabVisibilityAndStateAsync: Called LoadProject on _budgetTabControlInstance with ProjectID: {_currentProject?.ProjectID ?? -1}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"HandleBudgetTabVisibilityAndStateAsync: EXCEPTION: {ex.ToString()}");
+                if (tabControlProjectDetails.TabPages.Contains(tabPageBudget))
+                {
+                    tabControlProjectDetails.TabPages.Remove(tabPageBudget);
+                }
+                MessageBox.Show("Error determining user permissions for the budget tab. The tab will be hidden.", "Permissions Error");
+            }
+            Debug.WriteLine($"HandleBudgetTabVisibilityAndStateAsync: tabPageBudget is {(tabControlProjectDetails.TabPages.ContainsKey("tabPageBudget") ? "visible/present" : "hidden/removed")}.");
         }
 
         private async void ProjectCreateEditForm_Load(object sender, EventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Started.");
-            System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: tabControlProjectDetails is {(this.tabControlProjectDetails == null ? "null" : "found")}");
+            Debug.WriteLine($"ProjectCreateEditForm_Load: Started. _isEditMode: {_isEditMode}, _currentProject.ProjectID: {_currentProject?.ProjectID ?? -1}, _formInitialLoadComplete: {_formInitialLoadComplete}");
 
-            try { await LoadComboBoxesAsync(); }
-            catch (Exception ex)
+            if (!_formInitialLoadComplete)
             {
-                System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: EXCEPTION during LoadComboBoxesAsync: {ex.ToString()}");
-                MessageBox.Show("Error loading sections/managers: " + ex.ToString(), "Load Data Exception");
-                return;
+                try { await LoadComboBoxesAsync(); }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"ProjectCreateEditForm_Load: EXCEPTION during LoadComboBoxesAsync: {ex.ToString()}");
+                    MessageBox.Show("Error loading sections/managers: " + ex.ToString(), "Load Data Exception");
+                    return;
+                }
+
+                InitializeLogFrameUI();
+                InitializeActivityPlanTab();
+                // InitializeBudgetUITab() is called within HandleBudgetTabVisibilityAndStateAsync if needed
+
+                _formInitialLoadComplete = true;
             }
 
-            InitializeLogFrameUI();
-            InitializeActivityPlanTab();
-            InitializeBudgetUITab();
-
-            System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Attempting to apply role-based visibility for budget tab.");
-            TabPage tabPageBudget = null; // Initialize to null
-            try
-            {
-                tabPageBudget = tabControlProjectDetails.TabPages["tabPageBudget"];
-                if (tabPageBudget == null)
-                {
-                    System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Budget tab ('tabPageBudget') not found after initialization.");
-                }
-                else
-                {
-                    User currentUser = ApplicationState.CurrentUser;
-                    System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: ApplicationState.CurrentUser is {(currentUser == null ? "null" : currentUser.Username)}");
-
-                    if (currentUser == null)
-                    {
-                        System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: CurrentUser is null, preparing to hide budget tab.");
-                        System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Condition not met or user lacks permission, attempting to remove tabPageBudget.");
-                        tabControlProjectDetails.TabPages.Remove(tabPageBudget);
-                    }
-                    else
-                    {
-                        UserService userService = new UserService();
-                        List<int> roleIds = await userService.GetRoleIdsForUserAsync(currentUser.UserID);
-                        System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: Fetched role IDs for user {currentUser.Username}: {(roleIds == null ? "null" : string.Join(", ", roleIds))}");
-
-                        List<Role> allRoles = await userService.GetAllRolesAsync();
-                        System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: Fetched all roles: {(allRoles == null ? "null" : string.Join(", ", allRoles.Select(r => r.RoleName)))}");
-
-                        List<string> userRoleNames = roleIds
-                            .Select(id => allRoles.FirstOrDefault(r => r.RoleID == id)?.RoleName)
-                            .Where(name => name != null)
-                            .ToList();
-
-                        List<string> allowedRoleNames = new List<string> { "Administrator", "Project Manager", "Finance" };
-                        System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: Allowed role names for budget tab: {string.Join(", ", allowedRoleNames)}");
-
-                        bool userHasAllowedRole = userRoleNames.Any(userRole => allowedRoleNames.Contains(userRole));
-                        System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: User {currentUser.Username} {(userHasAllowedRole ? "HAS" : "DOES NOT HAVE")} an allowed role.");
-
-                        if (!userHasAllowedRole)
-                        {
-                            System.Diagnostics.Debug.WriteLine("ProjectCreateEditForm_Load: Condition not met or user lacks permission, attempting to remove tabPageBudget.");
-                            tabControlProjectDetails.TabPages.Remove(tabPageBudget);
-                        }
-                    }
-                }
-                // Final check on tab visibility
-                if (tabControlProjectDetails.TabPages.ContainsKey("tabPageBudget")) // Check by key if tabPageBudget variable might be stale after removal
-                {
-                    System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: tabPageBudget is visible/present.");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: tabPageBudget is hidden/removed.");
-                }
-
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: EXCEPTION during role-based visibility: {ex.ToString()}");
-                if (tabPageBudget != null && tabControlProjectDetails.TabPages.Contains(tabPageBudget)) // Attempt to remove if error occurred and tab still exists
-                {
-                    tabControlProjectDetails.TabPages.Remove(tabPageBudget);
-                    System.Diagnostics.Debug.WriteLine($"ProjectCreateEditForm_Load: tabPageBudget removed due to exception in role check.");
-                }
-                MessageBox.Show("Error determining user permissions for the budget tab. The tab will be hidden as a precaution.", "Permissions Error");
-            }
-
+            await HandleBudgetTabVisibilityAndStateAsync();
 
             DataGridView dgvActivityPlan = this.Controls.Find("dgvActivityPlan", true).FirstOrDefault() as DataGridView;
             if (dgvActivityPlan != null)
             {
-                dgvActivityPlan.CellValueChanged -= dgvActivityPlan_CellValueChanged;
+                dgvActivityPlan.CellValueChanged -= dgvActivityPlan_CellValueChanged; // Ensure it's only added once
                 dgvActivityPlan.CurrentCellDirtyStateChanged -= dgvActivityPlan_CurrentCellDirtyStateChanged;
                 dgvActivityPlan.CellValueChanged += dgvActivityPlan_CellValueChanged;
                 dgvActivityPlan.CurrentCellDirtyStateChanged += dgvActivityPlan_CurrentCellDirtyStateChanged;
@@ -223,6 +224,7 @@ namespace HumanitarianProjectManagement.Forms
 
             if (this.dtpStartDate != null) { this.dtpStartDate.ValueChanged -= ProjectDatesChanged_RefreshActivityPlan; this.dtpStartDate.ValueChanged += ProjectDatesChanged_RefreshActivityPlan; }
             if (this.dtpEndDate != null) { this.dtpEndDate.ValueChanged -= ProjectDatesChanged_RefreshActivityPlan; this.dtpEndDate.ValueChanged += ProjectDatesChanged_RefreshActivityPlan; }
+            Debug.WriteLine($"ProjectCreateEditForm_Load: Finished. _isEditMode: {_isEditMode}, _currentProject.ProjectID: {_currentProject?.ProjectID ?? -1}");
         }
 
         private void InitializeLogFrameUI()
@@ -653,8 +655,33 @@ namespace HumanitarianProjectManagement.Forms
             btnSave.Enabled = false; btnCancel.Enabled = false; this.UseWaitCursor = true;
             try
             {
+                bool wasNewProject = !_isEditMode && _currentProject.ProjectID == 0;
                 bool success = await _projectService.SaveProjectAsync(_currentProject);
-                if (success) { MessageBox.Show("Project saved successfully.", "Success"); this.DialogResult = DialogResult.OK; this.Close(); }
+
+                if (success)
+                {
+                    MessageBox.Show("Project saved successfully.", "Success");
+                    this.DialogResult = DialogResult.OK;
+
+                    if (wasNewProject && _currentProject.ProjectID > 0)
+                    {
+                        _isEditMode = true;
+                        this.Text = $"Edit Project - {_currentProject.ProjectName}";
+
+                        // Ensure HandleBudgetTabVisibilityAndStateAsync is awaited correctly
+                        // and that it correctly loads the project into the budgetTabControlInstance
+                        await HandleBudgetTabVisibilityAndStateAsync(); // This should handle visibility and initial load if tab becomes visible
+
+                        if (_budgetTabControlInstance != null && tabControlProjectDetails.TabPages.ContainsKey("tabPageBudget"))
+                        {
+                            _budgetTabControlInstance.LoadProject(_currentProject);
+                        }
+                    }
+                    else if (_isEditMode && !wasNewProject) // If it was an edit operation from the start and not a new project that was just saved
+                    {
+                        this.Close();
+                    }
+                }
                 else { MessageBox.Show("Failed to save project.", "Save Error"); }
             }
             catch (Exception ex) { MessageBox.Show($"An error occurred: {ex.Message}", "Error"); }
@@ -738,3 +765,4 @@ namespace HumanitarianProjectManagement.Forms
         }
     }
 }
+
