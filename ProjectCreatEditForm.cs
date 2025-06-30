@@ -535,13 +535,20 @@ namespace HumanitarianProjectManagement.Forms
         {
             Debug.WriteLine("CreateTopEntryAreaForOutcomes called."); // Added debug line
             if (logFrameTopEntryPanel == null)
+                // Check if the main label and container panel already exist. If so, do nothing.
+                if (logFrameTopEntryPanel.Controls.OfType<Label>().Any(lbl => lbl.Name == "entrySectionLabel_Outcome") &&
+                    logFrameTopEntryPanel.Controls.OfType<Panel>().Any(pnl => pnl.Name == "outcomeFormContainer_Outcome"))
+                {
+                    Debug.WriteLine("CreateTopEntryAreaForOutcomes: Controls already exist. Skipping creation.");
+                    logFrameTopEntryPanel.Visible = true; // Ensure it's visible if we are returning early
+                    return;
+                }
             {
                 Debug.WriteLine("CreateTopEntryAreaForOutcomes: logFrameTopEntryPanel is null. Cannot proceed.");
                 return;
             }
 
-            logFrameTopEntryPanel.Controls.Clear();
-
+            
             Label entrySectionLabel = new Label
             {
                 Text = "Define New Outcome",
@@ -663,33 +670,81 @@ namespace HumanitarianProjectManagement.Forms
         // Event handler for the sidebar "Add Outcome" button
         private void btnAddOutcome_Global_Click(object sender, EventArgs e)
         {
-            Debug.WriteLine("btnAddOutcome_Global_Click called.");
-            Debug.WriteLine($"btnAddOutcome_Global_Click: logFrameTopEntryPanel is {(logFrameTopEntryPanel == null ? "null" : "not null")}");
+            Debug.WriteLine("btnAddOutcome_Global_Click: TEST CODE RUNNING.");
+            Debug.WriteLine($"-- Initial states: mainVerticalSplit: {(this.mainVerticalSplit == null ? "null" : "OK")}, rightHorizontalSplit: {(this.rightHorizontalSplit == null ? "null" : "OK")}, logFrameTopEntryPanel: {(this.logFrameTopEntryPanel == null ? "null" : "OK")}");
 
-            if (logFrameTopEntryPanel != null)
+            if (this.mainVerticalSplit != null)
             {
-                // Ensure parent containers are visible before creating content
-                if (this.mainVerticalSplit != null) this.mainVerticalSplit.Visible = true;
-                if (this.mainVerticalSplit != null && this.mainVerticalSplit.Panel2 != null) this.mainVerticalSplit.Panel2.Visible = true;
-                if (this.rightHorizontalSplit != null) this.rightHorizontalSplit.Visible = true;
-                if (this.rightHorizontalSplit != null && this.rightHorizontalSplit.Panel1 != null) this.rightHorizontalSplit.Panel1.Visible = true;
+                this.mainVerticalSplit.Visible = true;
+                if (this.mainVerticalSplit.Panel2 != null) this.mainVerticalSplit.Panel2.Visible = true;
+            }
 
-                this.logFrameTopEntryPanel.Visible = true; // Make sure the top panel itself is visible
+            if (this.rightHorizontalSplit != null)
+            {
+                this.rightHorizontalSplit.Visible = true;
+                if (this.rightHorizontalSplit.Panel1 != null)
+                {
+                    this.rightHorizontalSplit.Panel1.Visible = true;
+                    this.rightHorizontalSplit.Panel1.BackColor = Color.Red; // Visual cue for parent
+                    // Ensure splitter distance gives space
+                    if (this.rightHorizontalSplit.Width > 200) this.rightHorizontalSplit.SplitterDistance = 100;
+                    else if (this.rightHorizontalSplit.Width > 0 && this.rightHorizontalSplit.Panel1MinSize > 0 && this.rightHorizontalSplit.Width > this.rightHorizontalSplit.Panel1MinSize) this.rightHorizontalSplit.SplitterDistance = this.rightHorizontalSplit.Panel1MinSize; // Adherence to Panel1MinSize
+                    else if (this.rightHorizontalSplit.Width > 0) this.rightHorizontalSplit.SplitterDistance = Math.Max(50, this.rightHorizontalSplit.Width / 3); // Ensure a minimum visible height
+                    else this.rightHorizontalSplit.SplitterDistance = 50; // Absolute fallback
+                    Debug.WriteLine($"-- rightHorizontalSplit.Panel1.Visible: {this.rightHorizontalSplit.Panel1.Visible}, Size: {this.rightHorizontalSplit.Panel1.Size}, SplitterDistance: {this.rightHorizontalSplit.SplitterDistance}");
+                }
+            }
 
-                CreateTopEntryAreaForOutcomes();
-                TextBox txtGlobalDesc = logFrameTopEntryPanel.Controls.Find("txtGlobalOutcomeDescription", true)?.FirstOrDefault() as TextBox;
-                txtGlobalDesc?.Focus();
+            if (this.logFrameTopEntryPanel != null)
+            {
+                this.logFrameTopEntryPanel.Visible = true;
+                this.logFrameTopEntryPanel.BackColor = Color.Yellow; // Visual cue for panel
+                this.logFrameTopEntryPanel.Controls.Clear();
 
-                Debug.WriteLine("btnAddOutcome_Global_Click: Attempting Invalidate/Update on logFrameTopEntryPanel.");
-                logFrameTopEntryPanel.Invalidate(true); // Invalidate with children
-                logFrameTopEntryPanel.Update();
+                Label testLabel = new Label
+                {
+                    Name = "testLabelInstance",
+                    Text = "DIRECT ADD TEST",
+                    Size = new Size(200, 40),
+                    Location = new Point(5, 5),
+                    BackColor = Color.LightGreen, // Visual cue for label
+                    Visible = true,
+                    Font = new Font("Arial", 12, FontStyle.Bold)
+                };
+                this.logFrameTopEntryPanel.Controls.Add(testLabel);
+
+                this.logFrameTopEntryPanel.PerformLayout();
+                this.logFrameTopEntryPanel.Refresh();
+
+                Debug.WriteLine($"-- logFrameTopEntryPanel.Visible: {this.logFrameTopEntryPanel.Visible}, Size: {this.logFrameTopEntryPanel.Size}, Controls.Count: {this.logFrameTopEntryPanel.Controls.Count}");
+                if (this.logFrameTopEntryPanel.Controls.Count > 0 && this.logFrameTopEntryPanel.Controls["testLabelInstance"] != null)
+                {
+                    Control foundLabel = this.logFrameTopEntryPanel.Controls["testLabelInstance"];
+                    Debug.WriteLine($"-- Test Label: Name: {foundLabel.Name}, Visible: {foundLabel.Visible}, Size: {foundLabel.Size}, Location: {foundLabel.Location}, Parent: {(foundLabel.Parent == null ? "null" : foundLabel.Parent.Name)}");
+                }
+                else
+                {
+                    Debug.WriteLine("-- Test Label NOT FOUND in logFrameTopEntryPanel.Controls after adding.");
+                }
             }
             else
             {
-                MessageBox.Show("LogFrame UI components for outcome entry are not initialized.", "UI Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Debug.WriteLine("btnAddOutcome_Global_Click: logFrameTopEntryPanel IS NULL.");
+                MessageBox.Show("logFrameTopEntryPanel is null in button click!");
             }
-            Application.DoEvents(); // Process message queue
-            Debug.WriteLine("btnAddOutcome_Global_Click: Application.DoEvents() called after Invalidate/Update.");
+
+            Application.DoEvents();
+            // Ensure the whole form refreshes as well
+            Control current = this.logFrameTopEntryPanel;
+            int refreshCount = 0;
+            while (current != null && refreshCount < 5)
+            { // Go up a few levels, refreshing
+                current.Refresh();
+                current = current.Parent;
+                refreshCount++;
+            }
+            this.Refresh(); // Refresh the form
+            Debug.WriteLine("btnAddOutcome_Global_Click: TEST CODE FINISHED.");
         }
 
 
@@ -1045,7 +1100,7 @@ namespace HumanitarianProjectManagement.Forms
 
             this.logFrameTopEntryPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(249, 250, 251), Padding = new Padding(10), AutoScroll = true };
             rightHorizontalSplit.Panel1.Controls.Add(this.logFrameTopEntryPanel);
-            this.CreateTopEntryAreaForOutcomes();
+            // this.CreateTopEntryAreaForOutcomes(); // Temporarily commented out for testing btnAddOutcome_Global_Click
 
             this.logFrameMiddleDisplayPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(236, 242, 249), Padding = new Padding(10), AutoScroll = true };
             rightHorizontalSplit.Panel2.Controls.Add(this.logFrameMiddleDisplayPanel);
