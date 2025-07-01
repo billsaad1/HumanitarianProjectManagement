@@ -496,6 +496,7 @@ namespace HumanitarianProjectManagement.Forms
         private System.Windows.Forms.Button btnAddOutputToOutcome1;
         private System.Windows.Forms.Button btnAddIndicatorToOutcome1_placeholder;
         private System.Windows.Forms.Button btnAddActivityViaOutcome1_placeholder;
+        private HumanitarianProjectManagement.LogFrameTabUserControl logFrameTabUserControlInstance; // Added
         // Removed: private System.Windows.Forms.TabPage tabPageDetailedBudget;
         // Removed: private System.Windows.Forms.FlowLayoutPanel flpBudgetCategories;
         private System.Windows.Forms.TabPage tabPageActivityPlan;
