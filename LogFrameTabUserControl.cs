@@ -631,7 +631,7 @@ namespace HumanitarianProjectManagement
             }
 
             // Use the alias for your Activity model
-            Models.Activity newActivity = new Models.Activity
+            HumanitarianProjectManagement.Models.Activity newActivity = new HumanitarianProjectManagement.Models.Activity
             {
                 OutputID = parentOutputId,
                 ActivityDescription = txtActivityDescription.Text.Trim(),

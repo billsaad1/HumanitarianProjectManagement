@@ -196,7 +196,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 using (SqlCommand command = new SqlCommand(query, conn, transaction))
                 {
                     command.Parameters.AddWithValue("@DetailedBudgetLineID", budgetLine.DetailedBudgetLineID);
-                    command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId);
+                    command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId); // This will now be correct for new projects
                     command.Parameters.AddWithValue("@ParentDetailedBudgetLineID", (object)budgetLine.ParentDetailedBudgetLineID ?? DBNull.Value);
                     command.Parameters.AddWithValue("@Category", (int)budgetLine.Category);
                     command.Parameters.AddWithValue("@Code", (object)budgetLine.Code ?? DBNull.Value);
@@ -239,7 +239,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 else { conn = DatabaseHelper.GetConnection(); await conn.OpenAsync(); manageConnection = true; }
                 using (SqlCommand command = new SqlCommand(query, conn, transaction))
                 {
-                    command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId);
+                    command.Parameters.AddWithValue("@ProjectID", budgetLine.ProjectId); // Ensure this is correct
                     command.Parameters.AddWithValue("@ParentDetailedBudgetLineID", (object)budgetLine.ParentDetailedBudgetLineID ?? DBNull.Value);
                     command.Parameters.AddWithValue("@Category", (int)budgetLine.Category);
                     command.Parameters.AddWithValue("@Code", (object)budgetLine.Code ?? DBNull.Value);
@@ -599,6 +599,8 @@ namespace HumanitarianProjectManagement.DataAccessLayer
         public async Task<bool> SaveProjectAsync(Project project)
         {
             bool mainProjectSavedSuccessfully = false;
+            bool isNewProjectInstance = project.ProjectID == 0; // Capture if it's a new project before its ID changes
+
             if (project.StartDate.HasValue && project.StartDate.Value < SqlDateTime.MinValue.Value) project.StartDate = SqlDateTime.MinValue.Value;
             if (project.EndDate.HasValue && project.EndDate.Value < SqlDateTime.MinValue.Value) project.EndDate = SqlDateTime.MinValue.Value;
             if (project.CreatedAt < SqlDateTime.MinValue.Value) project.CreatedAt = SqlDateTime.MinValue.Value;
@@ -609,7 +611,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             {
                 mainConn = DatabaseHelper.GetConnection(); await mainConn.OpenAsync();
                 SqlCommand command;
-                if (project.ProjectID == 0)
+                if (isNewProjectInstance) // Use the flag captured before any DB operation
                 {
                     string insertQuery = @"INSERT INTO Projects (ProjectName, ProjectCode, SectionID, StartDate, EndDate, Location, OverallObjective, ManagerUserID, Status, TotalBudget, Donor, CreatedAt, UpdatedAt) VALUES (@ProjectName, @ProjectCode, @SectionID, @StartDate, @EndDate, @Location, @OverallObjective, @ManagerUserID, @Status, @TotalBudget, @Donor, @CreatedAt, @UpdatedAt); SELECT CAST(SCOPE_IDENTITY() as int);";
                     command = new SqlCommand(insertQuery, mainConn);
@@ -633,40 +635,104 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 command.Parameters.AddWithValue("@TotalBudget", (object)project.TotalBudget ?? DBNull.Value);
                 command.Parameters.AddWithValue("@Donor", (object)project.Donor ?? DBNull.Value);
                 command.Parameters.AddWithValue("@UpdatedAt", (object)project.UpdatedAt ?? DateTime.UtcNow);
-                if (project.ProjectID == 0) { object newId = await command.ExecuteScalarAsync(); if (newId != null && newId != DBNull.Value) { project.ProjectID = Convert.ToInt32(newId); mainProjectSavedSuccessfully = true; } }
-                else { mainProjectSavedSuccessfully = await command.ExecuteNonQueryAsync() > 0; }
+
+                // Execute command and update ProjectID if new
+                if (isNewProjectInstance)
+                {
+                    object newId = await command.ExecuteScalarAsync();
+                    if (newId != null && newId != DBNull.Value)
+                    {
+                        project.ProjectID = Convert.ToInt32(newId);
+                        mainProjectSavedSuccessfully = true;
+                    }
+                }
+                else
+                {
+                    mainProjectSavedSuccessfully = await command.ExecuteNonQueryAsync() > 0;
+                }
             }
             catch (Exception ex) { Console.WriteLine($"Error saving main project details: {ex.Message}"); return false; }
             finally { if (mainConn?.State == ConnectionState.Open) mainConn.Close(); }
 
             if (!mainProjectSavedSuccessfully) { Console.WriteLine("Main project save failed. Aborting child entity sync."); return false; }
 
+            // If it *was* a new project instance, its ProjectID is now populated.
+            // Update ProjectID for child collections that might have been populated in the UI with the old (e.g., 0) ProjectID.
+            if (isNewProjectInstance && project.ProjectID != 0) // Ensure ProjectID is valid
+            {
+                if (project.Outcomes != null)
+                {
+                    foreach (var outcome in project.Outcomes)
+                    {
+                        outcome.ProjectID = project.ProjectID;
+                        if (outcome.Outputs != null)
+                        {
+                            foreach (var output in outcome.Outputs)
+                            {
+                                if (output.ProjectIndicators != null)
+                                {
+                                    foreach (var indicator in output.ProjectIndicators)
+                                    {
+                                        indicator.ProjectID = project.ProjectID;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (project.DetailedBudgetLines != null)
+                {
+                    foreach (var budgetLine in project.DetailedBudgetLines)
+                    {
+                        budgetLine.ProjectId = project.ProjectID;
+                    }
+                }
+            }
+
+            // Save LogFrame (Outcomes, Outputs, Activities, Indicators)
+            // This logic will now use the correctly set ProjectID on children if it was a new project.
             if (project.Outcomes != null)
             {
                 foreach (var outcome in project.Outcomes)
                 {
-                    outcome.ProjectID = project.ProjectID;
+                    // outcome.ProjectID is already updated if it was a new project by the block above.
                     if (outcome.OutcomeID == 0) { outcome.OutcomeID = await _logFrameService.AddOutcomeAsync(outcome); if (outcome.OutcomeID == 0) { Console.WriteLine($"Failed to add outcome: {outcome.OutcomeDescription}"); continue; } }
                     else { await _logFrameService.UpdateOutcomeAsync(outcome); }
-                    if (outcome.OutcomeID > 0 && outcome.Outputs != null) foreach (var output in outcome.Outputs)
+
+                    if (outcome.OutcomeID > 0 && outcome.Outputs != null)
+                    {
+                        foreach (var output in outcome.Outputs)
                         {
-                            output.OutcomeID = outcome.OutcomeID;
+                            output.OutcomeID = outcome.OutcomeID; // Ensure OutcomeID is set for the output.
                             if (output.OutputID == 0) { output.OutputID = await _logFrameService.AddOutputAsync(output); if (output.OutputID == 0) { Console.WriteLine($"Failed to add output: {output.OutputDescription}"); continue; } }
                             else { await _logFrameService.UpdateOutputAsync(output); }
-                            if (output.OutputID > 0 && output.Activities != null) foreach (var activity in output.Activities)
+
+                            if (output.OutputID > 0 && output.Activities != null)
+                            {
+                                foreach (var activity in output.Activities)
                                 {
                                     activity.OutputID = output.OutputID;
-                                    if (activity.ActivityID == 0) activity.ActivityID = await _logFrameService.AddActivityAsync(activity); else await _logFrameService.UpdateActivityAsync(activity);
+                                    if (activity.ActivityID == 0) activity.ActivityID = await _logFrameService.AddActivityAsync(activity);
+                                    else await _logFrameService.UpdateActivityAsync(activity);
                                 }
-                            if (output.OutputID > 0 && output.ProjectIndicators != null) foreach (var indicator in output.ProjectIndicators)
+                            }
+                            if (output.OutputID > 0 && output.ProjectIndicators != null)
+                            {
+                                foreach (var indicator in output.ProjectIndicators)
                                 {
-                                    indicator.OutputID = output.OutputID; indicator.ProjectID = project.ProjectID;
-                                    if (indicator.ProjectIndicatorID == 0) indicator.ProjectIndicatorID = await _logFrameService.AddProjectIndicatorToOutputAsync(indicator); else await _logFrameService.UpdateProjectIndicatorAsync(indicator);
+                                    indicator.OutputID = output.OutputID;
+                                    // indicator.ProjectID is already updated if it was a new project by the block above.
+                                    if (indicator.ProjectIndicatorID == 0) indicator.ProjectIndicatorID = await _logFrameService.AddProjectIndicatorToOutputAsync(indicator);
+                                    else await _logFrameService.UpdateProjectIndicatorAsync(indicator);
                                 }
+                            }
                         }
+                    }
                 }
             }
 
+            // Save Budget Lines
             SqlConnection budgetConn = null;
             try
             {
@@ -676,45 +742,78 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                 {
                     try
                     {
-                        // BudgetSubCategory sync removed
-
+                        // Existing budget lines from DB for this project
                         var dbLines = await GetFlatDetailedBudgetLinesByProjectIdAsync(project.ProjectID, budgetConn, budgetTransaction);
-                        var memoryLines = project.DetailedBudgetLines.ToList();
 
+                        // In-memory budget lines (already have ProjectId updated if it was a new project due to the block above)
+                        var memoryLines = project.DetailedBudgetLines?.ToList() ?? new List<DetailedBudgetLine>();
+
+                        // Lines to delete: in DB but not in memory
                         var linesToDelete = dbLines.Where(dbL => !memoryLines.Any(mL => mL.DetailedBudgetLineID == dbL.DetailedBudgetLineID)).ToList();
-                        foreach (var dbLine in linesToDelete)
+                        foreach (var dbLineToDelete in linesToDelete)
                         {
-                            await DeleteDetailedBudgetLineAsync(dbLine.DetailedBudgetLineID, budgetTransaction);
+                            await DeleteDetailedBudgetLineAsync(dbLineToDelete.DetailedBudgetLineID, budgetTransaction);
                         }
 
                         // Process lines hierarchically for adds/updates
+                        // This existing hierarchical processing logic should now work correctly
+                        // as `memLine.ProjectId` will be correct before calling Add/Update.
                         List<DetailedBudgetLine> linesToSave = new List<DetailedBudgetLine>();
-                        Stack<DetailedBudgetLine> processingStack = new Stack<DetailedBudgetLine>(memoryLines.Where(l => !l.ParentDetailedBudgetLineID.HasValue)); // Start with top-level lines
+                        Stack<DetailedBudgetLine> processingStack = new Stack<DetailedBudgetLine>(memoryLines.Where(l => !l.ParentDetailedBudgetLineID.HasValue || !memoryLines.Any(p => p.DetailedBudgetLineID == l.ParentDetailedBudgetLineID.Value))); // Start with top-level lines from memory
+
+                        HashSet<Guid> processedLineGuids = new HashSet<Guid>();
 
                         while (processingStack.Any())
                         {
                             var currentLine = processingStack.Pop();
-                            linesToSave.Add(currentLine); // Add to save list in order
+                            if (currentLine.DetailedBudgetLineID != Guid.Empty && processedLineGuids.Contains(currentLine.DetailedBudgetLineID))
+                            {
+                                continue; // Already processed this line via another path (e.g. child of another processed line)
+                            }
+
+                            linesToSave.Add(currentLine);
+                            if (currentLine.DetailedBudgetLineID != Guid.Empty) processedLineGuids.Add(currentLine.DetailedBudgetLineID);
+
                             if (currentLine.ChildDetailedBudgetLines != null)
                             {
                                 foreach (var child in currentLine.ChildDetailedBudgetLines.Reverse()) // Reverse to maintain order when popping
                                 {
-                                    processingStack.Push(child);
+                                    if (child.DetailedBudgetLineID == Guid.Empty || !processedLineGuids.Contains(child.DetailedBudgetLineID))
+                                    {
+                                        processingStack.Push(child);
+                                    }
                                 }
                             }
                         }
 
+                        // Add any lines in memory that were not picked up by hierarchical traversal (e.g. orphans, if any)
+                        // This ensures all lines in memoryLines are considered if not part of the explicit ChildDetailedBudgetLines collections
+                        // of other lines in memoryLines.
+                        foreach (var memLine in memoryLines)
+                        {
+                            if (memLine.DetailedBudgetLineID == Guid.Empty || !processedLineGuids.Contains(memLine.DetailedBudgetLineID))
+                            {
+                                // Check if it's already in linesToSave to avoid duplicates from different processing paths.
+                                if (!linesToSave.Any(lts => lts.DetailedBudgetLineID != Guid.Empty && lts.DetailedBudgetLineID == memLine.DetailedBudgetLineID) || memLine.DetailedBudgetLineID == Guid.Empty)
+                                {
+                                    linesToSave.Add(memLine); // Add if not already processed or added
+                                    if (memLine.DetailedBudgetLineID != Guid.Empty) processedLineGuids.Add(memLine.DetailedBudgetLineID); // Mark as processed
+                                }
+                            }
+                        }
+
+
                         foreach (var memLine in linesToSave)
-                        { // Save in hierarchical order
-                            var existingDbLine = dbLines.FirstOrDefault(dbL => dbL.DetailedBudgetLineID == memLine.DetailedBudgetLineID);
-                            if (memLine.DetailedBudgetLineID == Guid.Empty || existingDbLine == null)
+                        {
+                            // memLine.ProjectId is already updated for new projects by the block above.
+                            var existingDbLine = dbLines.FirstOrDefault(dbL => dbL.DetailedBudgetLineID == memLine.DetailedBudgetLineID && memLine.DetailedBudgetLineID != Guid.Empty);
+                            if (memLine.DetailedBudgetLineID == Guid.Empty || existingDbLine == null) // It's a new line
                             {
                                 if (memLine.DetailedBudgetLineID == Guid.Empty) memLine.DetailedBudgetLineID = Guid.NewGuid();
                                 await AddDetailedBudgetLineWithDetailsAsync(memLine, budgetTransaction);
                             }
-                            else
+                            else // It's an existing line, update it
                             {
-                                // More robust change detection might be needed here
                                 await UpdateDetailedBudgetLineWithDetailsAsync(memLine, budgetTransaction);
                             }
                         }
@@ -724,7 +823,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                     {
                         budgetTransaction.Rollback();
                         Console.WriteLine($"Error in budget synchronization transaction: {ex.Message}. Transaction rolled back.");
-                        return false;
+                        return false; // Propagate failure
                     }
                 }
             }

@@ -13,15 +13,15 @@ namespace HumanitarianProjectManagement
         private Project _currentProject;
         private BudgetCategoriesEnum? _selectedMainCategory;
 
-        // Main input fields
-        private TextBox txtDirectItem;
-        private TextBox txtDirectDescription;
-        private TextBox txtDirectUnit;
-        private NumericUpDown numDirectQuantity;
-        private NumericUpDown numDirectUnitCost;
-        private NumericUpDown numDirectDuration;
-        private NumericUpDown numDirectPercentageCBPF;
-        private Button btnDirectAddLine;
+        // Main input fields (These were unused, local instances are created in CreateInputRowForLine)
+        // private TextBox txtDirectItem;
+        // private TextBox txtDirectDescription;
+        // private TextBox txtDirectUnit;
+        // private NumericUpDown numDirectQuantity;
+        // private NumericUpDown numDirectUnitCost;
+        // private NumericUpDown numDirectDuration;
+        // private NumericUpDown numDirectPercentageCBPF;
+        // private Button btnDirectAddLine;
 
         public BudgetTabUserControl()
         {

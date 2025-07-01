@@ -1,7 +1,8 @@
 ﻿// Using statements from the original file - confirmed to be sufficient
 using HumanitarianProjectManagement.DataAccessLayer;
 using HumanitarianProjectManagement.Models;
-using ProjectActivity = HumanitarianProjectManagement.Models.Activity;
+// Using Models.Activity directly to avoid ambiguity
+// using ProjectActivity = HumanitarianProjectManagement.Models.Activity;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -468,7 +469,7 @@ namespace HumanitarianProjectManagement.Forms
         private void dgvActivityPlan_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             if (!(sender is DataGridView dgv) || e.RowIndex < 0 || e.ColumnIndex < 0) return;
-            if (!(dgv.Rows[e.RowIndex].Tag is ProjectActivity activity)) return;
+            if (!(dgv.Rows[e.RowIndex].Tag is HumanitarianProjectManagement.Models.Activity activity)) return;
             DataGridViewColumn col = dgv.Columns[e.ColumnIndex];
             if (col is DataGridViewCheckBoxColumn && col.Name.StartsWith("Month_") && col.Tag is string monthYearKey)
             {
