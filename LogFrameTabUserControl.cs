@@ -922,7 +922,7 @@ namespace HumanitarianProjectManagement
                 Margin = new Padding(20 * indentLevel + 5, isHeader ? 4 : 1, 0, isHeader ? 1 : 1),
             };
             itemRowPanel.ColumnStyles.Clear();
-            itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 1360F));
+            itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 13F));
             itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 

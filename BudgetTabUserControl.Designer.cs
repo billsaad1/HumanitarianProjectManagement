@@ -22,10 +22,10 @@ namespace HumanitarianProjectManagement
             this.pnlCategorySidebar = new System.Windows.Forms.Panel();
             this.tlpCategoryButtons = new System.Windows.Forms.TableLayoutPanel();
             this.pnlBudgetMainArea = new System.Windows.Forms.Panel();
-            this.pnlMainBudgetContentArea = new System.Windows.Forms.Panel(); // Renamed from pnlSubCategoryListArea
-            this.btnAddNewSubCategory = new System.Windows.Forms.Button();
-
-            // Removed declarations for pnlItemizedDetailsHolder and its contents
+            this.splitVerticalContent = new System.Windows.Forms.SplitContainer();
+            // MODIFIED: Changed type from Panel to FlowLayoutPanel
+            this.pnlMainBudgetContentArea = new System.Windows.Forms.FlowLayoutPanel();
+            // this.btnAddNewSubCategory = new System.Windows.Forms.Button(); // Remains commented out
 
             ((System.ComponentModel.ISupportInitialize)(this.scMainBudgetLayout)).BeginInit();
             this.scMainBudgetLayout.Panel1.SuspendLayout();
@@ -33,7 +33,12 @@ namespace HumanitarianProjectManagement
             this.scMainBudgetLayout.SuspendLayout();
             this.pnlCategorySidebar.SuspendLayout();
             this.pnlBudgetMainArea.SuspendLayout();
-            // Removed SuspendLayout/ResumeLayout for pnlItemizedDetailsHolder and dgvItemizedDetails
+            ((System.ComponentModel.ISupportInitialize)(this.splitVerticalContent)).BeginInit();
+            this.splitVerticalContent.Panel1.SuspendLayout();
+            this.splitVerticalContent.Panel2.SuspendLayout();
+            this.splitVerticalContent.SuspendLayout();
+            // If pnlMainBudgetContentArea is an FLP, it might need Suspend/Resume if properties are set after this.
+            // However, its properties are set below.
             this.SuspendLayout();
 
             // 
@@ -50,7 +55,7 @@ namespace HumanitarianProjectManagement
             this.scMainBudgetLayout.Panel1.Controls.Add(this.pnlCategorySidebar);
             this.scMainBudgetLayout.Panel1.Padding = new System.Windows.Forms.Padding(3);
             // 
-            // scMainBudgetLayout.Panel2 (Main Content)
+            // scMainBudgetLayout.Panel2 (Main Content Hosting another Splitter)
             // 
             this.scMainBudgetLayout.Panel2.Controls.Add(this.pnlBudgetMainArea);
             this.scMainBudgetLayout.Panel2.Padding = new System.Windows.Forms.Padding(3);
@@ -75,31 +80,45 @@ namespace HumanitarianProjectManagement
             // 
             // pnlBudgetMainArea
             // 
+            this.pnlBudgetMainArea.Controls.Add(this.splitVerticalContent);
             this.pnlBudgetMainArea.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlBudgetMainArea.Location = new System.Drawing.Point(0, 0);
             this.pnlBudgetMainArea.Name = "pnlBudgetMainArea";
-            this.pnlBudgetMainArea.Size = new System.Drawing.Size(463, 494);
             this.pnlBudgetMainArea.TabIndex = 0;
-            this.pnlBudgetMainArea.Padding = new System.Windows.Forms.Padding(5);
+            this.pnlBudgetMainArea.Padding = new System.Windows.Forms.Padding(0);
+
             // 
-            
+            // splitVerticalContent
             // 
-            // pnlMainBudgetContentArea (Renamed from pnlSubCategoryListArea)
+            this.splitVerticalContent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitVerticalContent.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            this.splitVerticalContent.Name = "splitVerticalContent";
+            this.splitVerticalContent.SplitterDistance = 0; // Adjusted
+            this.splitVerticalContent.Panel1MinSize = 0;
+            this.splitVerticalContent.Panel2MinSize = 0;
+            this.splitVerticalContent.TabIndex = 0;
+            // 
+            // splitVerticalContent.Panel1 (Entry Area Panel)
+            // 
+            this.splitVerticalContent.Panel1.Padding = new System.Windows.Forms.Padding(0);
+            this.splitVerticalContent.Panel1.AutoScroll = true;
+            // 
+            // splitVerticalContent.Panel2 (Display Area Panel)
+            // 
+            this.splitVerticalContent.Panel2.Controls.Add(this.pnlMainBudgetContentArea);
+            this.splitVerticalContent.Panel2.Padding = new System.Windows.Forms.Padding(0, 5, 0, 5); // MODIFIED
+            // 
+            // pnlMainBudgetContentArea 
             // 
             this.pnlMainBudgetContentArea.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlMainBudgetContentArea.Location = new System.Drawing.Point(5, 35); // Below btnAddNewSubCategory
-            this.pnlMainBudgetContentArea.Name = "pnlMainBudgetContentArea"; // Renamed
+            this.pnlMainBudgetContentArea.Location = new System.Drawing.Point(0, 0);
+            this.pnlMainBudgetContentArea.Name = "pnlMainBudgetContentArea";
             this.pnlMainBudgetContentArea.AutoScroll = true;
-            this.pnlMainBudgetContentArea.Size = new System.Drawing.Size(453, 454); // Adjusted size: 494 (parent) - 5 (pad_top) - 30 (btn) - 5 (pad_bottom)
-            this.pnlMainBudgetContentArea.TabIndex = 1;
-            this.pnlMainBudgetContentArea.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-
-            // Removed pnlItemizedDetailsHolder and its contents' initialization
-
-            // Add controls to pnlBudgetMainArea (Order matters for Dock.Fill)
-            this.pnlBudgetMainArea.Controls.Add(this.pnlMainBudgetContentArea); // Renamed
-            
-            // Removed: this.pnlBudgetMainArea.Controls.Add(this.pnlItemizedDetailsHolder);
+            // Properties specific to FlowLayoutPanel
+            this.pnlMainBudgetContentArea.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.pnlMainBudgetContentArea.WrapContents = false;
+            this.pnlMainBudgetContentArea.TabIndex = 0;
+            this.pnlMainBudgetContentArea.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle; // Kept from original
 
             // 
             // BudgetTabUserControl
@@ -114,9 +133,16 @@ namespace HumanitarianProjectManagement
             this.scMainBudgetLayout.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.scMainBudgetLayout)).EndInit();
             this.scMainBudgetLayout.ResumeLayout(false);
+
             this.pnlCategorySidebar.ResumeLayout(false);
+
+            this.splitVerticalContent.Panel1.ResumeLayout(false);
+            this.splitVerticalContent.Panel2.ResumeLayout(false); // pnlMainBudgetContentArea is child
+            ((System.ComponentModel.ISupportInitialize)(this.splitVerticalContent)).EndInit();
+            this.splitVerticalContent.ResumeLayout(false);
+
             this.pnlBudgetMainArea.ResumeLayout(false);
-            // Removed SuspendLayout/ResumeLayout for pnlItemizedDetailsHolder and dgvItemizedDetails
+
             this.ResumeLayout(false);
         }
         #endregion
@@ -125,8 +151,10 @@ namespace HumanitarianProjectManagement
         private System.Windows.Forms.Panel pnlCategorySidebar;
         private System.Windows.Forms.TableLayoutPanel tlpCategoryButtons;
         private System.Windows.Forms.Panel pnlBudgetMainArea;
-        private System.Windows.Forms.Button btnAddNewSubCategory;
-        private System.Windows.Forms.Panel pnlMainBudgetContentArea; // Renamed from pnlSubCategoryListArea
-        // Removed declarations for pnlItemizedDetailsHolder, lblItemizedDetailsHeader, btnAddNewItemizedDetail, dgvItemizedDetails, pnlItemizedDetailsControls
+        // MODIFIED: Changed type from Panel to FlowLayoutPanel
+        private System.Windows.Forms.FlowLayoutPanel pnlMainBudgetContentArea;
+
+        private System.Windows.Forms.SplitContainer splitVerticalContent;
+        // private System.Windows.Forms.Button btnAddNewSubCategory; // Remains commented
     }
 }
