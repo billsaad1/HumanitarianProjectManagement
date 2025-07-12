@@ -139,7 +139,7 @@ namespace HumanitarianProjectManagement
                 return;
             }
 
-            var orderedOutcomes = allOutcomes.OrderBy(o => o.OutcomeID).ToList(); // MODIFIED SORTING
+            var orderedOutcomes = allOutcomes.OrderBy(o => o.OutcomeDescription).ToList();
             await PopulateParentOutcomeComboBoxesAsync(orderedOutcomes);
 
             if (orderedOutcomes.Any())
@@ -181,8 +181,7 @@ namespace HumanitarianProjectManagement
 
         private async Task PopulateParentOutcomeComboBoxesAsync(List<Outcome> outcomes)
         {
-            // Sort for dropdown display can remain alphabetical if desired, or change to ID for consistency
-            var outcomeItems = outcomes.OrderBy(o => o.OutcomeDescription)
+            var outcomeItems = outcomes
                 .Select(o => new ComboboxItem { Text = TruncateText(o.OutcomeDescription, 50), Value = o.OutcomeID })
                 .ToList();
 
@@ -196,12 +195,12 @@ namespace HumanitarianProjectManagement
                 {
                     cmb.DisplayMember = "Text";
                     cmb.ValueMember = "Value";
-                    cmb.DataSource = new BindingList<ComboboxItem>(items);
+                    cmb.DataSource = new BindingList<ComboboxItem>(items); // Use BindingList for potential future two-way binding needs
                     if (previouslySelectedValue != null && items.Any(i => i.Value.Equals(previouslySelectedValue)))
                     {
                         cmb.SelectedValue = previouslySelectedValue;
                     }
-                    else if (items.Count > 0) { cmb.SelectedIndex = 0; }
+                    else if (items.Count > 0) { cmb.SelectedIndex = 0; } // Default to first if nothing specific was selected or available
                     else { cmb.SelectedIndex = -1; }
                 }
                 else
@@ -216,6 +215,7 @@ namespace HumanitarianProjectManagement
             populate(cmbParentOutcomeForIndicator, outcomeItems);
             populate(cmbParentOutcomeForActivity, outcomeItems);
 
+            // Trigger dependent combo population if an item is selected
             if (cmbParentOutcomeForIndicator.SelectedValue != null && (int)cmbParentOutcomeForIndicator.SelectedValue > 0)
                 await PopulateParentOutputComboBoxesAsync(cmbParentOutcomeForIndicator, cmbParentOutputForIndicator);
             else ClearOutputCombo(cmbParentOutputForIndicator, "Select Parent Outcome first");
@@ -261,7 +261,7 @@ namespace HumanitarianProjectManagement
                     cmbOutputTarget.ResumeLayout();
                     return;
                 }
-                // Sort for dropdown display can remain alphabetical if desired
+
                 var outputItems = outputs.OrderBy(o => o.OutputDescription)
                                          .Select(o => new ComboboxItem { Text = TruncateText(o.OutputDescription, 50), Value = o.OutputID })
                                          .ToList();
@@ -274,7 +274,7 @@ namespace HumanitarianProjectManagement
                     {
                         cmbOutputTarget.SelectedValue = previouslySelectedValue;
                     }
-                    else if (outputItems.Count > 0) { cmbOutputTarget.SelectedIndex = 0; }
+                    else if (outputItems.Count > 0) { cmbOutputTarget.SelectedIndex = 0; } // Default to first
                     else { cmbOutputTarget.SelectedIndex = -1; }
                 }
                 else
@@ -308,8 +308,9 @@ namespace HumanitarianProjectManagement
             pnlInputArea.Controls.Clear();
 
             inputTabControl = new TabControl { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F) };
-            inputTabControl.SelectedIndexChanged += InputTabControl_SelectedIndexChanged;
+            inputTabControl.SelectedIndexChanged += InputTabControl_SelectedIndexChanged; // Wire up the event
 
+            // Outcome Tab
             TabPage outcomeTab = new TabPage("Outcome");
             FlowLayoutPanel flpOutcomeInput = new FlowLayoutPanel { Name = "flpOutcomeInput", Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, AutoScroll = true, Padding = new Padding(10) };
             Label lblOutcomeDesc = new Label { Text = "Outcome Description:" }; StyleInputLabel(lblOutcomeDesc);
@@ -322,6 +323,7 @@ namespace HumanitarianProjectManagement
             outcomeTab.Controls.Add(flpOutcomeInput);
             inputTabControl.TabPages.Add(outcomeTab);
 
+            // Output Tab
             TabPage outputTab = new TabPage("Output");
             FlowLayoutPanel flpOutputInput = new FlowLayoutPanel { Name = "flpOutputInput", Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, AutoScroll = true, Padding = new Padding(10) };
             Label lblParentOutcomeForOutput = new Label { Text = "Parent Outcome:" }; StyleInputLabel(lblParentOutcomeForOutput);
@@ -338,6 +340,7 @@ namespace HumanitarianProjectManagement
             outputTab.Controls.Add(flpOutputInput);
             inputTabControl.TabPages.Add(outputTab);
 
+            // Indicator Tab
             TabPage indicatorTab = new TabPage("Indicator");
             FlowLayoutPanel flpIndicatorInput = new FlowLayoutPanel { Name = "flpIndicatorInput", Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, AutoScroll = true, Padding = new Padding(10) };
             GroupBox gbBasicIndicator = new GroupBox { Text = "Basic Details", AutoSize = true, Dock = DockStyle.Top, Padding = new Padding(10, 5, 10, 10), Margin = new Padding(0, 0, 0, 10) };
@@ -390,6 +393,7 @@ namespace HumanitarianProjectManagement
             indicatorTab.Controls.Add(flpIndicatorInput);
             inputTabControl.TabPages.Add(indicatorTab);
 
+            // Activity Tab
             TabPage activityTab = new TabPage("Activity");
             FlowLayoutPanel flpActivityInput = new FlowLayoutPanel { Name = "flpActivityInput", Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, AutoScroll = true, Padding = new Padding(10) };
             Label lblParentOutcomeForActivity = new Label { Text = "Parent Outcome:" }; StyleInputLabel(lblParentOutcomeForActivity);
@@ -423,11 +427,11 @@ namespace HumanitarianProjectManagement
         {
             cmb.DropDownStyle = ComboBoxStyle.DropDownList;
             cmb.Font = new Font("Segoe UI", 10F);
-            cmb.Width = 500;
-            cmb.Margin = new Padding(0, 0, 0, 10);
+            cmb.Width = 500; // Standard width
+            cmb.Margin = new Padding(0, 0, 0, 10); // Standard margin
         }
 
-        private void UpdateInputAreaForContext(Outcome outcomeForDisplayContext = null)
+        private void UpdateInputAreaForContext(Outcome outcomeForDisplayContext = null) // Parameter seems unused now
         {
             if (inputTabControl == null) InitializeInputControls();
 
@@ -435,26 +439,28 @@ namespace HumanitarianProjectManagement
 
             foreach (TabPage tab in inputTabControl.TabPages)
             {
-                tab.Enabled = projectIsSavedAndValid;
+                tab.Enabled = projectIsSavedAndValid; // Simplification: all tabs depend on project saved
             }
 
             if (!projectIsSavedAndValid)
             {
                 if (lblLogFrameDisplayPlaceholder != null && !lblLogFrameDisplayPlaceholder.IsDisposed)
                 {
-                    ClearLogFrameDisplay();
+                    ClearLogFrameDisplay(); // Ensure display is cleared
                     lblLogFrameDisplayPlaceholder.Text = "Please save the main project details first to enable logframe entries.";
                     lblLogFrameDisplayPlaceholder.Visible = true;
                 }
-                if (inputTabControl.TabPages.Count > 0) inputTabControl.SelectedIndex = 0;
-                return;
+                if (inputTabControl.TabPages.Count > 0) inputTabControl.SelectedIndex = 0; // Default to first tab
+                return; // Exit early
             }
 
+            // Project is saved, proceed with outcome-dependent logic
             bool hasOutcomes = _currentProject.Outcomes != null && _currentProject.Outcomes.Any();
 
-            if (inputTabControl.TabPages.Count > 1) inputTabControl.TabPages[1].Enabled = hasOutcomes;
-            if (inputTabControl.TabPages.Count > 2) inputTabControl.TabPages[2].Enabled = hasOutcomes;
-            if (inputTabControl.TabPages.Count > 3) inputTabControl.TabPages[3].Enabled = hasOutcomes;
+            // Enable/Disable tabs based on whether outcomes exist
+            if (inputTabControl.TabPages.Count > 1) inputTabControl.TabPages[1].Enabled = hasOutcomes; // Output Tab
+            if (inputTabControl.TabPages.Count > 2) inputTabControl.TabPages[2].Enabled = hasOutcomes; // Indicator Tab
+            if (inputTabControl.TabPages.Count > 3) inputTabControl.TabPages[3].Enabled = hasOutcomes; // Activity Tab
 
             if (lblLogFrameDisplayPlaceholder != null && !lblLogFrameDisplayPlaceholder.IsDisposed)
             {
@@ -463,20 +469,21 @@ namespace HumanitarianProjectManagement
                     lblLogFrameDisplayPlaceholder.Text = "No outcomes exist. Please add one using the 'Outcome' tab.";
                     lblLogFrameDisplayPlaceholder.Visible = true;
                 }
-                else if (flpLogFrameDisplay.Controls.Count <= 1)
+                else if (flpLogFrameDisplay.Controls.Count <= 1) // Only placeholder itself
                 {
                     lblLogFrameDisplayPlaceholder.Text = "Logframe items will appear here as they are added.";
                     lblLogFrameDisplayPlaceholder.Visible = true;
                 }
                 else
                 {
-                    lblLogFrameDisplayPlaceholder.Visible = false;
+                    lblLogFrameDisplayPlaceholder.Visible = false; // Hide if items are displayed
                 }
             }
 
+            // Adjust selected tab if current one becomes disabled
             if (inputTabControl.SelectedTab != null && !inputTabControl.SelectedTab.Enabled)
             {
-                inputTabControl.SelectedIndex = 0;
+                inputTabControl.SelectedIndex = 0; // Default to first enabled tab (Outcome)
             }
         }
 
@@ -494,12 +501,13 @@ namespace HumanitarianProjectManagement
                 return;
             }
 
+            // Check if we are in Edit mode for an Outcome
             if (btnAddOutcome.Tag is int outcomeIdToUpdate && btnAddOutcome.Text == "Update Outcome")
             {
                 Outcome outcomeToUpdate = new Outcome
                 {
                     OutcomeID = outcomeIdToUpdate,
-                    ProjectID = _currentProject.ProjectID,
+                    ProjectID = _currentProject.ProjectID, // Ensure ProjectID is correctly assigned
                     OutcomeDescription = txtOutcomeDescription.Text.Trim()
                 };
 
@@ -509,12 +517,17 @@ namespace HumanitarianProjectManagement
                     if (success)
                     {
                         MessageBox.Show("Outcome updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                        // Update local model
                         var existingOutcome = _currentProject.Outcomes.FirstOrDefault(o => o.OutcomeID == outcomeIdToUpdate);
                         if (existingOutcome != null)
                         {
                             existingOutcome.OutcomeDescription = outcomeToUpdate.OutcomeDescription;
                         }
-                        await LoadOutcomesAsync();
+
+                        await LoadOutcomesAsync(); // Refresh display
+
+                        // Reset button and tag
                         btnAddOutcome.Text = "Add New Outcome";
                         btnAddOutcome.Tag = null;
                         txtOutcomeDescription.Clear();
@@ -530,7 +543,7 @@ namespace HumanitarianProjectManagement
                     Debug.WriteLine($"Error BtnAddOutcome_Click (Update): {ex.ToString()}");
                 }
             }
-            else
+            else // Add new Outcome mode
             {
                 Outcome newOutcome = new Outcome { ProjectID = _currentProject.ProjectID, OutcomeDescription = txtOutcomeDescription.Text.Trim() };
                 int newOutcomeId = await _logFrameService.AddOutcomeAsync(newOutcome);
@@ -539,6 +552,7 @@ namespace HumanitarianProjectManagement
                     newOutcome.OutcomeID = newOutcomeId;
                     if (_currentProject.Outcomes == null) _currentProject.Outcomes = new List<Outcome>();
                     _currentProject.Outcomes.Add(newOutcome);
+
                     MessageBox.Show("Outcome added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txtOutcomeDescription.Clear();
                     await LoadOutcomesAsync();
@@ -569,12 +583,13 @@ namespace HumanitarianProjectManagement
                 return;
             }
 
+            // Check if we are in Edit mode for an Output
             if (btnAddOutput.Tag is int outputIdToUpdate && btnAddOutput.Text == "Update Output")
             {
                 Output outputToUpdate = new Output
                 {
                     OutputID = outputIdToUpdate,
-                    OutcomeID = parentOutcomeId,
+                    OutcomeID = parentOutcomeId, // From the combo box selection
                     OutputDescription = txtOutputDescription.Text.Trim()
                 };
 
@@ -584,17 +599,22 @@ namespace HumanitarianProjectManagement
                     if (success)
                     {
                         MessageBox.Show("Output updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        // Update local model
                         var pOutcome = _currentProject.Outcomes.FirstOrDefault(o => o.OutcomeID == outputToUpdate.OutcomeID);
                         var existingOutput = pOutcome?.Outputs.FirstOrDefault(op => op.OutputID == outputIdToUpdate);
                         if (existingOutput != null)
                         {
                             existingOutput.OutputDescription = outputToUpdate.OutputDescription;
+                            // If OutcomeID could change via UI (not current plan), handle that too:
+                            // existingOutput.OutcomeID = outputToUpdate.OutcomeID; 
                         }
-                        await LoadOutcomesAsync();
+                        await LoadOutcomesAsync(); // Refresh display
+
+                        // Reset button and tag
                         btnAddOutput.Text = "Add New Output";
                         btnAddOutput.Tag = null;
                         txtOutputDescription.Clear();
-                        cmbParentOutcomeForOutput.SelectedIndex = (cmbParentOutcomeForOutput.Items.Count > 0) ? 0 : -1;
+                        cmbParentOutcomeForOutput.SelectedIndex = (cmbParentOutcomeForOutput.Items.Count > 0) ? 0 : -1; // Reset parent combo
                     }
                     else
                     {
@@ -607,7 +627,7 @@ namespace HumanitarianProjectManagement
                     Debug.WriteLine($"Error BtnAddOutput_Click (Update): {ex.ToString()}");
                 }
             }
-            else
+            else // Add new Output mode
             {
                 Output newOutput = new Output { OutcomeID = parentOutcomeId, OutputDescription = txtOutputDescription.Text.Trim() };
                 int newOutputId = await _logFrameService.AddOutputAsync(newOutput);
@@ -621,6 +641,7 @@ namespace HumanitarianProjectManagement
                         if (localParentOutcome.Outputs == null) localParentOutcome.Outputs = new List<Output>();
                         localParentOutcome.Outputs.Add(newOutput);
                     }
+
                     MessageBox.Show("Output added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txtOutputDescription.Clear();
                     await LoadOutcomesAsync();
@@ -655,6 +676,7 @@ namespace HumanitarianProjectManagement
                 return;
             }
 
+            // Prepare activity data from form inputs
             HumanitarianProjectManagement.Models.Activity activityData = new HumanitarianProjectManagement.Models.Activity
             {
                 OutputID = parentOutputId,
@@ -662,22 +684,28 @@ namespace HumanitarianProjectManagement
                 PlannedMonths = txtActivityPlannedMonths.Text.Trim()
             };
 
+            // Check if we are in Edit mode for an Activity
             if (btnAddActivity.Tag is int activityIdToUpdate && btnAddActivity.Text == "Update Activity")
             {
-                activityData.ActivityID = activityIdToUpdate;
+                activityData.ActivityID = activityIdToUpdate; // Set the ID for the update
                 try
                 {
                     bool success = await _logFrameService.UpdateActivityAsync(activityData);
                     if (success)
                     {
                         MessageBox.Show("Activity updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        // Update local model
+                        // This is a bit more complex as it's nested.
+                        // For simplicity and robustness, full reload is often best.
                         await LoadOutcomesAsync();
+
+                        // Reset button and tag
                         btnAddActivity.Text = "Add New Activity";
                         btnAddActivity.Tag = null;
                         txtActivityDescription.Clear();
                         txtActivityPlannedMonths.Clear();
                         cmbParentOutcomeForActivity.SelectedIndex = (cmbParentOutcomeForActivity.Items.Count > 0) ? 0 : -1;
-                        ClearOutputCombo(cmbParentOutputForActivity);
+                        ClearOutputCombo(cmbParentOutputForActivity); // Reset child combo
                     }
                     else
                     {
@@ -690,12 +718,13 @@ namespace HumanitarianProjectManagement
                     Debug.WriteLine($"Error BtnAddActivity_Click (Update): {ex.ToString()}");
                 }
             }
-            else
+            else // Add new Activity mode
             {
                 int newActivityId = await _logFrameService.AddActivityAsync(activityData);
                 if (newActivityId > 0)
                 {
-                    activityData.ActivityID = newActivityId;
+                    activityData.ActivityID = newActivityId; // Set the new ID on the object that was added
+                                                             // Add to local model (if not relying solely on LoadOutcomesAsync)
                     foreach (var outcome in _currentProject.Outcomes)
                     {
                         var pOutput = outcome.Outputs?.FirstOrDefault(o => o.OutputID == activityData.OutputID);
@@ -706,6 +735,7 @@ namespace HumanitarianProjectManagement
                             break;
                         }
                     }
+
                     MessageBox.Show("Activity added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txtActivityDescription.Clear();
                     txtActivityPlannedMonths.Clear();
@@ -726,11 +756,13 @@ namespace HumanitarianProjectManagement
                 MessageBox.Show("Please select a Parent Outcome and then a Parent Output from the dropdowns.", "Parent Output Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
             if (_currentProject == null || _currentProject.ProjectID == 0)
             {
                 MessageBox.Show("Current project is not loaded or not saved.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+
             if (string.IsNullOrWhiteSpace(txtIndicatorName.Text))
             {
                 MessageBox.Show("Indicator name cannot be empty.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -738,6 +770,7 @@ namespace HumanitarianProjectManagement
                 return;
             }
 
+            // Prepare indicator data from form inputs
             ProjectIndicator indicatorData = new ProjectIndicator
             {
                 ProjectID = _currentProject.ProjectID,
@@ -754,16 +787,19 @@ namespace HumanitarianProjectManagement
                 TargetTotal = (int)numTargetTotal.Value
             };
 
+            // Check if we are in Edit mode for an Indicator
             if (btnAddIndicator.Tag is int indicatorIdToUpdate && btnAddIndicator.Text == "Update Indicator")
             {
-                indicatorData.ProjectIndicatorID = indicatorIdToUpdate;
+                indicatorData.ProjectIndicatorID = indicatorIdToUpdate; // Set the ID for update
                 try
                 {
                     bool success = await _logFrameService.UpdateProjectIndicatorAsync(indicatorData);
                     if (success)
                     {
                         MessageBox.Show("Indicator updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        await LoadOutcomesAsync();
+                        await LoadOutcomesAsync(); // Refresh display
+
+                        // Reset button and tag
                         btnAddIndicator.Text = "Add New Indicator";
                         btnAddIndicator.Tag = null;
                         txtIndicatorName.Clear();
@@ -785,12 +821,13 @@ namespace HumanitarianProjectManagement
                     Debug.WriteLine($"Error BtnAddIndicator_Click (Update): {ex.ToString()}");
                 }
             }
-            else
+            else // Add new Indicator mode
             {
                 int newIndicatorId = await _logFrameService.AddProjectIndicatorToOutputAsync(indicatorData);
                 if (newIndicatorId > 0)
                 {
-                    indicatorData.ProjectIndicatorID = newIndicatorId;
+                    indicatorData.ProjectIndicatorID = newIndicatorId; // Set the new ID on the object that was added
+                    // Add to local model (if not relying solely on LoadOutcomesAsync)
                     if (indicatorData.OutputID.HasValue)
                     {
                         foreach (var outcome in _currentProject.Outcomes)
@@ -804,6 +841,7 @@ namespace HumanitarianProjectManagement
                             }
                         }
                     }
+
                     MessageBox.Show("Indicator added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txtIndicatorName.Clear();
                     txtIndicatorDescription.Clear();
@@ -841,7 +879,7 @@ namespace HumanitarianProjectManagement
 
             displayPanel.SuspendLayout();
             int outcomeCounter = 1;
-            foreach (var outcome in outcomes) // outcomes are now ordered by OutcomeID from LoadOutcomesAsync
+            foreach (var outcome in outcomes)
             {
                 await RenderSingleOutcomeWithChildrenAsync(outcome, displayPanel, $"{outcomeCounter}.");
                 outcomeCounter++;
@@ -855,21 +893,33 @@ namespace HumanitarianProjectManagement
             if (outcome == null) return;
 
             AddDisplayControl(displayPanel, "Outcome", outcome.OutcomeDescription, 0, FontStyle.Bold, 12.5F, Color.DarkBlue, outcome, true, outcomeNumberPrefix);
+
+            // Ensure Outputs list is not null before trying to access it
+            // if (outcome.Outputs == null) outcome.Outputs = new List<Output>(); // Initialize if null
+            // var outputs = outcome.Outputs.OrderBy(o => o.OutputDescription).ToList(); // Use local list
+
+            // If outputs were not part of the outcome object and need to be fetched:
             var outputs = await _logFrameService.GetOutputsByOutcomeIdAsync(outcome.OutcomeID);
-            var orderedOutputs = outputs.OrderBy(o => o.OutputID).ToList(); // MODIFIED SORTING
+            // Sync with local model if necessary, or ensure LogFrameService returns them ordered.
+            // For now, assume GetOutputsByOutcomeIdAsync might not order, so order here.
+            var orderedOutputs = outputs.OrderBy(o => o.OutputDescription).ToList();
+
 
             int outputCounter = 1;
-            foreach (var output in orderedOutputs)
+            foreach (var output in orderedOutputs) // Iterate over fetched and ordered outputs
             {
                 string outputNumber = $"{outcomeNumberPrefix}{outputCounter}.";
                 AddDisplayControl(displayPanel, "Output", output.OutputDescription, 1, FontStyle.Bold, 11F, Color.DarkGreen, output, true, outputNumber);
+
+                // if (output.ProjectIndicators == null) output.ProjectIndicators = new List<ProjectIndicator>();
+                // var indicators = output.ProjectIndicators.OrderBy(i => i.IndicatorName).ToList();
                 var indicators = await _logFrameService.GetProjectIndicatorsByOutputIdAsync(output.OutputID);
-                var orderedIndicators = indicators.OrderBy(i => i.ProjectIndicatorID).ToList(); // MODIFIED SORTING
+                var orderedIndicators = indicators.OrderBy(i => i.IndicatorName).ToList();
 
                 int indicatorCounter = 1;
-                if (orderedIndicators.Any())
+                if (orderedIndicators.Any()) // Check orderedIndicators
                 {
-                    foreach (var indicator in orderedIndicators)
+                    foreach (var indicator in orderedIndicators) // Iterate orderedIndicators
                     {
                         string indicatorNumber = $"{outputNumber}{indicatorCounter}.";
                         AddDisplayControl(displayPanel, "Indicator", indicator.IndicatorName, 2, FontStyle.Regular, 10F, Color.Black, indicator, true, indicatorNumber);
@@ -886,13 +936,16 @@ namespace HumanitarianProjectManagement
                 {
                     AddDisplayControl(displayPanel, "", "No indicators for this output.", 2, FontStyle.Italic, 9F, Color.Gray, null, false, $"{outputNumber}  ");
                 }
+
+                // if (output.Activities == null) output.Activities = new List<Models.Activity>();
+                // var activities = output.Activities.OrderBy(a => a.ActivityDescription).ToList();
                 var activities = await _logFrameService.GetActivitiesByOutputIdAsync(output.OutputID);
-                var orderedActivities = activities.OrderBy(a => a.ActivityID).ToList(); // MODIFIED SORTING
+                var orderedActivities = activities.OrderBy(a => a.ActivityDescription).ToList();
 
                 int activityCounter = 1;
-                if (orderedActivities.Any())
+                if (orderedActivities.Any()) // Check orderedActivities
                 {
-                    foreach (var activity in orderedActivities)
+                    foreach (var activity in orderedActivities) // Iterate orderedActivities
                     {
                         string activityNumber = $"{outputNumber}{((char)('a' + activityCounter - 1))}.";
                         AddDisplayControl(displayPanel, "Activity", activity.ActivityDescription, 2, FontStyle.Regular, 10F, Color.Black, activity, true, activityNumber);
@@ -922,23 +975,24 @@ namespace HumanitarianProjectManagement
                 Margin = new Padding(20 * indentLevel + 5, isHeader ? 4 : 1, 0, isHeader ? 1 : 1),
             };
             itemRowPanel.ColumnStyles.Clear();
-            itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 13F));
-            itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 400F)); // Column 0: Label (Fixed Width)
+            itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // Column 1: Stretcher
+            itemRowPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));    // Column 2: Actions
 
             var label = new Label
             {
                 Text = $"{itemNumberPrefix}{(string.IsNullOrEmpty(itemTypeTitle) ? "" : " " + itemTypeTitle + ": ")}{text}",
                 Font = new Font("Segoe UI", fontSize, fontStyle),
                 ForeColor = foreColor,
-                AutoSize = true, // MODIFIED
-                AutoEllipsis = false, // MODIFIED
+                AutoSize = false, // MODIFIED
+                AutoEllipsis = true, // MODIFIED
                 Padding = new Padding(3, 0, 3, 0),
                 Margin = new Padding(0),
                 Dock = DockStyle.Fill
             };
             itemRowPanel.Controls.Add(label, 0, 0);
 
+            // Stretcher Panel for Column 1
             itemRowPanel.Controls.Add(new Panel { Size = new Size(0, 0), Margin = Padding.Empty }, 1, 0);
 
             if (itemData != null && isHeader)
@@ -996,7 +1050,7 @@ namespace HumanitarianProjectManagement
                 }
                 actionsPanel.Controls.Add(btnEdit);
                 actionsPanel.Controls.Add(btnDelete);
-                itemRowPanel.Controls.Add(actionsPanel, 2, 0);
+                itemRowPanel.Controls.Add(actionsPanel, 2, 0); // MODIFIED - Actions to Column 2
             }
 
             panel.Controls.Add(itemRowPanel);
@@ -1017,7 +1071,8 @@ namespace HumanitarianProjectManagement
 
         private void StyleInputLabel(Label label)
         {
-            label.AutoSize = true;
+            label.AutoSize = true; // This might need to be false if the label is in a fixed width column and needs to fill it.
+                                   // However, for the input form, this is likely correct.
             label.Margin = new Padding(0, 8, 0, 2);
             label.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
         }
@@ -1429,5 +1484,4 @@ namespace HumanitarianProjectManagement
         }
     }
 }
-
 
