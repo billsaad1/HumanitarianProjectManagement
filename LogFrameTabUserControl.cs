@@ -269,7 +269,7 @@ namespace HumanitarianProjectManagement
 
             if (cmbParentOutcomeForActivity.SelectedValue != null && (int)cmbParentOutcomeForActivity.SelectedValue > 0)
                 await PopulateParentOutputComboBoxesAsync(cmbParentOutcomeForActivity, cmbParentOutputForActivity);
-            else ClearOutputCombo(cmbParentOutputForActivity, "Select Parent Outcome first");
+            else ClearOutputCombo(cmbParentOutcomeForActivity, "Select Parent Outcome first");
         }
 
         private void ClearOutputCombo(ComboBox cmbOutput, string placeholderText = "Select Parent Outcome first")
@@ -644,6 +644,7 @@ namespace HumanitarianProjectManagement
         {
             Panel cardPanel = new Panel
             {
+                AutoSize = true,
                 Dock = DockStyle.Fill,
                 BackColor = White,
                 Padding = new Padding(10),
@@ -832,7 +833,7 @@ namespace HumanitarianProjectManagement
             {
                 if (!hasOutcomes)
                 {
-                    lblLogFrameDisplayPlaceholder.Text = "No outcomes exist. Please add one using the 'Outcome' tab.";
+                    lblLogFrameDisplayPlaceholder.Text = "No outcomes exist. Please add one using the \'Outcome\' tab.";
                     lblLogFrameDisplayPlaceholder.Visible = true;
                 }
                 else if (flpLogFrameDisplay.Controls.Count <= 1)
@@ -1262,11 +1263,42 @@ namespace HumanitarianProjectManagement
                     {
                         string indicatorNumber = $"{outputNumber}{indicatorCounter}.";
                         AddDisplayControl(displayPanel, "Indicator", indicator.IndicatorName, 2, FontStyle.Regular, 10F, WarningOrange, indicator, true, indicatorNumber);
-                        string details = $"Target: {indicator.TargetValue ?? "N/A"}, MoV: {indicator.MeansOfVerification ?? "N/A"}";
+                        
+                        // --- START OF ENHANCED DEMOGRAPHIC DISPLAY LOGIC ---
                         if (indicator.TargetMen > 0 || indicator.TargetWomen > 0 || indicator.TargetBoys > 0 || indicator.TargetGirls > 0 || indicator.TargetTotal > 0)
                         {
-                            details += $", Demo: M({indicator.TargetMen}), W({indicator.TargetWomen}), B({indicator.TargetBoys}), G({indicator.TargetGirls}), T({indicator.TargetTotal})";
+                            TableLayoutPanel demographicTable = new TableLayoutPanel
+                            {
+                                AutoSize = true,
+                                Margin = new Padding(20 * 3 + 5, 0, 5, 5), // Indent to align with indicator details
+                                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
+                                BackColor = LightGray
+                            };
+                            demographicTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                            demographicTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                            demographicTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                            demographicTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                            demographicTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+
+                            // Header Row
+                            demographicTable.Controls.Add(CreateDemographicLabel("👨 Men", true), 0, 0);
+                            demographicTable.Controls.Add(CreateDemographicLabel("👩 Women", true), 1, 0);
+                            demographicTable.Controls.Add(CreateDemographicLabel("👦 Boys", true), 2, 0);
+                            demographicTable.Controls.Add(CreateDemographicLabel("👧 Girls", true), 3, 0);
+                            demographicTable.Controls.Add(CreateDemographicLabel("👥 Total", true), 4, 0);
+
+                            // Data Row
+                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetMen.ToString()), 0, 1);
+                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetWomen.ToString()), 1, 1);
+                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetBoys.ToString()), 2, 1);
+                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetGirls.ToString()), 3, 1);
+                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetTotal.ToString()), 4, 1);
+
+                            displayPanel.Controls.Add(demographicTable);
                         }
+                        // --- END OF ENHANCED DEMOGRAPHIC DISPLAY LOGIC ---
+
+                        string details = $"Target: {indicator.TargetValue ?? "N/A"}, MoV: {indicator.MeansOfVerification ?? "N/A"}";
                         AddDisplayControl(displayPanel, "", details, 3, FontStyle.Italic, 8.5F, DarkGray, null, false, "");
                         indicatorCounter++;
                     }
@@ -1299,6 +1331,21 @@ namespace HumanitarianProjectManagement
                 }
                 outputCounter++;
             }
+        }
+
+        private Label CreateDemographicLabel(string text, bool isHeader = false)
+        {
+            Label label = new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Padding = new Padding(5),
+                Margin = new Padding(0),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Segoe UI", isHeader ? 9F : 8.5F, isHeader ? FontStyle.Bold : FontStyle.Regular),
+                ForeColor = isHeader ? PrimaryBlue : Color.Black
+            };
+            return label;
         }
 
         private void AddDisplayControl(FlowLayoutPanel panel, string itemTypeTitle, string text, int indentLevel, FontStyle fontStyle, float fontSize, Color foreColor, object itemData, bool isHeader = true, string itemNumberPrefix = "")
@@ -1486,7 +1533,7 @@ namespace HumanitarianProjectManagement
                 return;
             }
 
-            var confirmResult = MessageBox.Show($"Are you sure you want to delete outcome: '{TruncateText(outcomeToDelete.OutcomeDescription, 50)}'? This will also delete all associated outputs, activities, and indicators.", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            var confirmResult = MessageBox.Show($"Are you sure you want to delete outcome: \'{TruncateText(outcomeToDelete.OutcomeDescription, 50)}\'? This will also delete all associated outputs, activities, and indicators.", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (confirmResult == DialogResult.Yes)
             {
                 try
@@ -1541,7 +1588,7 @@ namespace HumanitarianProjectManagement
                 return;
             }
 
-            var confirmResult = MessageBox.Show($"Are you sure you want to delete output: '{TruncateText(outputToDelete.OutputDescription, 50)}'? This will also delete all associated activities and indicators.", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            var confirmResult = MessageBox.Show($"Are you sure you want to delete output: \'{TruncateText(outputToDelete.OutputDescription, 50)}\'? This will also delete all associated activities and indicators.", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (confirmResult == DialogResult.Yes)
             {
                 try
@@ -1598,7 +1645,7 @@ namespace HumanitarianProjectManagement
                 return;
             }
 
-            var confirmResult = MessageBox.Show($"Are you sure you want to delete activity: '{TruncateText(activityToDelete.ActivityDescription, 50)}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            var confirmResult = MessageBox.Show($"Are you sure you want to delete activity: \'{TruncateText(activityToDelete.ActivityDescription, 50)}\'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (confirmResult == DialogResult.Yes)
             {
                 try
@@ -1678,7 +1725,7 @@ namespace HumanitarianProjectManagement
                 return;
             }
 
-            var confirmResult = MessageBox.Show($"Are you sure you want to delete indicator: '{TruncateText(indicatorToDelete.IndicatorName, 50)}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            var confirmResult = MessageBox.Show($"Are you sure you want to delete indicator: \'{TruncateText(indicatorToDelete.IndicatorName, 50)}\'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (confirmResult == DialogResult.Yes)
             {
                 try
@@ -1824,3 +1871,4 @@ namespace HumanitarianProjectManagement
         }
     }
 }
+
