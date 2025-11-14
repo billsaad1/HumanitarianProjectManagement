@@ -310,9 +310,15 @@
       <DependentUpon>BudgetTabUserControl.cs</DependentUpon>
     </Compile>
     <Compile Include="DetailedBudgetLine.cs" />
+    <Compile Include="GoodsReceiptService.cs" />
+    <Compile Include="InvoiceService.cs" />
     <Compile Include="ItemizedBudgetDetail.cs" />
     <Compile Include="LogFrameService.cs" />
     <Compile Include="LogFrameServiceTests.cs" />
+    <Compile Include="LogFrameTabUserControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="LogFrameTabUserControl.Designer.cs" />
     <Compile Include="Migrations\20250615225544_CascadeFix_AllRelationships.cs" />
     <Compile Include="Migrations\20250615225544_CascadeFix_AllRelationships.Designer.cs">
       <DependentUpon>20250615225544_CascadeFix_AllRelationships.cs</DependentUpon>
@@ -332,6 +338,9 @@
     <Compile Include="Migrations\HpmDbContextModelSnapshot.cs" />
     <Compile Include="Outcome.cs" />
     <Compile Include="Output.cs" />
+    <Compile Include="PaymentService.cs" />
+    <Compile Include="ProductService.cs" />
+    <Compile Include="ProjectActivity.cs" />
     <Compile Include="ProjectCreatEditForm.Designer.cs">
       <DependentUpon>ProjectCreatEditForm.cs</DependentUpon>
     </Compile>
@@ -344,6 +353,11 @@
     <Compile Include="PurchaseOrderCreateEditForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="PurchaseRequisitionService.cs" />
+    <Compile Include="PurchasingMainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PurchasingMainForm.Designer.cs" />
     <Compile Include="SplashScreenForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -404,6 +418,13 @@
     </Compile>
     <Compile Include="PurchaseOrderService.cs" />
     <Compile Include="StockService.cs" />
+    <Compile Include="SupplierCreateEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SupplierListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SupplierService.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="ThemeManager.cs" />
     <Compile Include="ProjectIndicator.cs" />
@@ -444,6 +465,12 @@
     <Compile Include="DataBaseHelper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="BudgetTabUserControl.resx">
+      <DependentUpon>BudgetTabUserControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LogFrameTabUserControl.resx">
+      <DependentUpon>LogFrameTabUserControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </EmbeddedResource>
