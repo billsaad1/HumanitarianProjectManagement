@@ -1,4 +1,4 @@
-namespace HumanitarianProjectManagement
+﻿namespace HumanitarianProjectManagement
 {
     partial class LogFrameTabUserControl
     {
@@ -63,15 +63,15 @@ namespace HumanitarianProjectManagement
             // 
             this.splitContainerMain.Panel1.Controls.Add(this.pnlInputArea);
             this.splitContainerMain.Panel1.BackColor = System.Drawing.Color.White;
-            this.splitContainerMain.Panel1MinSize = 400;
+            this.splitContainerMain.Panel1MinSize = 450;
             // 
             // splitContainerMain.Panel2
             // 
             this.splitContainerMain.Panel2.Controls.Add(this.splitContainerContent);
             this.splitContainerMain.Panel2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(236)))), ((int)(((byte)(240)))), ((int)(((byte)(241)))));
-            this.splitContainerMain.Panel2MinSize = 700;
+            this.splitContainerMain.Panel2MinSize = 750;
             this.splitContainerMain.Size = new System.Drawing.Size(1600, 900);
-            this.splitContainerMain.SplitterDistance = 450;
+            this.splitContainerMain.SplitterDistance = 480;
             this.splitContainerMain.TabIndex = 0;
             // 
             // pnlInputArea
@@ -79,7 +79,7 @@ namespace HumanitarianProjectManagement
             this.pnlInputArea.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlInputArea.Location = new System.Drawing.Point(0, 0);
             this.pnlInputArea.Name = "pnlInputArea";
-            this.pnlInputArea.Size = new System.Drawing.Size(450, 900);
+            this.pnlInputArea.Size = new System.Drawing.Size(480, 900);
             this.pnlInputArea.TabIndex = 0;
             this.pnlInputArea.BackColor = System.Drawing.Color.White;
             this.pnlInputArea.Padding = new System.Windows.Forms.Padding(15);
@@ -105,9 +105,9 @@ namespace HumanitarianProjectManagement
             // 
             this.splitContainerContent.Panel2.Controls.Add(this.flpOutcomesSidebar);
             this.splitContainerContent.Panel2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(249)))), ((int)(((byte)(250)))));
-            this.splitContainerContent.Panel2MinSize = 280;
-            this.splitContainerContent.Size = new System.Drawing.Size(1140, 900);
-            this.splitContainerContent.SplitterDistance = 800;
+            this.splitContainerContent.Panel2MinSize = 300;
+            this.splitContainerContent.Size = new System.Drawing.Size(1110, 900);
+            this.splitContainerContent.SplitterDistance = 780;
             this.splitContainerContent.TabIndex = 0;
             // 
             // pnlDisplayContainer
@@ -115,7 +115,7 @@ namespace HumanitarianProjectManagement
             this.pnlDisplayContainer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlDisplayContainer.Location = new System.Drawing.Point(0, 0);
             this.pnlDisplayContainer.Name = "pnlDisplayContainer";
-            this.pnlDisplayContainer.Size = new System.Drawing.Size(800, 900);
+            this.pnlDisplayContainer.Size = new System.Drawing.Size(780, 900);
             this.pnlDisplayContainer.TabIndex = 0;
             this.pnlDisplayContainer.BackColor = System.Drawing.Color.White;
             this.pnlDisplayContainer.Padding = new System.Windows.Forms.Padding(10);
@@ -125,15 +125,16 @@ namespace HumanitarianProjectManagement
             // flpLogFrameDisplay
             // 
             this.flpLogFrameDisplay.AutoScroll = false;
-            this.flpLogFrameDisplay.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpLogFrameDisplay.Dock = System.Windows.Forms.DockStyle.Top;
             this.flpLogFrameDisplay.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpLogFrameDisplay.Location = new System.Drawing.Point(10, 10);
             this.flpLogFrameDisplay.Name = "flpLogFrameDisplay";
-            this.flpLogFrameDisplay.Size = new System.Drawing.Size(780, 880);
+            this.flpLogFrameDisplay.Size = new System.Drawing.Size(760, 880);
             this.flpLogFrameDisplay.TabIndex = 0;
             this.flpLogFrameDisplay.WrapContents = false;
             this.flpLogFrameDisplay.BackColor = System.Drawing.Color.White;
             this.flpLogFrameDisplay.Padding = new System.Windows.Forms.Padding(15);
+            this.flpLogFrameDisplay.AutoSize = true;
             this.flpLogFrameDisplay.Controls.Add(this.lblLogFrameDisplayPlaceholder);
             // 
             // lblLogFrameDisplayPlaceholder
@@ -157,7 +158,7 @@ namespace HumanitarianProjectManagement
             this.flpOutcomesSidebar.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpOutcomesSidebar.Location = new System.Drawing.Point(0, 0);
             this.flpOutcomesSidebar.Name = "flpOutcomesSidebar";
-            this.flpOutcomesSidebar.Size = new System.Drawing.Size(330, 900);
+            this.flpOutcomesSidebar.Size = new System.Drawing.Size(320, 900);
             this.flpOutcomesSidebar.TabIndex = 0;
             this.flpOutcomesSidebar.WrapContents = false;
             this.flpOutcomesSidebar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(249)))), ((int)(((byte)(250)))));
@@ -194,6 +195,7 @@ namespace HumanitarianProjectManagement
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerContent)).EndInit();
             this.splitContainerContent.ResumeLayout(false);
             this.pnlDisplayContainer.ResumeLayout(false);
+            this.pnlDisplayContainer.PerformLayout();
             this.flpLogFrameDisplay.ResumeLayout(false);
             this.flpLogFrameDisplay.PerformLayout();
             this.flpOutcomesSidebar.ResumeLayout(false);

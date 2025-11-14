@@ -66,7 +66,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer // Corrected namespace
             if (section == null)
                 throw new ArgumentNullException(nameof(section));
 
-            // Ensure SectionName is provided, as it's required by the model
+            // Ensure SectionName is provided, as it\'s required by the model
             if (string.IsNullOrWhiteSpace(section.SectionName))
                 throw new ArgumentException("SectionName cannot be empty or whitespace.", nameof(section.SectionName));
 
@@ -106,3 +106,4 @@ namespace HumanitarianProjectManagement.DataAccessLayer // Corrected namespace
         }
     }
 }
+

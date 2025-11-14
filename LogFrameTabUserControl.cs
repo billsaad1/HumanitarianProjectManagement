@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -66,15 +66,16 @@ namespace HumanitarianProjectManagement
 
             if (splitContainerMain != null)
             {
-                splitContainerMain.SplitterDistance = 450;
+                splitContainerMain.SplitterDistance = 480;
             }
             if (splitContainerContent != null)
             {
-                splitContainerContent.SplitterDistance = 800;
+                splitContainerContent.SplitterDistance = 780;
             }
 
             InitializeInputControls();
             UpdateInputAreaForContext();
+            PopulateQuickNavigation();
 
             if (lblLogFrameDisplayPlaceholder != null && !lblLogFrameDisplayPlaceholder.IsDisposed)
             {
@@ -131,6 +132,85 @@ namespace HumanitarianProjectManagement
                 flpOutcomesSidebar.BackColor = LightGray;
                 flpOutcomesSidebar.Padding = new Padding(10);
             }
+        }
+
+        private void PopulateQuickNavigation()
+        {
+            if (flpOutcomesSidebar == null) return;
+
+            // Clear existing controls except the title
+            var controlsToRemove = flpOutcomesSidebar.Controls.OfType<Control>().Where(c => c != lblSidebarTitle).ToList();
+            foreach (var control in controlsToRemove)
+            {
+                flpOutcomesSidebar.Controls.Remove(control);
+                control.Dispose();
+            }
+
+            // Add quick navigation buttons
+            Button btnGoToOutcome = CreateQuickNavButton("🎯 Go to Outcome", () => {
+                if (inputTabControl.TabPages.Count > 0)
+                    inputTabControl.SelectedIndex = 0;
+            });
+            flpOutcomesSidebar.Controls.Add(btnGoToOutcome);
+
+            Button btnGoToOutput = CreateQuickNavButton("📊 Go to Output", () => {
+                if (inputTabControl.TabPages.Count > 1)
+                    inputTabControl.SelectedIndex = 1;
+            });
+            flpOutcomesSidebar.Controls.Add(btnGoToOutput);
+
+            Button btnGoToIndicator = CreateQuickNavButton("📈 Go to Indicator", () => {
+                if (inputTabControl.TabPages.Count > 2)
+                    inputTabControl.SelectedIndex = 2;
+            });
+            flpOutcomesSidebar.Controls.Add(btnGoToIndicator);
+
+            Button btnGoToActivity = CreateQuickNavButton("⚡ Go to Activity", () => {
+                if (inputTabControl.TabPages.Count > 3)
+                    inputTabControl.SelectedIndex = 3;
+            });
+            flpOutcomesSidebar.Controls.Add(btnGoToActivity);
+
+            // Add separator
+            Panel separator = new Panel
+            {
+                Height = 2,
+                Width = 280,
+                BackColor = DarkGray,
+                Margin = new Padding(0, 15, 0, 15)
+            };
+            flpOutcomesSidebar.Controls.Add(separator);
+
+            // Add refresh button
+            Button btnRefresh = CreateQuickNavButton("🔄 Refresh Display", async () => {
+                await LoadOutcomesAsync();
+            });
+            flpOutcomesSidebar.Controls.Add(btnRefresh);
+        }
+
+        private Button CreateQuickNavButton(string text, Action onClick)
+        {
+            Button btn = new Button
+            {
+                Text = text,
+                Width = 280,
+                Height = 35,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(52, 152, 219),
+                ForeColor = White,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Margin = new Padding(0, 0, 0, 8),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(10, 0, 0, 0),
+                Cursor = Cursors.Hand
+            };
+
+            btn.FlatAppearance.BorderSize = 0;
+            btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(41, 128, 185);
+
+            btn.Click += (sender, e) => onClick?.Invoke();
+
+            return btn;
         }
 
         public async Task LoadProjectAsync(Project project)
@@ -371,7 +451,7 @@ namespace HumanitarianProjectManagement
                 Font = new Font("Segoe UI", 10F, FontStyle.Regular),
                 Appearance = TabAppearance.FlatButtons,
                 SizeMode = TabSizeMode.Fixed,
-                ItemSize = new Size(100, 35)
+                ItemSize = new Size(110, 35)
             };
             inputTabControl.SelectedIndexChanged += InputTabControl_SelectedIndexChanged;
 
@@ -453,7 +533,7 @@ namespace HumanitarianProjectManagement
             flpOutcomeInput.Controls.Add(lblOutcomeDesc);
 
             txtOutcomeDescription = new TextBox();
-            StyleInputTextBox(txtOutcomeDescription, multiline: true, height: 80, width: 400, placeholder: "Enter outcome description...");
+            StyleInputTextBox(txtOutcomeDescription, multiline: true, height: 80, width: 430, placeholder: "Enter outcome description...");
             flpOutcomeInput.Controls.Add(txtOutcomeDescription);
 
             btnAddOutcome = new Button { Text = "Add New Outcome" };
@@ -499,7 +579,7 @@ namespace HumanitarianProjectManagement
             flpOutputInput.Controls.Add(lblOutputDesc);
 
             txtOutputDescription = new TextBox();
-            StyleInputTextBox(txtOutputDescription, multiline: true, height: 80, width: 400, placeholder: "Enter output description...");
+            StyleInputTextBox(txtOutputDescription, multiline: true, height: 80, width: 430, placeholder: "Enter output description...");
             flpOutputInput.Controls.Add(txtOutputDescription);
 
             btnAddOutput = new Button { Text = "Add New Output" };
@@ -549,31 +629,38 @@ namespace HumanitarianProjectManagement
 
             Label lblIndicatorName = new Label { Text = "Indicator Name:" }; StyleInputLabel(lblIndicatorName);
             flpBasicIndicator.Controls.Add(lblIndicatorName);
-            txtIndicatorName = new TextBox(); StyleInputTextBox(txtIndicatorName, width: 400, placeholder: "Enter indicator name...");
+            txtIndicatorName = new TextBox(); StyleInputTextBox(txtIndicatorName, width: 430, placeholder: "Enter indicator name...");
             flpBasicIndicator.Controls.Add(txtIndicatorName);
 
             Label lblIndicatorDesc = new Label { Text = "Description:" }; StyleInputLabel(lblIndicatorDesc);
             flpBasicIndicator.Controls.Add(lblIndicatorDesc);
-            txtIndicatorDescription = new TextBox(); StyleInputTextBox(txtIndicatorDescription, multiline: true, height: 60, width: 400, placeholder: "Enter indicator description...");
+            txtIndicatorDescription = new TextBox(); StyleInputTextBox(txtIndicatorDescription, multiline: true, height: 60, width: 430, placeholder: "Enter indicator description...");
             flpBasicIndicator.Controls.Add(txtIndicatorDescription);
 
             Label lblIndicatorTarget = new Label { Text = "Target Value (textual):" }; StyleInputLabel(lblIndicatorTarget);
             flpBasicIndicator.Controls.Add(lblIndicatorTarget);
-            txtIndicatorTargetValue = new TextBox(); StyleInputTextBox(txtIndicatorTargetValue, width: 400, placeholder: "Enter target value...");
+            txtIndicatorTargetValue = new TextBox(); StyleInputTextBox(txtIndicatorTargetValue, width: 430, placeholder: "Enter target value...");
             flpBasicIndicator.Controls.Add(txtIndicatorTargetValue);
 
             Label lblMeansOfVerification = new Label { Text = "Means of Verification:" }; StyleInputLabel(lblMeansOfVerification);
             flpBasicIndicator.Controls.Add(lblMeansOfVerification);
-            txtMeansOfVerification = new TextBox(); StyleInputTextBox(txtMeansOfVerification, multiline: true, height: 50, width: 400, placeholder: "Enter means of verification...");
+            txtMeansOfVerification = new TextBox(); StyleInputTextBox(txtMeansOfVerification, multiline: true, height: 50, width: 430, placeholder: "Enter means of verification...");
             flpBasicIndicator.Controls.Add(txtMeansOfVerification);
 
             gbBasicIndicator.Controls.Add(flpBasicIndicator);
             flpIndicatorInput.Controls.Add(gbBasicIndicator);
 
-            // Demographics Group - IMPROVED LAYOUT
+            // Demographics Group - ENHANCED LAYOUT WITH PROPER SIZING AND LABELS
             GroupBox gbDemographics = CreateStyledGroupBox("Demographic Targets");
-            gbDemographics.Height = 120; // Fixed height to prevent layout issues
+            gbDemographics.Height = 200; // Increased height for better visibility
             gbDemographics.AutoSize = false;
+
+            Panel demographicPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(15),
+                BackColor = Color.FromArgb(248, 249, 250)
+            };
 
             TableLayoutPanel tlpDemographicsInd = new TableLayoutPanel
             {
@@ -581,52 +668,53 @@ namespace HumanitarianProjectManagement
                 RowCount = 5,
                 AutoSize = false,
                 Dock = DockStyle.Fill,
-                Padding = new Padding(10),
-                CellBorderStyle = TableLayoutPanelCellBorderStyle.None
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
+                BackColor = Color.FromArgb(248, 249, 250)
             };
 
             // Configure column styles for better layout
-            tlpDemographicsInd.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F)); // Labels
-            tlpDemographicsInd.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F)); // Controls
+            tlpDemographicsInd.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F)); // Labels
+            tlpDemographicsInd.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F)); // Controls
 
-            // Configure row styles
+            // Configure row styles for equal distribution
             for (int i = 0; i < 5; i++)
             {
                 tlpDemographicsInd.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
             }
 
-            // Add demographic controls in a more compact layout
-            Label lblTargetMenInd = new Label { Text = "👨 Men:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 3, 0, 0) };
-            StyleInputLabel(lblTargetMenInd);
+            // Add demographic controls with enhanced styling and proper sizing
+            Label lblTargetMenInd = new Label { Text = "👨 Men:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(5, 8, 5, 5) };
+            StyleDemographicLabel(lblTargetMenInd);
             tlpDemographicsInd.Controls.Add(lblTargetMenInd, 0, 0);
-            numTargetMen = new NumericUpDown { Name = "numTargetMen", Maximum = 1000000, Minimum = 0, Width = 120, Font = new Font("Segoe UI", 9F), Margin = new Padding(0), Anchor = AnchorStyles.Left | AnchorStyles.Top };
+            numTargetMen = new NumericUpDown { Name = "numTargetMen", Maximum = 1000000, Minimum = 0, Width = 150, Height = 25, Font = new Font("Segoe UI", 10F), Margin = new Padding(5), Anchor = AnchorStyles.Left | AnchorStyles.Top };
             tlpDemographicsInd.Controls.Add(numTargetMen, 1, 0);
 
-            Label lblTargetWomenInd = new Label { Text = "👩 Women:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 3, 0, 0) };
-            StyleInputLabel(lblTargetWomenInd);
+            Label lblTargetWomenInd = new Label { Text = "👩 Women:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(5, 8, 5, 5) };
+            StyleDemographicLabel(lblTargetWomenInd);
             tlpDemographicsInd.Controls.Add(lblTargetWomenInd, 0, 1);
-            numTargetWomen = new NumericUpDown { Name = "numTargetWomen", Maximum = 1000000, Minimum = 0, Width = 120, Font = new Font("Segoe UI", 9F), Margin = new Padding(0), Anchor = AnchorStyles.Left | AnchorStyles.Top };
+            numTargetWomen = new NumericUpDown { Name = "numTargetWomen", Maximum = 1000000, Minimum = 0, Width = 150, Height = 25, Font = new Font("Segoe UI", 10F), Margin = new Padding(5), Anchor = AnchorStyles.Left | AnchorStyles.Top };
             tlpDemographicsInd.Controls.Add(numTargetWomen, 1, 1);
 
-            Label lblTargetBoysInd = new Label { Text = "👦 Boys:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 3, 0, 0) };
-            StyleInputLabel(lblTargetBoysInd);
+            Label lblTargetBoysInd = new Label { Text = "👦 Boys:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(5, 8, 5, 5) };
+            StyleDemographicLabel(lblTargetBoysInd);
             tlpDemographicsInd.Controls.Add(lblTargetBoysInd, 0, 2);
-            numTargetBoys = new NumericUpDown { Name = "numTargetBoys", Maximum = 1000000, Minimum = 0, Width = 120, Font = new Font("Segoe UI", 9F), Margin = new Padding(0), Anchor = AnchorStyles.Left | AnchorStyles.Top };
+            numTargetBoys = new NumericUpDown { Name = "numTargetBoys", Maximum = 1000000, Minimum = 0, Width = 150, Height = 25, Font = new Font("Segoe UI", 10F), Margin = new Padding(5), Anchor = AnchorStyles.Left | AnchorStyles.Top };
             tlpDemographicsInd.Controls.Add(numTargetBoys, 1, 2);
 
-            Label lblTargetGirlsInd = new Label { Text = "👧 Girls:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 3, 0, 0) };
-            StyleInputLabel(lblTargetGirlsInd);
+            Label lblTargetGirlsInd = new Label { Text = "👧 Girls:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(5, 8, 5, 5) };
+            StyleDemographicLabel(lblTargetGirlsInd);
             tlpDemographicsInd.Controls.Add(lblTargetGirlsInd, 0, 3);
-            numTargetGirls = new NumericUpDown { Name = "numTargetGirls", Maximum = 1000000, Minimum = 0, Width = 120, Font = new Font("Segoe UI", 9F), Margin = new Padding(0), Anchor = AnchorStyles.Left | AnchorStyles.Top };
+            numTargetGirls = new NumericUpDown { Name = "numTargetGirls", Maximum = 1000000, Minimum = 0, Width = 150, Height = 25, Font = new Font("Segoe UI", 10F), Margin = new Padding(5), Anchor = AnchorStyles.Left | AnchorStyles.Top };
             tlpDemographicsInd.Controls.Add(numTargetGirls, 1, 3);
 
-            Label lblTargetTotalInd = new Label { Text = "👥 Total:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(0, 3, 0, 0) };
-            StyleInputLabel(lblTargetTotalInd);
+            Label lblTargetTotalInd = new Label { Text = "👥 Total:", Anchor = AnchorStyles.Left | AnchorStyles.Top, Margin = new Padding(5, 8, 5, 5) };
+            StyleDemographicLabel(lblTargetTotalInd);
             tlpDemographicsInd.Controls.Add(lblTargetTotalInd, 0, 4);
-            numTargetTotal = new NumericUpDown { Name = "numTargetTotal", Maximum = 4000000, Minimum = 0, Width = 120, Font = new Font("Segoe UI", 9F), Margin = new Padding(0), Anchor = AnchorStyles.Left | AnchorStyles.Top };
+            numTargetTotal = new NumericUpDown { Name = "numTargetTotal", Maximum = 4000000, Minimum = 0, Width = 150, Height = 25, Font = new Font("Segoe UI", 10F), Margin = new Padding(5), Anchor = AnchorStyles.Left | AnchorStyles.Top };
             tlpDemographicsInd.Controls.Add(numTargetTotal, 1, 4);
 
-            gbDemographics.Controls.Add(tlpDemographicsInd);
+            demographicPanel.Controls.Add(tlpDemographicsInd);
+            gbDemographics.Controls.Add(demographicPanel);
             flpIndicatorInput.Controls.Add(gbDemographics);
 
             btnAddIndicator = new Button { Text = "Add New Indicator" };
@@ -637,6 +725,14 @@ namespace HumanitarianProjectManagement
             cardPanel.Controls.Add(flpIndicatorInput);
             indicatorTab.Controls.Add(cardPanel);
             inputTabControl.TabPages.Add(indicatorTab);
+        }
+
+        private void StyleDemographicLabel(Label label)
+        {
+            label.AutoSize = true;
+            label.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            label.ForeColor = PrimaryBlue;
+            label.BackColor = Color.Transparent;
         }
 
         private void CreateActivityTab()
@@ -672,12 +768,12 @@ namespace HumanitarianProjectManagement
 
             Label lblActivityDesc = new Label { Text = "Activity Description:" }; StyleInputLabel(lblActivityDesc);
             flpActivityInput.Controls.Add(lblActivityDesc);
-            txtActivityDescription = new TextBox(); StyleInputTextBox(txtActivityDescription, multiline: true, height: 80, width: 400, placeholder: "Enter activity description...");
+            txtActivityDescription = new TextBox(); StyleInputTextBox(txtActivityDescription, multiline: true, height: 80, width: 430, placeholder: "Enter activity description...");
             flpActivityInput.Controls.Add(txtActivityDescription);
 
             Label lblActivityMonths = new Label { Text = "Planned Months (e.g., Jan/23,Feb/23):" }; StyleInputLabel(lblActivityMonths);
             flpActivityInput.Controls.Add(lblActivityMonths);
-            txtActivityPlannedMonths = new TextBox(); StyleInputTextBox(txtActivityPlannedMonths, width: 200, placeholder: "e.g., Jan/23, Feb/23");
+            txtActivityPlannedMonths = new TextBox(); StyleInputTextBox(txtActivityPlannedMonths, width: 250, placeholder: "e.g., Jan/23, Feb/23");
             flpActivityInput.Controls.Add(txtActivityPlannedMonths);
 
             btnAddActivity = new Button { Text = "Add New Activity" };
@@ -722,7 +818,7 @@ namespace HumanitarianProjectManagement
                 ForeColor = PrimaryBlue,
                 AutoSize = true,
                 Margin = new Padding(0, 0, 0, 15),
-                MaximumSize = new Size(400, 0)
+                MaximumSize = new Size(430, 0)
             };
             return header;
         }
@@ -736,7 +832,7 @@ namespace HumanitarianProjectManagement
                 Dock = DockStyle.Top,
                 Padding = new Padding(10, 5, 10, 10),
                 Margin = new Padding(0, 0, 0, 10),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = PrimaryBlue
             };
             return gb;
@@ -745,8 +841,8 @@ namespace HumanitarianProjectManagement
         private void StyleComboBox(ComboBox cmb)
         {
             cmb.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmb.Font = new Font("Segoe UI", 9F);
-            cmb.Width = 400;
+            cmb.Font = new Font("Segoe UI", 10F);
+            cmb.Width = 430;
             cmb.Margin = new Padding(0, 0, 0, 10);
             cmb.BackColor = White;
             cmb.ForeColor = Color.Black;
@@ -756,11 +852,11 @@ namespace HumanitarianProjectManagement
         {
             label.AutoSize = true;
             label.Margin = new Padding(0, 8, 0, 3);
-            label.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            label.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             label.ForeColor = Color.FromArgb(52, 73, 94);
         }
 
-        private void StyleInputTextBox(TextBox textBox, bool multiline = false, int width = 400, int height = 60, string placeholder = "")
+        private void StyleInputTextBox(TextBox textBox, bool multiline = false, int width = 430, int height = 60, string placeholder = "")
         {
             textBox.Width = width;
             textBox.BackColor = White;
@@ -777,7 +873,7 @@ namespace HumanitarianProjectManagement
                 textBox.Height = 25;
             }
             textBox.Margin = new Padding(0, 0, 0, 10);
-            textBox.Font = new Font("Segoe UI", 9F);
+            textBox.Font = new Font("Segoe UI", 10F);
 
             // Enhanced focus effects
             textBox.Enter += (sender, e) => {
@@ -812,13 +908,13 @@ namespace HumanitarianProjectManagement
         private void StylePrimaryButton(Button button)
         {
             button.AutoSize = false;
-            button.Size = new Size(180, 35);
+            button.Size = new Size(200, 35);
             button.FlatStyle = FlatStyle.Flat;
             button.FlatAppearance.BorderSize = 0;
             button.BackColor = PrimaryBlue;
             button.ForeColor = White;
             button.Margin = new Padding(0, 10, 0, 15);
-            button.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            button.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             button.Cursor = Cursors.Hand;
 
             // Hover effects
@@ -946,7 +1042,7 @@ namespace HumanitarianProjectManagement
 
                         btnAddOutcome.Text = "Add New Outcome";
                         btnAddOutcome.Tag = null;
-                        StyleInputTextBox(txtOutcomeDescription, multiline: true, height: 80, width: 400, placeholder: "Enter outcome description...");
+                        StyleInputTextBox(txtOutcomeDescription, multiline: true, height: 80, width: 430, placeholder: "Enter outcome description...");
                     }
                     else
                     {
@@ -970,7 +1066,7 @@ namespace HumanitarianProjectManagement
                     _currentProject.Outcomes.Add(newOutcome);
 
                     MessageBox.Show("Outcome added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    StyleInputTextBox(txtOutcomeDescription, multiline: true, height: 80, width: 400, placeholder: "Enter outcome description...");
+                    StyleInputTextBox(txtOutcomeDescription, multiline: true, height: 80, width: 430, placeholder: "Enter outcome description...");
                     await LoadOutcomesAsync();
                     if (inputTabControl.TabPages.Count > 1 && inputTabControl.TabPages[1].Enabled)
                     {
@@ -1024,7 +1120,7 @@ namespace HumanitarianProjectManagement
 
                         btnAddOutput.Text = "Add New Output";
                         btnAddOutput.Tag = null;
-                        StyleInputTextBox(txtOutputDescription, multiline: true, height: 80, width: 400, placeholder: "Enter output description...");
+                        StyleInputTextBox(txtOutputDescription, multiline: true, height: 80, width: 430, placeholder: "Enter output description...");
                         cmbParentOutcomeForOutput.SelectedIndex = (cmbParentOutcomeForOutput.Items.Count > 0) ? 0 : -1;
                     }
                     else
@@ -1054,7 +1150,7 @@ namespace HumanitarianProjectManagement
                     }
 
                     MessageBox.Show("Output added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    StyleInputTextBox(txtOutputDescription, multiline: true, height: 80, width: 400, placeholder: "Enter output description...");
+                    StyleInputTextBox(txtOutputDescription, multiline: true, height: 80, width: 430, placeholder: "Enter output description...");
                     await LoadOutcomesAsync();
 
                     if (inputTabControl.TabPages.Count > 2 && inputTabControl.TabPages[2].Enabled)
@@ -1107,8 +1203,8 @@ namespace HumanitarianProjectManagement
 
                         btnAddActivity.Text = "Add New Activity";
                         btnAddActivity.Tag = null;
-                        StyleInputTextBox(txtActivityDescription, multiline: true, height: 80, width: 400, placeholder: "Enter activity description...");
-                        StyleInputTextBox(txtActivityPlannedMonths, width: 200, placeholder: "e.g., Jan/23, Feb/23");
+                        StyleInputTextBox(txtActivityDescription, multiline: true, height: 80, width: 430, placeholder: "Enter activity description...");
+                        StyleInputTextBox(txtActivityPlannedMonths, width: 250, placeholder: "e.g., Jan/23, Feb/23");
                         cmbParentOutcomeForActivity.SelectedIndex = (cmbParentOutcomeForActivity.Items.Count > 0) ? 0 : -1;
                         ClearOutputCombo(cmbParentOutputForActivity);
                     }
@@ -1141,8 +1237,8 @@ namespace HumanitarianProjectManagement
                     }
 
                     MessageBox.Show("Activity added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    StyleInputTextBox(txtActivityDescription, multiline: true, height: 80, width: 400, placeholder: "Enter activity description...");
-                    StyleInputTextBox(txtActivityPlannedMonths, width: 200, placeholder: "e.g., Jan/23, Feb/23");
+                    StyleInputTextBox(txtActivityDescription, multiline: true, height: 80, width: 430, placeholder: "Enter activity description...");
+                    StyleInputTextBox(txtActivityPlannedMonths, width: 250, placeholder: "e.g., Jan/23, Feb/23");
                     await LoadOutcomesAsync();
                     cmbParentOutputForActivity?.Focus();
                 }
@@ -1203,10 +1299,10 @@ namespace HumanitarianProjectManagement
 
                         btnAddIndicator.Text = "Add New Indicator";
                         btnAddIndicator.Tag = null;
-                        StyleInputTextBox(txtIndicatorName, width: 400, placeholder: "Enter indicator name...");
-                        StyleInputTextBox(txtIndicatorDescription, multiline: true, height: 60, width: 400, placeholder: "Enter indicator description...");
-                        StyleInputTextBox(txtIndicatorTargetValue, width: 400, placeholder: "Enter target value...");
-                        StyleInputTextBox(txtMeansOfVerification, multiline: true, height: 50, width: 400, placeholder: "Enter means of verification...");
+                        StyleInputTextBox(txtIndicatorName, width: 430, placeholder: "Enter indicator name...");
+                        StyleInputTextBox(txtIndicatorDescription, multiline: true, height: 60, width: 430, placeholder: "Enter indicator description...");
+                        StyleInputTextBox(txtIndicatorTargetValue, width: 430, placeholder: "Enter target value...");
+                        StyleInputTextBox(txtMeansOfVerification, multiline: true, height: 50, width: 430, placeholder: "Enter means of verification...");
                         numTargetMen.Value = 0; numTargetWomen.Value = 0; numTargetBoys.Value = 0; numTargetGirls.Value = 0; numTargetTotal.Value = 0;
                         cmbParentOutcomeForIndicator.SelectedIndex = (cmbParentOutcomeForIndicator.Items.Count > 0) ? 0 : -1;
                         ClearOutputCombo(cmbParentOutputForIndicator);
@@ -1243,10 +1339,10 @@ namespace HumanitarianProjectManagement
                     }
 
                     MessageBox.Show("Indicator added successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    StyleInputTextBox(txtIndicatorName, width: 400, placeholder: "Enter indicator name...");
-                    StyleInputTextBox(txtIndicatorDescription, multiline: true, height: 60, width: 400, placeholder: "Enter indicator description...");
-                    StyleInputTextBox(txtIndicatorTargetValue, width: 400, placeholder: "Enter target value...");
-                    StyleInputTextBox(txtMeansOfVerification, multiline: true, height: 50, width: 400, placeholder: "Enter means of verification...");
+                    StyleInputTextBox(txtIndicatorName, width: 430, placeholder: "Enter indicator name...");
+                    StyleInputTextBox(txtIndicatorDescription, multiline: true, height: 60, width: 430, placeholder: "Enter indicator description...");
+                    StyleInputTextBox(txtIndicatorTargetValue, width: 430, placeholder: "Enter target value...");
+                    StyleInputTextBox(txtMeansOfVerification, multiline: true, height: 50, width: 430, placeholder: "Enter means of verification...");
                     numTargetMen.Value = 0; numTargetWomen.Value = 0; numTargetBoys.Value = 0; numTargetGirls.Value = 0; numTargetTotal.Value = 0;
                     await LoadOutcomesAsync();
                     cmbParentOutputForIndicator?.Focus();
@@ -1320,9 +1416,19 @@ namespace HumanitarianProjectManagement
                             Panel demographicPanel = new Panel
                             {
                                 AutoSize = true,
+                                Width = displayPanel.Width - 100,
                                 Margin = new Padding(20 * 3 + 5, 5, 5, 5), // Indent to align with indicator details
                                 BackColor = Color.FromArgb(248, 249, 250),
-                                Padding = new Padding(10)
+                                Padding = new Padding(15)
+                            };
+
+                            // Add border to demographic panel
+                            demographicPanel.Paint += (sender, e) => {
+                                ControlPaint.DrawBorder(e.Graphics, demographicPanel.ClientRectangle,
+                                    Color.FromArgb(200, 200, 200), 1, ButtonBorderStyle.Solid,
+                                    Color.FromArgb(200, 200, 200), 1, ButtonBorderStyle.Solid,
+                                    Color.FromArgb(200, 200, 200), 1, ButtonBorderStyle.Solid,
+                                    Color.FromArgb(200, 200, 200), 1, ButtonBorderStyle.Solid);
                             };
 
                             TableLayoutPanel demographicTable = new TableLayoutPanel
@@ -1343,19 +1449,19 @@ namespace HumanitarianProjectManagement
                             demographicTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                             demographicTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-                            // Header Row
-                            demographicTable.Controls.Add(CreateDemographicLabel("👨 Men", true), 0, 0);
-                            demographicTable.Controls.Add(CreateDemographicLabel("👩 Women", true), 1, 0);
-                            demographicTable.Controls.Add(CreateDemographicLabel("👦 Boys", true), 2, 0);
-                            demographicTable.Controls.Add(CreateDemographicLabel("👧 Girls", true), 3, 0);
-                            demographicTable.Controls.Add(CreateDemographicLabel("👥 Total", true), 4, 0);
+                            // Header Row with enhanced styling
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel("👨 Men", true), 0, 0);
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel("👩 Women", true), 1, 0);
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel("👦 Boys", true), 2, 0);
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel("👧 Girls", true), 3, 0);
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel("👥 Total", true), 4, 0);
 
-                            // Data Row
-                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetMen.ToString()), 0, 1);
-                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetWomen.ToString()), 1, 1);
-                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetBoys.ToString()), 2, 1);
-                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetGirls.ToString()), 3, 1);
-                            demographicTable.Controls.Add(CreateDemographicLabel(indicator.TargetTotal.ToString()), 4, 1);
+                            // Data Row with enhanced styling
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel(indicator.TargetMen.ToString()), 0, 1);
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel(indicator.TargetWomen.ToString()), 1, 1);
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel(indicator.TargetBoys.ToString()), 2, 1);
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel(indicator.TargetGirls.ToString()), 3, 1);
+                            demographicTable.Controls.Add(CreateDemographicDisplayLabel(indicator.TargetTotal.ToString()), 4, 1);
 
                             demographicPanel.Controls.Add(demographicTable);
                             displayPanel.Controls.Add(demographicPanel);
@@ -1397,19 +1503,20 @@ namespace HumanitarianProjectManagement
             }
         }
 
-        private Label CreateDemographicLabel(string text, bool isHeader = false)
+        private Label CreateDemographicDisplayLabel(string text, bool isHeader = false)
         {
             Label label = new Label
             {
                 Text = text,
                 AutoSize = true,
-                Padding = new Padding(8),
+                Padding = new Padding(10, 8, 10, 8),
                 Margin = new Padding(0),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Segoe UI", isHeader ? 9F : 8.5F, isHeader ? FontStyle.Bold : FontStyle.Regular),
+                Font = new Font("Segoe UI", isHeader ? 10F : 9.5F, isHeader ? FontStyle.Bold : FontStyle.Regular),
                 ForeColor = isHeader ? PrimaryBlue : Color.Black,
                 BackColor = isHeader ? Color.FromArgb(240, 248, 255) : White,
-                Dock = DockStyle.Fill
+                Dock = DockStyle.Fill,
+                MinimumSize = new Size(80, 30)
             };
             return label;
         }
@@ -1893,7 +2000,7 @@ namespace HumanitarianProjectManagement
 
         private void ResetOutcomeInput()
         {
-            StyleInputTextBox(txtOutcomeDescription, multiline: true, height: 80, width: 400, placeholder: "Enter outcome description...");
+            StyleInputTextBox(txtOutcomeDescription, multiline: true, height: 80, width: 430, placeholder: "Enter outcome description...");
             btnAddOutcome.Text = "Add New Outcome";
             btnAddOutcome.Tag = null;
         }
@@ -1901,7 +2008,7 @@ namespace HumanitarianProjectManagement
         private void ResetOutputInput()
         {
             cmbParentOutcomeForOutput.SelectedIndex = (cmbParentOutcomeForOutput.Items.Count > 0) ? 0 : -1;
-            StyleInputTextBox(txtOutputDescription, multiline: true, height: 80, width: 400, placeholder: "Enter output description...");
+            StyleInputTextBox(txtOutputDescription, multiline: true, height: 80, width: 430, placeholder: "Enter output description...");
             btnAddOutput.Text = "Add New Output";
             btnAddOutput.Tag = null;
         }
@@ -1910,8 +2017,8 @@ namespace HumanitarianProjectManagement
         {
             cmbParentOutcomeForActivity.SelectedIndex = (cmbParentOutcomeForActivity.Items.Count > 0) ? 0 : -1;
             ClearOutputCombo(cmbParentOutputForActivity);
-            StyleInputTextBox(txtActivityDescription, multiline: true, height: 80, width: 400, placeholder: "Enter activity description...");
-            StyleInputTextBox(txtActivityPlannedMonths, width: 200, placeholder: "e.g., Jan/23, Feb/23");
+            StyleInputTextBox(txtActivityDescription, multiline: true, height: 80, width: 430, placeholder: "Enter activity description...");
+            StyleInputTextBox(txtActivityPlannedMonths, width: 250, placeholder: "e.g., Jan/23, Feb/23");
             btnAddActivity.Text = "Add New Activity";
             btnAddActivity.Tag = null;
         }
@@ -1920,10 +2027,10 @@ namespace HumanitarianProjectManagement
         {
             cmbParentOutcomeForIndicator.SelectedIndex = (cmbParentOutcomeForIndicator.Items.Count > 0) ? 0 : -1;
             ClearOutputCombo(cmbParentOutputForIndicator);
-            StyleInputTextBox(txtIndicatorName, width: 400, placeholder: "Enter indicator name...");
-            StyleInputTextBox(txtIndicatorDescription, multiline: true, height: 60, width: 400, placeholder: "Enter indicator description...");
-            StyleInputTextBox(txtIndicatorTargetValue, width: 400, placeholder: "Enter target value...");
-            StyleInputTextBox(txtMeansOfVerification, multiline: true, height: 50, width: 400, placeholder: "Enter means of verification...");
+            StyleInputTextBox(txtIndicatorName, width: 430, placeholder: "Enter indicator name...");
+            StyleInputTextBox(txtIndicatorDescription, multiline: true, height: 60, width: 430, placeholder: "Enter indicator description...");
+            StyleInputTextBox(txtIndicatorTargetValue, width: 430, placeholder: "Enter target value...");
+            StyleInputTextBox(txtMeansOfVerification, multiline: true, height: 50, width: 430, placeholder: "Enter means of verification...");
             numTargetMen.Value = 0;
             numTargetWomen.Value = 0;
             numTargetBoys.Value = 0;

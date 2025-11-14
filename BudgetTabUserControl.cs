@@ -13,16 +13,6 @@ namespace HumanitarianProjectManagement
         private Project _currentProject;
         private BudgetCategoriesEnum? _selectedMainCategory;
 
-        // Main input fields (These were unused, local instances are created in CreateInputRowForLine)
-        // private TextBox txtDirectItem;
-        // private TextBox txtDirectDescription;
-        // private TextBox txtDirectUnit;
-        // private NumericUpDown numDirectQuantity;
-        // private NumericUpDown numDirectUnitCost;
-        // private NumericUpDown numDirectDuration;
-        // private NumericUpDown numDirectPercentageCBPF;
-        // private Button btnDirectAddLine;
-
         public BudgetTabUserControl()
         {
             InitializeComponent();
@@ -37,11 +27,12 @@ namespace HumanitarianProjectManagement
                     AutoScroll = true,
                     FlowDirection = FlowDirection.TopDown,
                     WrapContents = false,
-                    Padding = new Padding(0),
-                    Margin = new Padding(0)
+                    Padding = new Padding(5),
+                    Margin = new Padding(0),
+                    BackColor = Color.White
                 };
-                this.pnlBudgetMainArea.Controls.Remove(this.pnlMainBudgetContentArea);
-                this.pnlBudgetMainArea.Controls.Add(flp);
+                this.splitVerticalContent.Panel2.Controls.Remove(this.pnlMainBudgetContentArea);
+                this.splitVerticalContent.Panel2.Controls.Add(flp);
                 this.pnlMainBudgetContentArea = flp;
             }
         }
@@ -68,8 +59,23 @@ namespace HumanitarianProjectManagement
         {
             if (this.tlpCategoryButtons == null) return;
             this.tlpCategoryButtons.SuspendLayout();
-            this.tlpCategoryButtons.Controls.Clear(); this.tlpCategoryButtons.RowStyles.Clear();
+            this.tlpCategoryButtons.Controls.Clear();
+            this.tlpCategoryButtons.RowStyles.Clear();
+
             int currentRow = 0;
+            var colors = new List<Color>
+            {
+                Color.FromArgb(255, 182, 193), // Light Pink
+                Color.FromArgb(173, 216, 230), // Light Blue
+                Color.FromArgb(144, 238, 144), // Light Green
+                Color.FromArgb(255, 255, 224), // Light Yellow
+                Color.FromArgb(221, 160, 221), // Plum
+                Color.FromArgb(240, 230, 140), // Khaki
+                Color.FromArgb(176, 224, 230), // Powder Blue
+                Color.FromArgb(255, 228, 196)  // Moccasin
+            };
+
+            int colorIndex = 0;
             foreach (BudgetCategoriesEnum catEnum in Enum.GetValues(typeof(BudgetCategoriesEnum)))
             {
                 this.tlpCategoryButtons.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -78,32 +84,34 @@ namespace HumanitarianProjectManagement
                     Text = GetCategoryDisplayName(catEnum),
                     Tag = catEnum,
                     Dock = DockStyle.Top,
-                    Height = 35,
+                    Height = 45,
                     FlatStyle = FlatStyle.Flat,
                     TextAlign = ContentAlignment.MiddleLeft,
-                    Padding = new Padding(10, 0, 0, 0),
-                    Margin = new Padding(0, 3, 0, 3),
-                    BackColor = Color.FromArgb(225, 225, 225),
+                    Padding = new Padding(15, 0, 0, 0),
+                    Margin = new Padding(5, 3, 5, 3),
+                    BackColor = colors[colorIndex % colors.Count],
                     ForeColor = Color.Black,
-                    Cursor = Cursors.Hand
+                    Cursor = Cursors.Hand,
+                    Font = new Font("Segoe UI", 10F, FontStyle.Regular)
                 };
-                btnCategory.FlatAppearance.BorderSize = 0;
+                btnCategory.FlatAppearance.BorderSize = 1;
+                btnCategory.FlatAppearance.BorderColor = Color.FromArgb(200, 200, 200);
                 btnCategory.Click += btnBudgetCategory_Internal_Click;
                 this.tlpCategoryButtons.Controls.Add(btnCategory, 0, currentRow++);
+                colorIndex++;
             }
-            this.tlpCategoryButtons.RowCount = currentRow; this.tlpCategoryButtons.ResumeLayout(true);
+            this.tlpCategoryButtons.RowCount = currentRow;
+            this.tlpCategoryButtons.ResumeLayout(true);
         }
 
         private string GetCategoryDisplayName(BudgetCategoriesEnum? category)
         {
             if (!category.HasValue) return "No Category Selected";
             string name = category.Value.ToString();
-            if (name.Contains("_"))
-            {
-                var parts = name.Split('_');
-                name = parts[0] + ". " + string.Join(" ", parts.Skip(1).Select(p => System.Text.RegularExpressions.Regex.Replace(p, "([a-z])([A-Z])", "$1 $2")));
-            }
-            else { name = System.Text.RegularExpressions.Regex.Replace(name, "([a-z])([A-Z])", "$1 $2"); }
+            name = name.Replace("_", ". ");
+            if (name.StartsWith("C.")) name = "C. Equipment";
+            if (name.StartsWith("D.")) name = "D. Contractual Services";
+            if (name.StartsWith("F.")) name = "F. Other Direct Costs";
             return name;
         }
 
@@ -121,39 +129,53 @@ namespace HumanitarianProjectManagement
             Button clickedButton = sender as Button;
             if (clickedButton == null || !(clickedButton.Tag is BudgetCategoriesEnum)) return;
             _selectedMainCategory = (BudgetCategoriesEnum?)clickedButton.Tag;
-            foreach (Control c in this.tlpCategoryButtons.Controls) { if (c is Button btn) { btn.BackColor = Color.FromArgb(225, 225, 225); btn.ForeColor = Color.Black; } }
-            clickedButton.BackColor = Color.FromArgb(0, 122, 204); clickedButton.ForeColor = Color.White;
 
+            clickedButton.BackColor = Color.FromArgb(0, 122, 204);
+            clickedButton.ForeColor = Color.White;
+
+            RefreshMainDisplay();
+        }
+
+        private void RefreshMainDisplay()
+        {
             var flp = this.pnlMainBudgetContentArea as FlowLayoutPanel;
             if (flp == null) return;
+
             flp.SuspendLayout();
             flp.Controls.Clear();
 
             // 1. Category title at the very top
             Label lblCategoryHeader = new Label
             {
-                Text = "Budget for: " + GetCategoryDisplayName(_selectedMainCategory),
-                Font = new Font(this.Font.FontFamily, 13F, FontStyle.Bold),
+                Text = _selectedMainCategory.HasValue ? "Budget for: " + GetCategoryDisplayName(_selectedMainCategory) : "Budget Entry - Select Category",
+                Font = new Font(this.Font.FontFamily, 14F, FontStyle.Bold),
                 AutoSize = true,
-                Padding = new Padding(3, 8, 3, 8),
-                Margin = new Padding(0, 6, 0, 6),
-                ForeColor = Color.Black,
-                BackColor = Color.Transparent // No gray background
+                Padding = new Padding(10, 15, 10, 15),
+                Margin = new Padding(0, 10, 0, 10),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(0, 122, 204),
+                BorderStyle = BorderStyle.FixedSingle,
+                Width = flp.Width - 20
             };
             flp.Controls.Add(lblCategoryHeader);
 
             // 2. Input row for adding top-level direct lines
             flp.Controls.Add(CreateInputRowForLine(null));
 
-            // 3. Render all top-level lines for this category
-            if (_currentProject != null && _selectedMainCategory.HasValue)
+            // 3. Column headers for Excel-like appearance
+            TableLayoutPanel headerRow = CreateHeaderRow();
+            flp.Controls.Add(headerRow);
+
+            // 4. Render ALL budget lines from ALL categories
+            if (_currentProject != null)
             {
-                var topLines = _currentProject.DetailedBudgetLines
-                    .Where(l => l.Category == _selectedMainCategory.Value && l.ParentDetailedBudgetLineID == null)
-                    .OrderBy(l => l.Code)
+                var allLines = _currentProject.DetailedBudgetLines
+                    .Where(l => l.ParentDetailedBudgetLineID == null)
+                    .OrderBy(l => l.Category)
+                    .ThenBy(l => l.Code)
                     .ToList();
 
-                foreach (var line in topLines)
+                foreach (var line in allLines)
                 {
                     RenderBudgetLineWithChildren(line, 0, flp);
                 }
@@ -161,6 +183,51 @@ namespace HumanitarianProjectManagement
 
             flp.ResumeLayout(true);
             flp.PerformLayout();
+        }
+
+        private TableLayoutPanel CreateHeaderRow()
+        {
+            TableLayoutPanel headerRow = new TableLayoutPanel
+            {
+                ColumnCount = 10,
+                RowCount = 1,
+                AutoSize = true,
+                Dock = DockStyle.Top,
+                Margin = new Padding(0, 5, 0, 0),
+                BackColor = Color.FromArgb(233, 236, 239),
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
+                BorderStyle = BorderStyle.FixedSingle,
+                Height = 35
+            };
+
+            // Set column widths to match input row
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // Code
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));    // Item
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));    // Description
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // Unit
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));   // Quantity
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));  // Unit Cost
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // Duration
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // % CBPF
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));  // Total
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));    // Actions
+
+            string[] headers = { "Code", "Item/Activity", "Description", "Unit", "Quantity", "Unit Cost", "Duration", "% CBPF", "Total", "Actions" };
+            for (int i = 0; i < headers.Length; i++)
+            {
+                headerRow.Controls.Add(new Label
+                {
+                    Text = headers[i],
+                    AutoSize = false,
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Padding = new Padding(3),
+                    ForeColor = Color.Black,
+                    BackColor = Color.Transparent
+                }, i, 0);
+            }
+            return headerRow;
         }
 
         private TableLayoutPanel CreateInputRowForLine(DetailedBudgetLine parentLine)
@@ -171,33 +238,73 @@ namespace HumanitarianProjectManagement
                 RowCount = 2,
                 AutoSize = true,
                 Dock = DockStyle.Top,
-                Padding = new Padding(0, 5, 0, 10),
-                Margin = new Padding(parentLine == null ? 0 : 20, 0, 0, 5),
-                BackColor = Color.White
+                Padding = new Padding(5, 10, 5, 10),
+                Margin = new Padding(parentLine == null ? 0 : 20, 10, 0, 10),
+                BackColor = Color.FromArgb(248, 249, 250),
+                BorderStyle = BorderStyle.FixedSingle
             };
-            for (int i = 0; i < 7; i++) inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.0F));
-            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.0F));
+
+            // Set column widths to match header
+            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));    // Item
+            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));    // Description
+            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // Unit
+            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));   // Quantity
+            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));  // Unit Cost
+            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // Duration
+            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // % CBPF
+            inputRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));    // Action
+
             string[] directLabels = { "Item/Activity:", "Description:", "Unit:", "Quantity:", "Unit Cost:", "Duration:", "% CBPF:" };
 
-            TextBox txtItem = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
-            TextBox txtDescription = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
-            TextBox txtUnit = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
-            NumericUpDown numQuantity = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 2, Minimum = 0, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
-            NumericUpDown numUnitCost = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 2, Minimum = 0, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
-            NumericUpDown numDuration = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 1, Minimum = 0, Value = 1, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
-            NumericUpDown numPercentageCBPF = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 0, Minimum = 0, Maximum = 100, Value = 100, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+            TextBox txtItem = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9F), Margin = new Padding(3), BorderStyle = BorderStyle.FixedSingle };
+            TextBox txtDescription = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9F), Margin = new Padding(3), BorderStyle = BorderStyle.FixedSingle };
+            TextBox txtUnit = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9F), Margin = new Padding(3), BorderStyle = BorderStyle.FixedSingle };
+            NumericUpDown numQuantity = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 2, Minimum = 0, Font = new Font("Segoe UI", 9F), Margin = new Padding(3), BorderStyle = BorderStyle.FixedSingle };
+            NumericUpDown numUnitCost = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 2, Minimum = 0, Font = new Font("Segoe UI", 9F), Margin = new Padding(3), BorderStyle = BorderStyle.FixedSingle };
+            NumericUpDown numDuration = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 1, Minimum = 0, Value = 1, Font = new Font("Segoe UI", 9F), Margin = new Padding(3), BorderStyle = BorderStyle.FixedSingle };
+            NumericUpDown numPercentageCBPF = new NumericUpDown { Dock = DockStyle.Fill, DecimalPlaces = 0, Minimum = 0, Maximum = 100, Value = 100, Font = new Font("Segoe UI", 9F), Margin = new Padding(3), BorderStyle = BorderStyle.FixedSingle };
+
             Control[] directInputs = { txtItem, txtDescription, txtUnit, numQuantity, numUnitCost, numDuration, numPercentageCBPF };
+
             for (int i = 0; i < directLabels.Length; i++)
             {
-                inputRow.Controls.Add(new Label { Text = directLabels[i], AutoSize = true, Anchor = AnchorStyles.Left, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) }, i, 0);
+                inputRow.Controls.Add(new Label { Text = directLabels[i], AutoSize = true, Anchor = AnchorStyles.Left, Font = new Font("Segoe UI", 9F, FontStyle.Bold), Margin = new Padding(3), ForeColor = Color.FromArgb(0, 122, 204) }, i, 0);
                 inputRow.Controls.Add(directInputs[i], i, 1);
             }
-            Button btnAddLine = new Button { Text = parentLine == null ? "Add Top-Level Direct Line" : "Add Sub-line", Dock = DockStyle.Fill, FlatStyle = FlatStyle.System, Height = 30, Font = new Font("Segoe UI", 10F), Margin = new Padding(2) };
+
+            Button btnAddLine = new Button
+            {
+                Text = "Add Entry",
+                Dock = DockStyle.Fill,
+                FlatStyle = FlatStyle.Flat,
+                Height = 35,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Margin = new Padding(3),
+                BackColor = Color.FromArgb(40, 167, 69),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnAddLine.FlatAppearance.BorderSize = 0;
+
             btnAddLine.Click += (s, e) =>
             {
-                if (_currentProject == null || !_selectedMainCategory.HasValue) { MessageBox.Show("Project or Main Category not selected."); return; }
-                if (string.IsNullOrWhiteSpace(txtItem.Text)) { MessageBox.Show("Item name required."); txtItem.Focus(); return; }
-                if (numQuantity.Value <= 0) { MessageBox.Show("Quantity must be > 0."); numQuantity.Focus(); return; }
+                if (_currentProject == null || !_selectedMainCategory.HasValue)
+                {
+                    MessageBox.Show("Please select a category first.");
+                    return;
+                }
+                if (string.IsNullOrWhiteSpace(txtItem.Text))
+                {
+                    MessageBox.Show("Item name is required.");
+                    txtItem.Focus();
+                    return;
+                }
+                if (numQuantity.Value <= 0)
+                {
+                    MessageBox.Show("Quantity must be greater than 0.");
+                    numQuantity.Focus();
+                    return;
+                }
 
                 DetailedBudgetLine newLine = new DetailedBudgetLine
                 {
@@ -217,10 +324,19 @@ namespace HumanitarianProjectManagement
                 RecalculateItemTotal(newLine);
                 _currentProject.DetailedBudgetLines.Add(newLine);
 
-                // Refresh view
-                Button btnToRefresh = tlpCategoryButtons.Controls.OfType<Button>().FirstOrDefault(b => b.Tag is BudgetCategoriesEnum tag && tag == _selectedMainCategory.Value);
-                if (btnToRefresh != null) btnBudgetCategory_Internal_Click(btnToRefresh, EventArgs.Empty);
+                // Clear inputs
+                txtItem.Clear();
+                txtDescription.Clear();
+                txtUnit.Clear();
+                numQuantity.Value = 0;
+                numUnitCost.Value = 0;
+                numDuration.Value = 1;
+                numPercentageCBPF.Value = 100;
+
+                // Refresh the display
+                RefreshMainDisplay();
             };
+
             inputRow.Controls.Add(btnAddLine, 7, 1);
             return inputRow;
         }
@@ -233,33 +349,75 @@ namespace HumanitarianProjectManagement
                 RowCount = 1,
                 AutoSize = true,
                 Dock = DockStyle.Top,
-                Margin = new Padding(indentLevel * 20, 2, 0, 2),
-                BackColor = indentLevel % 2 == 0 ? Color.White : Color.FromArgb(245, 245, 245)
+                Margin = new Padding(indentLevel * 20, 1, 0, 1),
+                BackColor = indentLevel % 2 == 0 ? Color.White : Color.FromArgb(248, 249, 250),
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
+                BorderStyle = BorderStyle.FixedSingle,
+                Width = flp.Width - (indentLevel * 20) - 25
             };
 
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // Code
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15)); // Item
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25)); // Description
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // Unit
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // Qty
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80)); // Unit Cost
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // Duration
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // % CBPF
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80)); // Total
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100)); // Actions
+            // Set column widths to match header
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // Code
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));    // Item
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));    // Description
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // Unit
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));   // Quantity
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));  // Unit Cost
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // Duration
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // % CBPF
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));  // Total
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));    // Actions
 
-            row.Controls.Add(new Label { Text = line.Code, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10F) }, 0, 0);
-            row.Controls.Add(new Label { Text = line.ItemName, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10F) }, 1, 0);
-            row.Controls.Add(new Label { Text = line.Description, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10F) }, 2, 0);
-            row.Controls.Add(new Label { Text = line.Unit, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10F) }, 3, 0);
-            row.Controls.Add(new Label { Text = line.Quantity.ToString("N2"), AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 4, 0);
-            row.Controls.Add(new Label { Text = line.UnitCost.ToString("C2"), AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 5, 0);
-            row.Controls.Add(new Label { Text = line.Duration.ToString("N1"), AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 6, 0);
-            row.Controls.Add(new Label { Text = line.PercentageChargedToCBPF.ToString("N0") + "%", AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 7, 0);
-            row.Controls.Add(new Label { Text = line.TotalCost.ToString("C2"), AutoSize = true, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 10F) }, 8, 0);
+            row.Controls.Add(new Label { Text = line.Code, AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9F), Padding = new Padding(3), ForeColor = Color.Black }, 0, 0);
+            row.Controls.Add(new Label { Text = line.ItemName, AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9F), Padding = new Padding(3), ForeColor = Color.Black }, 1, 0);
+            row.Controls.Add(new Label { Text = line.Description, AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9F), Padding = new Padding(3), ForeColor = Color.Black }, 2, 0);
+            row.Controls.Add(new Label { Text = line.Unit, AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9F), Padding = new Padding(3), ForeColor = Color.Black }, 3, 0);
+            row.Controls.Add(new Label { Text = line.Quantity.ToString("N2"), AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9F), Padding = new Padding(3), ForeColor = Color.Black }, 4, 0);
+            row.Controls.Add(new Label { Text = line.UnitCost.ToString("C2"), AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9F), Padding = new Padding(3), ForeColor = Color.Black }, 5, 0);
+            row.Controls.Add(new Label { Text = line.Duration.ToString("N1"), AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9F), Padding = new Padding(3), ForeColor = Color.Black }, 6, 0);
+            row.Controls.Add(new Label { Text = line.PercentageChargedToCBPF.ToString("N0") + "%", AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9F), Padding = new Padding(3), ForeColor = Color.Black }, 7, 0);
+            row.Controls.Add(new Label { Text = line.TotalCost.ToString("C2"), AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9F, FontStyle.Bold), Padding = new Padding(3), ForeColor = Color.FromArgb(40, 167, 69) }, 8, 0);
 
             // Actions
-            FlowLayoutPanel actionsPanel = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight, Dock = DockStyle.Fill };
+            FlowLayoutPanel actionsPanel = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                FlowDirection = FlowDirection.LeftToRight,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(3),
+                BackColor = Color.Transparent
+            };
+
+            Button btnEdit = new Button
+            {
+                Text = "Edit",
+                Tag = line,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8F),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(108, 117, 125),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2)
+            };
+            btnEdit.FlatAppearance.BorderSize = 0;
+            btnEdit.Click += (s, e) => EditBudgetLine(line);
+
+            Button btnDelete = new Button
+            {
+                Text = "Del",
+                Tag = line,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8F),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(220, 53, 69),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2)
+            };
+            btnDelete.FlatAppearance.BorderSize = 0;
+            btnDelete.Click += (s, e) => DeleteBudgetLine(line);
+
             Button btnAddSubLine = new Button { Text = "+ Sub", Tag = line, AutoSize = true, Font = new Font("Segoe UI", 10F) };
             btnAddSubLine.Click += (s, e) =>
             {
@@ -268,7 +426,8 @@ namespace HumanitarianProjectManagement
                 flp.Controls.SetChildIndex(inputRow, flp.Controls.GetChildIndex(row) + 1);
             };
             actionsPanel.Controls.Add(btnAddSubLine);
-            // Add Edit/Delete buttons as needed
+            actionsPanel.Controls.Add(btnEdit);
+            actionsPanel.Controls.Add(btnDelete);
             row.Controls.Add(actionsPanel, 9, 0);
 
             flp.Controls.Add(row);
@@ -283,13 +442,35 @@ namespace HumanitarianProjectManagement
                 RenderBudgetLineWithChildren(child, indentLevel + 1, flp);
         }
 
+        private void EditBudgetLine(DetailedBudgetLine line)
+        {
+            MessageBox.Show($"Edit functionality for: {line.ItemName}\nCode: {line.Code}");
+        }
+
+        private void DeleteBudgetLine(DetailedBudgetLine line)
+        {
+            if (MessageBox.Show($"Are you sure you want to delete '{line.ItemName}'?",
+                "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                _currentProject.DetailedBudgetLines.Remove(line);
+                RefreshMainDisplay();
+            }
+        }
+
         private string GenerateDirectLineCode(BudgetCategoriesEnum mainCategory)
         {
             if (_currentProject == null) return GetCategoryPrefix(mainCategory) + ".ERR";
             string prefix = GetCategoryPrefix(mainCategory) + ".";
             int maxSuffix = _currentProject.DetailedBudgetLines
                 .Where(line => line.Category == mainCategory && line.ParentDetailedBudgetLineID == null)
-                .Select(line => { if (line.Code != null && line.Code.StartsWith(prefix) && !line.Code.Substring(prefix.Length).Contains(".")) { string s = line.Code.Substring(prefix.Length); return int.TryParse(s, out int n) ? n : 0; } return 0; })
+                .Select(line => {
+                    if (line.Code != null && line.Code.StartsWith(prefix) && !line.Code.Substring(prefix.Length).Contains("."))
+                    {
+                        string s = line.Code.Substring(prefix.Length);
+                        return int.TryParse(s, out int n) ? n : 0;
+                    }
+                    return 0;
+                })
                 .DefaultIfEmpty(0).Max();
             return prefix + (maxSuffix + 1).ToString();
         }
@@ -300,7 +481,10 @@ namespace HumanitarianProjectManagement
             string basePrefix = parentLine.Code + ".";
             int maxSuffix = _currentProject.DetailedBudgetLines
                 .Where(line => line.ParentDetailedBudgetLineID == parentLine.DetailedBudgetLineID && line.Code != null && line.Code.StartsWith(basePrefix))
-                .Select(line => { string suffixPart = line.Code.Substring(basePrefix.Length); return int.TryParse(suffixPart, out int num) ? num : 0; })
+                .Select(line => {
+                    string suffixPart = line.Code.Substring(basePrefix.Length);
+                    return int.TryParse(suffixPart, out int num) ? num : 0;
+                })
                 .DefaultIfEmpty(0).Max();
             return basePrefix + (maxSuffix + 1).ToString();
         }
@@ -317,7 +501,7 @@ namespace HumanitarianProjectManagement
             ClearAndHideAllContentArea();
             if (this.tlpCategoryButtons != null)
                 foreach (Control c in this.tlpCategoryButtons.Controls)
-                    if (c is Button btn) { btn.BackColor = Color.FromArgb(225, 225, 225); btn.ForeColor = Color.Black; }
+                    if (c is Button btn) { btn.BackColor = Color.FromArgb(245, 245, 245); btn.ForeColor = Color.Black; }
         }
 
         private void ClearAndHideAllContentArea()
