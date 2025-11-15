@@ -12,7 +12,7 @@ namespace HumanitarianProjectManagement.Forms
 {
     public partial class PurchaseOrderCreateEditForm : Form
     {
-        private readonly PurchaseOrderService _poService;
+        private readonly PurchaseOrderServiceAdo _poService;
         private readonly ProjectService _projectService;
         private readonly UserService _userService; // For ApprovedBy ComboBox
         private PurchaseOrder _currentPO;

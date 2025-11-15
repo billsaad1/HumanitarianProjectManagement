@@ -12,11 +12,11 @@ namespace HumanitarianProjectManagement.Forms
     public partial class PurchasingMainForm : Form
     {
         private readonly SupplierService _supplierService;
-        private readonly ProductService _productService;
+        private readonly ProductServiceAdo _productService;
         private readonly PurchaseRequisitionService _purchaseRequisitionService;
-        private readonly PurchaseOrderService _purchaseOrderService;
+        private readonly PurchaseOrderServiceAdo _purchaseOrderService;
         private readonly GoodsReceiptService _goodsReceiptService;
-        private readonly InvoiceService _invoiceService;
+        private readonly InvoiceServiceAdo _invoiceService;
         private readonly PaymentService _paymentService;
 
         public PurchasingMainForm()
@@ -26,11 +26,11 @@ namespace HumanitarianProjectManagement.Forms
 
             // Initialize services
             _supplierService = new SupplierService();
-            _productService = new ProductService();
+            _productService = new ProductServiceAdo();
             _purchaseRequisitionService = new PurchaseRequisitionService();
-            _purchaseOrderService = new PurchaseOrderService();
+            _purchaseOrderService = new PurchaseOrderServiceAdo();
             _goodsReceiptService = new GoodsReceiptService();
-            _invoiceService = new InvoiceService();
+            _invoiceService = new InvoiceServiceAdo();
             _paymentService = new PaymentService();
 
             // Wire up event handlers
