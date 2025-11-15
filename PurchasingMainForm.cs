@@ -4,6 +4,7 @@ using HumanitarianProjectManagement.UI;
 using HumanitarianProjectManagement.Forms;
 using HumanitarianProjectManagement.Models;
 using HumanitarianProjectManagement.Services;
+using HumanitarianProjectManagement.DataAccessLayer;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -11,13 +12,13 @@ namespace HumanitarianProjectManagement.Forms
 {
     public partial class PurchasingMainForm : Form
     {
-        private readonly SupplierService _supplierService;
-        private readonly ProductService _productService;
-        private readonly PurchaseRequisitionService _purchaseRequisitionService;
-        private readonly PurchaseOrderService _purchaseOrderService;
-        private readonly GoodsReceiptService _goodsReceiptService;
-        private readonly InvoiceService _invoiceService;
-        private readonly PaymentService _paymentService;
+        private readonly SupplierServiceAdo _supplierService;
+        private readonly ProductServiceAdo _productService;
+        private readonly PurchaseRequisitionServiceAdo _purchaseRequisitionService;
+        private readonly PurchaseOrderServiceAdo _purchaseOrderService;
+        private readonly GoodsReceiptServiceAdo _goodsReceiptService;
+        private readonly InvoiceServiceAdo _invoiceService;
+        private readonly PaymentServiceAdo _paymentService;
 
         public PurchasingMainForm()
         {
@@ -25,13 +26,13 @@ namespace HumanitarianProjectManagement.Forms
             ThemeManager.ApplyThemeToForm(this);
 
             // Initialize services
-            _supplierService = new SupplierService();
-            _productService = new ProductService();
-            _purchaseRequisitionService = new PurchaseRequisitionService();
-            _purchaseOrderService = new PurchaseOrderService();
-            _goodsReceiptService = new GoodsReceiptService();
-            _invoiceService = new InvoiceService();
-            _paymentService = new PaymentService();
+            _supplierService = new SupplierServiceAdo();
+            _productService = new ProductServiceAdo();
+            _purchaseRequisitionService = new PurchaseRequisitionServiceAdo();
+            _purchaseOrderService = new PurchaseOrderServiceAdo();
+            _goodsReceiptService = new GoodsReceiptServiceAdo();
+            _invoiceService = new InvoiceServiceAdo();
+            _paymentService = new PaymentServiceAdo();
 
             // Wire up event handlers
             this.Load += PurchasingMainForm_Load;
