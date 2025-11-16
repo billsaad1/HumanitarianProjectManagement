@@ -1,4 +1,4 @@
-﻿using HumanitarianProjectManagement.DataAccessLayer;
+using HumanitarianProjectManagement.DataAccessLayer;
 using HumanitarianProjectManagement.Models;
 using HumanitarianProjectManagement.UI;
 using System;
@@ -15,17 +15,17 @@ namespace HumanitarianProjectManagement.Forms
         private readonly PurchaseOrderServiceAdo _poService;
         private readonly ProjectService _projectService;
         private readonly UserService _userService; // For ApprovedBy ComboBox
-        private PurchaseOrder _currentPO;
+        private PurchaseOrderAdo _currentPO;
         private readonly bool _isEditMode;
         private List<Project> _projects;
         private List<User> _users;
 
-        public PurchaseOrderCreateEditForm(PurchaseOrder poToEdit = null)
+        public PurchaseOrderCreateEditForm(PurchaseOrderAdo poToEdit = null)
         {
             InitializeComponent();
             ThemeManager.ApplyThemeToForm(this);
 
-            _poService = new PurchaseOrderService();
+            _poService = new PurchaseOrderServiceAdo();
             _projectService = new ProjectService();
             _userService = new UserService();
 
@@ -42,7 +42,7 @@ namespace HumanitarianProjectManagement.Forms
             }
             else
             {
-                _currentPO = new PurchaseOrder
+                _currentPO = new PurchaseOrderAdo
                 {
                     OrderDate = DateTime.Today // Default for new PO
                 };

@@ -1,4 +1,4 @@
-﻿using HumanitarianProjectManagement.DataAccessLayer;
+using HumanitarianProjectManagement.DataAccessLayer;
 using HumanitarianProjectManagement.Models;
 using HumanitarianProjectManagement.UI;
 using System;
@@ -115,7 +115,7 @@ namespace HumanitarianProjectManagement.Forms
                 DateTime? fromDate = chkFilterFromDate.Checked ? dtpFilterFromDate.Value.Date : (DateTime?)null;
                 DateTime? toDate = chkFilterToDate.Checked ? dtpFilterToDate.Value.Date.AddDays(1).AddTicks(-1) : (DateTime?)null; // End of day
 
-                List<PurchaseOrder> purchaseOrders = await _poService.GetPurchaseOrdersAsync(projectId, status, fromDate, toDate);
+                List<PurchaseOrderAdo> purchaseOrders = await _poService.GetPurchaseOrdersAsync(projectId, status, fromDate, toDate);
                 dgvPurchaseOrders.DataSource = purchaseOrders;
                 ConfigureDataGridView();
             }
@@ -221,9 +221,9 @@ namespace HumanitarianProjectManagement.Forms
         {
             if (dgvPurchaseOrders.SelectedRows.Count > 0)
             {
-                PurchaseOrder selectedPO = (PurchaseOrder)dgvPurchaseOrders.SelectedRows[0].DataBoundItem;
+                PurchaseOrderAdo selectedPO = (PurchaseOrderAdo)dgvPurchaseOrders.SelectedRows[0].DataBoundItem;
                 SetLoadingState(true, "Loading PO Details...");
-                PurchaseOrder poToEdit = null;
+                PurchaseOrderAdo poToEdit = null;
                 try
                 {
                     poToEdit = await _poService.GetPurchaseOrderByIdAsync(selectedPO.PurchaseOrderID);
@@ -265,7 +265,7 @@ namespace HumanitarianProjectManagement.Forms
         {
             if (dgvPurchaseOrders.SelectedRows.Count > 0)
             {
-                PurchaseOrder selectedPO = (PurchaseOrder)dgvPurchaseOrders.SelectedRows[0].DataBoundItem;
+                PurchaseOrderAdo selectedPO = (PurchaseOrderAdo)dgvPurchaseOrders.SelectedRows[0].DataBoundItem;
                 DialogResult confirmation = MessageBox.Show($"Are you sure you want to delete Purchase Order ID: {selectedPO.PurchaseOrderID} (Supplier: {selectedPO.SupplierName})?\nThis action cannot be undone.",
                                                            "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (confirmation == DialogResult.Yes)

@@ -11,9 +11,9 @@ namespace HumanitarianProjectManagement.DataAccessLayer
 {
     public class PurchaseOrderServiceAdo
     {
-        public async Task<List<PurchaseOrder>> GetPurchaseOrdersAsync(int? projectId = null, string status = null, DateTime? fromDate = null, DateTime? toDate = null)
+        public async Task<List<PurchaseOrderAdo>> GetPurchaseOrdersAsync(int? projectId = null, string status = null, DateTime? fromDate = null, DateTime? toDate = null)
         {
-            List<PurchaseOrder> purchaseOrders = new List<PurchaseOrder>();
+            List<PurchaseOrderAdo> purchaseOrders = new List<PurchaseOrderAdo>();
             StringBuilder queryBuilder = new StringBuilder(
                 "SELECT PurchaseOrderID, ProjectID, PurchaseID, SupplierName, OrderDate, ExpectedDeliveryDate, ActualDeliveryDate, TotalAmount, Status, ShippingAddress, BillingAddress, Notes, CreatedByUserID, ApprovedByUserID FROM PurchaseOrders");
 
@@ -70,7 +70,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         {
                             while (await reader.ReadAsync())
                             {
-                                PurchaseOrder po = new PurchaseOrder
+                                PurchaseOrderAdo po = new PurchaseOrderAdo
                                 {
                                     PurchaseOrderID = (int)reader["PurchaseOrderID"],
                                     ProjectID = (int)reader["ProjectID"],
@@ -100,9 +100,9 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             return purchaseOrders;
         }
 
-        public async Task<PurchaseOrder> GetPurchaseOrderByIdAsync(int purchaseOrderId)
+        public async Task<PurchaseOrderAdo> GetPurchaseOrderByIdAsync(int purchaseOrderId)
         {
-            PurchaseOrder po = null;
+            PurchaseOrderAdo po = null;
             string query = "SELECT PurchaseOrderID, ProjectID, PurchaseID, SupplierName, OrderDate, ExpectedDeliveryDate, ActualDeliveryDate, TotalAmount, Status, ShippingAddress, BillingAddress, Notes, CreatedByUserID, ApprovedByUserID FROM PurchaseOrders WHERE PurchaseOrderID = @PurchaseOrderID;";
 
             try
@@ -117,7 +117,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
                         {
                             if (await reader.ReadAsync())
                             {
-                                po = new PurchaseOrder
+                                po = new PurchaseOrderAdo
                                 {
                                     PurchaseOrderID = (int)reader["PurchaseOrderID"],
                                     ProjectID = (int)reader["ProjectID"],
@@ -146,7 +146,7 @@ namespace HumanitarianProjectManagement.DataAccessLayer
             return po;
         }
 
-        public async Task<bool> SavePurchaseOrderAsync(PurchaseOrder po)
+        public async Task<bool> SavePurchaseOrderAsync(PurchaseOrderAdo po)
         {
             int rowsAffected = 0;
             try
