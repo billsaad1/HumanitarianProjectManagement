@@ -6,17 +6,18 @@ using HumanitarianProjectManagement.Models;
 using HumanitarianProjectManagement.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using HumanitarianProjectManagement.DataAccessLayer;
 
 namespace HumanitarianProjectManagement.Forms
 {
     public partial class PurchasingMainForm : Form
     {
         private readonly SupplierService _supplierService;
-        private readonly ProductService _productService;
+        private readonly ProductServiceAdo _productService;
         private readonly PurchaseRequisitionService _purchaseRequisitionService;
-        private readonly PurchaseOrderService _purchaseOrderService;
+        private readonly PurchaseOrderServiceAdo _purchaseOrderService;
         private readonly GoodsReceiptService _goodsReceiptService;
-        private readonly InvoiceService _invoiceService;
+        private readonly InvoiceServiceAdo _invoiceService;
         private readonly PaymentService _paymentService;
 
         public PurchasingMainForm()
@@ -26,11 +27,11 @@ namespace HumanitarianProjectManagement.Forms
 
             // Initialize services
             _supplierService = new SupplierService();
-            _productService = new ProductService();
+            _productService = new ProductServiceAdo();
             _purchaseRequisitionService = new PurchaseRequisitionService();
-            _purchaseOrderService = new PurchaseOrderService();
+            _purchaseOrderService = new PurchaseOrderServiceAdo();
             _goodsReceiptService = new GoodsReceiptService();
-            _invoiceService = new InvoiceService();
+            _invoiceService = new InvoiceServiceAdo();
             _paymentService = new PaymentService();
 
             // Wire up event handlers
@@ -72,14 +73,16 @@ namespace HumanitarianProjectManagement.Forms
 
         private void btnProducts_Click(object sender, EventArgs e)
         {
-            var productListForm = new ProductListForm();
-            productListForm.ShowDialog();
+            // This form does not exist in the original project
+            // var productListForm = new ProductListForm();
+            // productListForm.ShowDialog();
         }
 
         private void btnPurchaseRequisitions_Click(object sender, EventArgs e)
         {
-            var requisitionListForm = new PurchaseRequisitionListForm();
-            requisitionListForm.ShowDialog();
+            // This form does not exist in the original project
+            // var requisitionListForm = new PurchaseRequisitionListForm();
+            // requisitionListForm.ShowDialog();
         }
 
         private void btnPurchaseOrders_Click(object sender, EventArgs e)
@@ -90,26 +93,30 @@ namespace HumanitarianProjectManagement.Forms
 
         private void btnGoodsReceipts_Click(object sender, EventArgs e)
         {
-            var goodsReceiptListForm = new GoodsReceiptListForm();
-            goodsReceiptListForm.ShowDialog();
+            // This form does not exist in the original project
+            // var goodsReceiptListForm = new GoodsReceiptListForm();
+            // goodsReceiptListForm.ShowDialog();
         }
 
         private void btnInvoices_Click(object sender, EventArgs e)
         {
-            var invoiceListForm = new InvoiceListForm();
-            invoiceListForm.ShowDialog();
+            // This form does not exist in the original project
+            // var invoiceListForm = new InvoiceListForm();
+            // invoiceListForm.ShowDialog();
         }
 
         private void btnPayments_Click(object sender, EventArgs e)
         {
-            var paymentListForm = new PaymentListForm();
-            paymentListForm.ShowDialog();
+            // This form does not exist in the original project
+            // var paymentListForm = new PaymentListForm();
+            // paymentListForm.ShowDialog();
         }
 
         private void btnReports_Click(object sender, EventArgs e)
         {
-            var reportsForm = new PurchasingReportsForm();
-            reportsForm.ShowDialog();
+            // This form does not exist in the original project
+            // var reportsForm = new PurchasingReportsForm();
+            // reportsForm.ShowDialog();
         }
 
         private async void btnRefresh_Click(object sender, EventArgs e)
@@ -118,4 +125,3 @@ namespace HumanitarianProjectManagement.Forms
         }
     }
 }
-
